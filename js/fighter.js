@@ -10,7 +10,7 @@ const STAGE_RIGHT = 1760;      // 월드 폭
 const PUSH_RADIUS = 46;        // 캐릭터끼리 밀어내는 반경
 
 const HURT_STAND = { x: -30, y: -152, w: 60, h: 152 };
-const HURT_CROUCH = { x: -33, y: -102, w: 66, h: 102 };
+const HURT_CROUCH = { x: -34, y: -112, w: 68, h: 112 };
 const HURT_AIR = { x: -30, y: -142, w: 60, h: 134 };
 const HURT_DOWN = { x: -54, y: -44, w: 108, h: 44 };
 
@@ -89,8 +89,8 @@ class Fighter {
     const bm = def.beam;
     const grow = clamp(0.42 + (f - def.startup) / 6, 0, 1);
     const h = bm.height * grow;
-    const originX = this.x + this.facing * 34;
-    const originY = this.y - 86;
+    const originX = this.x + this.facing * 38;
+    const originY = this.y - 74;
     const x = this.facing > 0 ? originX : originX - bm.reach;
     return { x, y: originY - h / 2, w: bm.reach, h, grow };
   }
@@ -163,7 +163,7 @@ class Fighter {
       this.setState('charge');
       if (this.stateTimer % 22 === 1) Sfx.play('charge');
       this.world.particles.spawn({
-        x: this.x + rand(-26, 26), y: this.y - rand(0, 120),
+        x: this.x + rand(-26, 26), y: this.y - rand(0, 110),
         vx: rand(-0.6, 0.6), vy: rand(-3.4, -1.6), life: randInt(14, 26),
         size: rand(3, 7), color: this.char.colors.aura, shape: 'shard'
       });
@@ -302,7 +302,7 @@ class Fighter {
       const bm = this.beamRect();
       if (bm && this.stateTimer % 2 === 0) {
         this.world.particles.spawn({
-          x: this.x + this.facing * 40, y: this.y - 86,
+          x: this.x + this.facing * 42, y: this.y - 74,
           vx: rand(-1, 1) + this.facing * rand(1, 4), vy: rand(-2.2, 2.2),
           life: randInt(10, 22), size: rand(4, 11),
           color: def === MOVES.ultimate ? this.char.ultimate.color : this.char.special.color
@@ -313,8 +313,8 @@ class Fighter {
     if ((def.beam || def.projectile) && a.frame < def.startup && a.frame % 3 === 0) {
       const ang = rand(0, Math.PI * 2), r = rand(40, 90);
       this.world.particles.spawn({
-        x: this.x + this.facing * 34 + Math.cos(ang) * r,
-        y: this.y - 86 + Math.sin(ang) * r,
+        x: this.x + this.facing * 38 + Math.cos(ang) * r,
+        y: this.y - 74 + Math.sin(ang) * r,
         vx: -Math.cos(ang) * 3.2, vy: -Math.sin(ang) * 3.2,
         life: 14, size: rand(3, 7),
         color: def === MOVES.ultimate ? this.char.ultimate.color : this.char.special.color

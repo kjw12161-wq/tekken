@@ -421,8 +421,8 @@ const Game = {
     const pj = def.projectile;
     this.projectiles.push({
       owner, def,
-      x: owner.x + owner.facing * 44,
-      y: owner.y - 86,
+      x: owner.x + owner.facing * 46,
+      y: owner.y - 74,
       vx: owner.facing * pj.speed,
       radius: pj.radius,
       color: owner.char.special.color,
@@ -447,7 +447,7 @@ const Game = {
     this.announce(f.char.ultimate.name, 'ult');
     this.slowmo = Math.max(this.slowmo, 26);
     this.shake(10);
-    this.particles.burst(f.x, f.y - 70, 30, {
+    this.particles.burst(f.x, f.y - 64, 30, {
       color: f.char.ultimate.color, minSpeed: 2, maxSpeed: 10,
       minSize: 4, maxSize: 12, minLife: 20, maxLife: 44, shape: 'shard'
     });
@@ -464,7 +464,7 @@ const Game = {
     winner.roundsWon++;
     winner.locked = true;
     this.announce('K.O.', 'ko');
-    this.particles.burst(loser.x, loser.y - 70, 34, {
+    this.particles.burst(loser.x, loser.y - 64, 34, {
       color: '#ffd24a', minSpeed: 3, maxSpeed: 12, minSize: 4, maxSize: 14,
       minLife: 24, maxLife: 50, shape: 'spark'
     });
@@ -618,7 +618,7 @@ const Game = {
       const f = att.attack.frame - move.startup;
       if (f % move.beam.hitEvery !== 0) return;
       if (rectsOverlap(rect, def.hurtbox())) {
-        const hx = def.x - att.facing * 20, hy = def.y - 80;
+        const hx = def.x - att.facing * 20, hy = def.y - 70;
         def.takeHit(att, move, { x: hx, y: hy }, {
           damage: move.beam.damage, chip: move.beam.chip,
           pushback: move.beam.pushback, lift: 0

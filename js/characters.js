@@ -28,6 +28,11 @@ const CHARACTERS = [
     hairStyle: 'vegeta',
     colors: {
       gi: '#1b2a5e', giDark: '#101a3d', trim: '#f2f2f2', trimDark: '#c2c6d6',
+      sleeve: '#22346f', sleeveDark: '#141f4a',
+      glove: '#f4f6fb', gloveDark: '#c3c9da',      // 흰 장갑
+      boot: '#f4f6fb', bootDark: '#c3c9da',        // 흰 부츠
+      belt: '#e8c45a', beltDark: '#a8862a',
+      armor: { plate: '#eef1f7', plateDark: '#c2c8d8', pad: '#e8c45a', padDark: '#b08f2e' },
       skin: '#f5c79b', skinDark: '#d69f70', hair: '#1d1408', hairLit: '#4a331a',
       aura: '#ff5ec7', eye: '#2b2b2b'
     },
