@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>스프라이트 프롬프트 생성기 - DRAGON FIGHTER Z</title>
+<style>
+  :root { --line: rgba(255,255,255,.14); --muted: #a4acc9; --orange: #ff8a1f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px; background: #0a0d18; color: #eef1ff;
+         font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 14px; margin: 18px 0 8px; color: var(--orange); }
+  p, li, label { color: var(--muted); font-size: 13px; line-height: 1.7; }
+  code { background: rgba(255,255,255,.1); padding: 1px 5px; border-radius: 4px; color: #ffd76a; }
+  .wrap { display: grid; grid-template-columns: 330px 1fr; gap: 18px; align-items: start; }
+  .panel { border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+           background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.28)); }
+  select, input[type=text], textarea {
+    width: 100%; font: inherit; font-size: 12.5px; padding: 7px 9px; border-radius: 7px;
+    border: 1px solid var(--line); background: rgba(255,255,255,.06); color: #fff;
+  }
+  textarea { font-family: ui-monospace, Menlo, monospace; line-height: 1.55; resize: vertical; }
+  button { font: inherit; font-weight: 700; font-size: 12.5px; border: 0; border-radius: 8px;
+           padding: 8px 14px; background: linear-gradient(180deg,#ff8a1f,#d5620a); color: #fff; cursor: pointer; }
+  button.ghost { background: rgba(255,255,255,.08); color: #dfe4f5; border: 1px solid var(--line); }
+  button.mini { padding: 4px 9px; font-size: 11px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+  .chk { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #dfe4f5; }
+  .group { border-top: 1px dashed rgba(255,255,255,.12); padding-top: 8px; margin-top: 8px; }
+  .group h3 { font-size: 12px; margin: 0 0 6px; color: #8ea0d0; display: flex; justify-content: space-between; }
+  .keys { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .keys label { font: 11px/1.5 monospace; color: #cdd6f0; display: flex; align-items: center; gap: 4px; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 10px;
+          background: #101728; display: grid; grid-template-columns: 92px 1fr; gap: 10px; }
+  .card canvas { width: 92px; height: auto; image-rendering: pixelated;
+                 background: repeating-conic-gradient(#1b2036 0 25%, #131728 0 50%) 0 0/12px 12px; border-radius: 6px; }
+  .card .body { min-width: 0; }
+  .card .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .card .key { font: 700 12px/1 monospace; color: #ffd76a; }
+  .card pre { margin: 0; white-space: pre-wrap; word-break: break-word;
+              font: 11.5px/1.6 ui-monospace, Menlo, monospace; color: #cfd8f0;
+              max-height: 190px; overflow: auto; }
+  .note { border-left: 3px solid var(--orange); padding: 8px 12px; background: rgba(255,138,31,.07);
+          border-radius: 0 8px 8px 0; margin: 10px 0; }
+  #count { color: #ffd76a; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>스프라이트 프롬프트 생성기</h1>
+<p>
+  이 게임에 바로 쓸 수 있는 스프라이트를 만들기 위한 프롬프트를 프레임별로 만들어 줍니다.
+  셀 규격·바라보는 방향·투명 배경 같은 <b>게임 쪽 제약이 자동으로 들어가고</b>,
+  각 프레임에는 내장 스프라이트를 <b>포즈 레퍼런스</b>로 함께 보여 줍니다.
+  생성한 그림은 <code>tools/pack-sprites.html</code> 에서 조립하면 됩니다.
+</p>
+
+<div class="wrap">
+  <!-- ================= 설정 ================= -->
+  <div class="panel">
+    <h2>캐릭터</h2>
+    <select id="charSel"></select>
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="ssaiyan"> 초사이어인 변형(<code>_ss</code>)으로 생성</label>
+
+    <h2>화풍</h2>
+    <select id="styleSel">
+      <option value="toriyama">토리야마 도트 (기본)</option>
+      <option value="arcade">90년대 아케이드 격투게임</option>
+      <option value="hd">현대 HD 도트 (고해상도)</option>
+      <option value="chibi">SD 치비</option>
+    </select>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="optOutline" checked> 외곽선</label>
+      <label class="chk"><input type="checkbox" id="optCel" checked> 셀 음영</label>
+      <label class="chk"><input type="checkbox" id="optSpec"> 규격(px) 명시</label>
+    </div>
+
+    <h2>프레임 선택 <span id="count"></span></h2>
+    <div class="row">
+      <button class="ghost mini" data-preset="min">최소 20장</button>
+      <button class="ghost mini" data-preset="core">대기+이동+자세</button>
+      <button class="ghost mini" data-preset="atk">공격 전부</button>
+      <button class="ghost mini" data-preset="all">88장 전체</button>
+      <button class="ghost mini" data-preset="none">모두 해제</button>
+    </div>
+    <div id="groups"></div>
+  </div>
+
+  <!-- ================= 결과 ================= -->
+  <div>
+    <div class="panel">
+      <h2>공통 블록 <button class="ghost mini" id="btnReset">기본값</button></h2>
+      <textarea id="styleBlock" rows="7"></textarea>
+      <h2>금지 항목 (negative prompt)</h2>
+      <textarea id="negBlock" rows="3"></textarea>
+      <div class="row">
+        <button id="btnCopyAll">선택한 프롬프트 전부 복사</button>
+        <button class="ghost" id="btnTxt">.txt 로 저장</button>
+        <button class="ghost" id="btnNeg">금지 항목 복사</button>
+        <button class="ghost" id="btnRefSheet">포즈 레퍼런스 시트 PNG</button>
+      </div>
+      <div class="note">
+        <b>추천 순서</b> · ① <code>idle0</code> 한 장을 먼저 만들어 화풍을 고정하고
+        ② 그 결과를 레퍼런스 이미지로 물려(캐릭터 일관성) 나머지를 생성하고
+        ③ 포즈가 흔들리면 옆의 포즈 레퍼런스를 함께 첨부하세요.
+      </div>
+    </div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<script src="../js/util.js"></script>
+<script src="../js/characters.js"></script>
+<script src="../js/moves.js"></script>
+<script src="../js/fighter.js"></script>
+<script src="../js/render.js"></script>
+<script src="../js/sprites.js"></script>
+<script>
+'use strict';
+
+/* ---------------- 캐릭터 외형 설명 ---------------- */
+const LOOK = {
+  goku: 'Goku: spiky black hair, orange gi with blue undershirt, blue sash belt, blue wristbands, bare forearms, dark blue boots with orange trim',
+  vegeta: 'Vegeta: flame-shaped black hair with a widow’s peak, navy blue battle suit, white saiyan armor chest plate with gold shoulder pads, white gloves, white boots',
+  piccolo: 'Piccolo: green skin, pointed ears, head antennae, purple gi with dark blue sash, white turban and shoulder cape, brown boots',
+  frieza: 'Frieza final form: sleek white and purple bio-armor, smooth white head with purple crown plate, red eyes, purple gems on shoulders and chest, slender build',
+  cell: 'Perfect Cell: green insectoid humanoid, black spots, dark green wing shells on the back, black head crest and antennae, orange eyes',
+  gohan: 'Ultimate Gohan: spiky black hair swept back, navy blue Supreme Kai gi, light blue long-sleeved undershirt, red sash, light grey boots',
+  trunks: 'Future Trunks: lavender bob hair, dark blue jacket over a grey shirt, yellow belt, sword sheathed on the back, yellow boots'
+};
+const SS_LOOK = {
+  goku: 'Super Saiyan Goku: golden spiky upswept hair, green eyes, orange gi with blue undershirt, blue wristbands, dark blue boots',
+  vegeta: 'Super Saiyan Vegeta: golden flame-shaped hair, green eyes, navy blue battle suit with white armor and gold shoulder pads, white gloves and boots',
+  trunks: 'Super Saiyan Trunks: golden spiky hair, green eyes, dark blue jacket, yellow belt, sword on the back, yellow boots'
+};
+
+/* ---------------- 화풍 프리셋 ---------------- */
+const STYLES = {
+  toriyama: '2D pixel art fighting game sprite, single character, Akira Toriyama Dragon Ball art style',
+  arcade: '2D pixel art fighting game sprite, single character, 1990s arcade fighter sprite style (Street Fighter / King of Fighters era), Dragon Ball character',
+  hd: '2D high resolution pixel art fighting game sprite, single character, modern HD sprite work with rich shading, Dragon Ball character',
+  chibi: '2D pixel art fighting game sprite, single character, super deformed (SD chibi) proportions with a large head, Dragon Ball character'
+};
+
+/* ---------------- 프레임별 포즈 문구 ---------------- */
+const STAGE = [
+  'wind-up, weight loaded, limb pulled back',
+  'starting to extend, weight shifting forward',
+  'halfway through the motion',
+  'almost fully extended',
+  'full extension at the moment of impact'
+];
+const MOVE_EN = {
+  jab: 'quick lead-hand jab at head height',
+  straight: 'heavy straight punch driven by hip and shoulder rotation, rear heel lifting',
+  roundhouse: 'high roundhouse kick, upper body leaning back as the leg swings horizontally',
+  lowKick: 'low crouching front kick',
+  sweep: 'low sweeping leg attack close to the ground, body dropped low',
+  uppercut: 'rising uppercut, fist punched straight up above the head while the body lifts off the ground',
+  grab: 'both arms thrust forward to grab the opponent, fingers spread',
+  airPunch: 'mid-air punch, legs tucked up',
+  airKick: 'mid-air kick, front leg extended down and forward',
+  kiBlast: 'one arm thrust forward, palm facing the enemy to fire a small energy shot (do NOT draw the energy)'
+};
+const POSE_EN = {
+  idle: [
+    'fighting stance at rest, feet wider than shoulders, knees slightly bent, both fists up at chest height, elbows out',
+    'fighting stance, breathing in, chest and shoulders raised slightly',
+    'fighting stance, top of the breathing cycle, shoulders at their highest',
+    'fighting stance, breathing out, returning down'
+  ],
+  walk: [
+    'walking forward, front foot starting to step out, rear heel lifting, guard held up',
+    'walking forward, front foot about to land, body at its lowest',
+    'walking forward, front foot planted, weight moving onto it',
+    'walking forward, rear foot swinging through',
+    'walking forward, legs crossing, body at its highest',
+    'walking forward, opposite foot stepping out'
+  ],
+  back: [
+    'stepping backwards while facing the enemy, guard held up, short stride',
+    'stepping backwards, rear foot planted, body low',
+    'stepping backwards, weight shifting back',
+    'stepping backwards, front foot dragging back',
+    'stepping backwards, legs close together',
+    'stepping backwards, opposite foot moving back'
+  ],
+  charge: [
+    'powering up: both fists clenched at the waist, knees bent, whole body tensed',
+    'powering up, body tensed harder, shoulders slightly raised',
+    'powering up at peak strain, muscles flexed',
+    'powering up, easing back down slightly'
+  ],
+  win: [
+    'victory pose, one arm raised high in the air',
+    'victory pose, arm raised, chest rising with breath',
+    'victory pose, arm raised, top of the breath',
+    'victory pose, arm raised, breathing out'
+  ],
+  crouch: 'crouching low, knees folded, torso lowered, fists kept up',
+  crouchGuard: 'crouching and blocking, both arms raised in front of the face',
+  guard: 'standing block, both forearms raised in front of the face and chest, body leaning slightly back',
+  dash: 'dashing forward, torso pitched far forward, both arms trailing behind',
+  wakeup: 'getting up off the ground, one knee up, one hand pushing off the floor',
+  down: 'knocked out, lying flat on the back on the ground, head towards the rear, legs towards the front, eyes shut',
+  jumpUp: 'rising in mid-air, knees tucked up, both arms raised',
+  jumpDown: 'falling in mid-air, legs extended downward, arms lowered',
+  hurt: 'taking a hit, head snapped back, torso pushed backwards, both arms flung open',
+  beamC: [
+    'starting to charge a two-handed energy beam, turning sideways, hands beginning to draw back to the hip',
+    'charging the beam, hands drawn further back beside the waist, knees bending',
+    'charging the beam, hands cupped together at the hip, body coiled',
+    'fully charged Kamehameha stance, both hands cupped tight at the hip, deep stance (do NOT draw the energy)'
+  ],
+  beamF: 'firing a two-handed energy beam: both arms thrust forward, palms together facing the enemy, legs braced wide front and back (do NOT draw the beam)'
+};
+
+/* ---------------- 프레임 목록 & 그룹 ---------------- */
+let charId = 'goku';
+let allFrames = [];        // { key, spec }
+const selected = new Set();
+
+function frameList() {
+  SpriteBank.init({});
+  const out = [], seen = {};
+  for (const spec of SpriteBank.poseSpecs()) {
+    const d = SpriteBank.makeDummy(CHAR_BY_ID[charId], spec.over);
+    const k = poseFor(d, spec.time).key;
+    if (!seen[k]) { seen[k] = 1; out.push({ key: k, spec }); }
+  }
+  return out;
+}
+
+const GROUPS = [
+  { title: '대기', test: k => /^idle/.test(k) },
+  { title: '이동', test: k => /^(walk|back|dash)/.test(k) },
+  { title: '자세', test: k => /^(crouch|crouchGuard|guard|wakeup|down|hurt|jumpUp|jumpDown)$/.test(k) },
+  { title: '기 모으기 / 승리', test: k => /^(charge|win)/.test(k) },
+  { title: '지상 타격기', test: k => /^(jab|straight|roundhouse|lowKick|sweep|uppercut|grab)\d$/.test(k) },
+  { title: '공중기', test: k => /^air/.test(k) },
+  { title: '기공파', test: k => /^(kiBlast|beam)/.test(k) }
+];
+const PRESETS = {
+  min: ['idle0','idle1','idle2','idle3','walk0','walk2','walk4','guard','crouch','jumpUp','jumpDown','hurt','down',
+        'jab4','straight4','roundhouse4','uppercut4','sweep4','kiBlast4','beamC3','beamF'],
+  core: k => /^(idle|walk|back|dash|crouch|guard|wakeup|down|hurt|jump)/.test(k),
+  atk: k => /^(jab|straight|roundhouse|lowKick|sweep|uppercut|grab|air|kiBlast|beam)/.test(k),
+  all: () => true,
+  none: () => false
+};
+
+/* ---------------- 포즈 문구 만들기 ---------------- */
+function poseText(key) {
+  let m = key.match(/^(idle|walk|back|charge|win)(\d)$/);
+  if (m) return POSE_EN[m[1]][+m[2]] || POSE_EN[m[1]][0];
+  m = key.match(/^beamC(\d)$/);
+  if (m) return POSE_EN.beamC[+m[1]];
+  m = key.match(/^([a-zA-Z]+)(\d)$/);
+  if (m && MOVE_EN[m[1]]) return `${MOVE_EN[m[1]]} — ${STAGE[+m[2]]}`;
+  return POSE_EN[key] || key;
+}
+
+function styleBlockText() {
+  const style = STYLES[document.getElementById('styleSel').value];
+  const outline = document.getElementById('optOutline').checked
+    ? 'Clean 1px dark outline, outline color tinted to each material (not pure black).\n' : '';
+  const cel = document.getElementById('optCel').checked
+    ? 'Cel shading with 3-4 tones per material (base / shadow / highlight), light from above, no dithering.\n' : '';
+  const spec = document.getElementById('optSpec').checked
+    ? `Character height about ${CELL_OY - 24}px from feet to top of the head (up to ${CELL_OY - 8}px including hair) inside a ${CELL_W}x${CELL_H}px frame.\n` : '';
+  return `${style}.
+Side view, character faces RIGHT.
+${outline}${cel}Sharp pixel edges, no anti-aliasing, no blur.
+Transparent background, character only, no ground shadow.
+Full body visible from head to feet, feet flat on an invisible ground line near the bottom.
+${spec}Consistent character height, head size and camera distance across every frame.`;
+}
+const NEG_DEFAULT = 'background, ground shadow, energy effects, aura, beam, ki blast sphere, motion blur, speed lines, text, labels, watermark, frame border, multiple characters, cropped limbs, 3d render, photorealistic, gradient background, soft anti-aliased edges';
+
+function promptFor(key) {
+  const ss = document.getElementById('ssaiyan').checked && SS_LOOK[charId];
+  const look = ss ? SS_LOOK[charId] : LOOK[charId];
+  return `${document.getElementById('styleBlock').value}\n\n${look}.\n\nPOSE: ${poseText(key)}.`;
+}
+
+/* ---------------- 화면 ---------------- */
+function buildGroups() {
+  const host = document.getElementById('groups');
+  host.innerHTML = '';
+  for (const g of GROUPS) {
+    const keys = allFrames.filter(f => g.test(f.key)).map(f => f.key);
+    if (!keys.length) continue;
+    const box = document.createElement('div');
+    box.className = 'group';
+    const h = document.createElement('h3');
+    h.innerHTML = `<span>${g.title} (${keys.length})</span>`;
+    const all = document.createElement('button');
+    all.className = 'ghost mini';
+    all.textContent = '전체';
+    all.addEventListener('click', () => {
+      const on = !keys.every(k => selected.has(k));
+      keys.forEach(k => on ? selected.add(k) : selected.delete(k));
+      render();
+    });
+    h.appendChild(all);
+    box.appendChild(h);
+    const keysBox = document.createElement('div');
+    keysBox.className = 'keys';
+    for (const k of keys) {
+      const lab = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = selected.has(k);
+      cb.addEventListener('change', () => { cb.checked ? selected.add(k) : selected.delete(k); render(); });
+      lab.appendChild(cb);
+      lab.appendChild(document.createTextNode(k));
+      keysBox.appendChild(lab);
+    }
+    box.appendChild(keysBox);
+    host.appendChild(box);
+  }
+}
+
+function render() {
+  document.getElementById('count').textContent = `· ${selected.size}장 선택`;
+  buildGroups();
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  const ss = document.getElementById('ssaiyan').checked;
+  for (const f of allFrames) {
+    if (!selected.has(f.key)) continue;
+    const card = document.createElement('div');
+    card.className = 'card';
+    const cv = document.createElement('canvas');
+    cv.width = CELL_W; cv.height = CELL_H;
+    const dummy = SpriteBank.makeDummy(CHAR_BY_ID[charId], Object.assign({ ki: ss ? 100 : 0 }, f.spec.over));
+    const fr = SpriteBank.get(dummy, poseFor(dummy, f.spec.time), f.spec.time);
+    if (fr) {
+      const c = cv.getContext('2d');
+      c.imageSmoothingEnabled = false;
+      c.drawImage(fr.image, fr.sx, fr.sy, CELL_W, CELL_H, 0, 0, CELL_W, CELL_H);
+    }
+    card.appendChild(cv);
+    const body = document.createElement('div');
+    body.className = 'body';
+    const head = document.createElement('div');
+    head.className = 'head';
+    const key = document.createElement('span');
+    key.className = 'key';
+    key.textContent = f.key + (ss && SS_LOOK[charId] ? '_ss' : '');
+    head.appendChild(key);
+    const btns = document.createElement('span');
+    const bCopy = document.createElement('button');
+    bCopy.className = 'mini';
+    bCopy.textContent = '복사';
+    bCopy.addEventListener('click', () => {
+      navigator.clipboard.writeText(promptFor(f.key));
+      bCopy.textContent = '복사됨'; setTimeout(() => bCopy.textContent = '복사', 900);
+    });
+    const bRef = document.createElement('button');
+    bRef.className = 'ghost mini';
+    bRef.style.marginLeft = '6px';
+    bRef.textContent = '포즈 PNG';
+    bRef.addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.download = `${charId}_${f.key}_pose.png`;
+      a.href = cv.toDataURL('image/png');
+      a.click();
+    });
+    btns.appendChild(bCopy); btns.appendChild(bRef);
+    head.appendChild(btns);
+    body.appendChild(head);
+    const pre = document.createElement('pre');
+    pre.textContent = promptFor(f.key);
+    body.appendChild(pre);
+    card.appendChild(body);
+    list.appendChild(card);
+  }
+}
+
+function selectedPrompts() {
+  return allFrames.filter(f => selected.has(f.key))
+    .map(f => `### ${f.key}\n${promptFor(f.key)}`).join('\n\n---\n\n');
+}
+
+/* ---------------- 이벤트 ---------------- */
+const charSel = document.getElementById('charSel');
+CHARACTERS.forEach(c => {
+  const o = document.createElement('option');
+  o.value = c.id; o.textContent = `${c.name} (${c.id})`;
+  charSel.appendChild(o);
+});
+charSel.addEventListener('change', () => {
+  charId = charSel.value;
+  SpriteBank.init({});
+  allFrames = frameList();
+  render();
+});
+['styleSel', 'optOutline', 'optCel', 'optSpec'].forEach(id =>
+  document.getElementById(id).addEventListener('change', () => {
+    document.getElementById('styleBlock').value = styleBlockText();
+    render();
+  }));
+document.getElementById('ssaiyan').addEventListener('change', render);
+document.getElementById('styleBlock').addEventListener('input', render);
+document.getElementById('btnReset').addEventListener('click', () => {
+  document.getElementById('styleBlock').value = styleBlockText();
+  document.getElementById('negBlock').value = NEG_DEFAULT;
+  render();
+});
+document.querySelectorAll('[data-preset]').forEach(btn =>
+  btn.addEventListener('click', () => {
+    const p = PRESETS[btn.dataset.preset];
+    selected.clear();
+    allFrames.forEach(f => {
+      const hit = Array.isArray(p) ? p.includes(f.key) : p(f.key);
+      if (hit) selected.add(f.key);
+    });
+    render();
+  }));
+document.getElementById('btnCopyAll').addEventListener('click', e => {
+  navigator.clipboard.writeText(selectedPrompts());
+  e.target.textContent = '복사됨'; setTimeout(() => e.target.textContent = '선택한 프롬프트 전부 복사', 1000);
+});
+document.getElementById('btnNeg').addEventListener('click', e => {
+  navigator.clipboard.writeText(document.getElementById('negBlock').value);
+  e.target.textContent = '복사됨'; setTimeout(() => e.target.textContent = '금지 항목 복사', 1000);
+});
+document.getElementById('btnTxt').addEventListener('click', () => {
+  const text = `# ${CHAR_BY_ID[charId].name} 스프라이트 프롬프트 (${selected.size}장)\n\n` +
+    `## 금지 항목\n${document.getElementById('negBlock').value}\n\n${selectedPrompts()}\n`;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.download = `${charId}-prompts.txt`;
+  a.href = URL.createObjectURL(blob);
+  a.click();
+});
+document.getElementById('btnRefSheet').addEventListener('click', () => {
+  const keys = allFrames.filter(f => selected.has(f.key));
+  if (!keys.length) { alert('프레임을 먼저 선택하세요.'); return; }
+  const COLS = 8, LABEL = 16;
+  const rows = Math.ceil(keys.length / COLS);
+  const cv = document.createElement('canvas');
+  cv.width = COLS * CELL_W; cv.height = rows * (CELL_H + LABEL);
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#10142a'; ctx.fillRect(0, 0, cv.width, cv.height);
+  const ss = document.getElementById('ssaiyan').checked;
+  keys.forEach((f, i) => {
+    const x = (i % COLS) * CELL_W, y = Math.floor(i / COLS) * (CELL_H + LABEL);
+    const dummy = SpriteBank.makeDummy(CHAR_BY_ID[charId], Object.assign({ ki: ss ? 100 : 0 }, f.spec.over));
+    const fr = SpriteBank.get(dummy, poseFor(dummy, f.spec.time), f.spec.time);
+    if (fr) ctx.drawImage(fr.image, fr.sx, fr.sy, CELL_W, CELL_H, x, y, CELL_W, CELL_H);
+    ctx.fillStyle = '#8ea0d0'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(f.key, x + CELL_W / 2, y + CELL_H + 12);
+    ctx.textAlign = 'left';
+  });
+  const a = document.createElement('a');
+  a.download = `${charId}-pose-reference.png`;
+  a.href = cv.toDataURL('image/png');
+  a.click();
+});
+
+/* ---------------- 초기화 ---------------- */
+allFrames = frameList();
+PRESETS.min.forEach(k => selected.add(k));
+document.getElementById('styleBlock').value = styleBlockText();
+document.getElementById('negBlock').value = NEG_DEFAULT;
+render();
+</script>
+</body>
+</html>
