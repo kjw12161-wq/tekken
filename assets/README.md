@@ -7,11 +7,10 @@
 > 개인적으로 시험해보는 것과 배포하는 것은 다릅니다. 공개 저장소·웹사이트에 올릴 시트는
 > 직접 그렸거나 재배포가 허용된 것만 사용하세요. (그래서 이 저장소에는 시트가 들어 있지 않습니다)
 
-## 0. 이미지 생성 AI 로 만들 때
+## 0. 프레임을 한 장씩 그렸다면
 
-프레임별 포즈 지시문과 공통 프롬프트는 [`docs/SPRITE-PROMPTS.md`](../docs/SPRITE-PROMPTS.md) 에 있습니다.
-생성한 이미지를 프레임 키 이름(`idle0.png`, `straight4.png` …)으로 저장한 뒤
-`tools/pack-sprites.html` 에 끌어다 놓으면 시트와 `sprites.json` 이 자동으로 만들어집니다.
+프레임 키 이름(`idle0.png`, `straight4.png` …)으로 저장한 뒤 `tools/pack-sprites.html` 에
+끌어다 놓으면 크기·위치가 자동 정렬되고 시트와 `sprites.json` 이 만들어집니다.
 
 ## 1. 시작용 시트 뽑기
 
