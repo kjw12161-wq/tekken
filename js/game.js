@@ -44,7 +44,10 @@ const Game = {
     this.debug = /[?&]debug=1/.test(location.search);
     // ?vector=1 로 스프라이트를 끄고 벡터 렌더링을 그대로 볼 수 있다
     SpriteBank.init({ disabled: /[?&]vector=1/.test(location.search) });
-    SpriteBank.loadExternal().then(ok => { if (ok) this.buildSelectGrid(); });
+    // 단일 파일 빌드에서는 외부 시트 폴더가 없으므로 건너뛴다
+    if (!window.DFZ_SINGLE_FILE) {
+      SpriteBank.loadExternal().then(ok => { if (ok) this.buildSelectGrid(); });
+    }
     Input.init();
     this.buildSelectGrid();
     this.bindUI();
