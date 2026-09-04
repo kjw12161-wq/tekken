@@ -42,6 +42,9 @@ const Game = {
     this.canvas.height = VIEW_H;
     this.ctx = this.canvas.getContext('2d');
     this.debug = /[?&]debug=1/.test(location.search);
+    // ?vector=1 로 스프라이트를 끄고 벡터 렌더링을 그대로 볼 수 있다
+    SpriteBank.init({ disabled: /[?&]vector=1/.test(location.search) });
+    SpriteBank.loadExternal().then(ok => { if (ok) this.buildSelectGrid(); });
     Input.init();
     this.buildSelectGrid();
     this.bindUI();
@@ -125,19 +128,30 @@ const Game = {
     });
   },
 
-  /** 선택 화면용 미니 캐릭터 초상 */
+  /** 선택 / 결과 화면용 미니 캐릭터 초상 (게임과 같은 스프라이트를 사용) */
   drawPortrait(cv, ch) {
     const ctx = cv.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, cv.width, cv.height);
     const dummy = {
       char: ch, x: 0, y: 0, facing: 1, state: 'idle', stateTimer: 0, vy: 0,
       attack: null, ki: 0, charging: false, flash: 0, hitstun: 0, guarding: false, blockstun: 0
     };
+    const pose = poseFor(dummy, 0);
+    const frame = SpriteBank.get(dummy, pose, 0);
     ctx.save();
     ctx.translate(cv.width / 2, cv.height - 8);
-    ctx.scale(0.92, 0.92);
-    ctx.translate(0, 6);
-    drawFighterLocal(ctx, dummy, poseFor(dummy, 0), 0);
+    if (frame) {
+      const k = 1.35;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        frame.image, frame.sx, frame.sy, frame.sw, frame.sh,
+        -frame.ox * k, -frame.oy * k, frame.sw * k, frame.sh * k
+      );
+    } else {
+      ctx.scale(0.78, 0.78);
+      drawFighterRig(ctx, dummy, pose, 0);
+    }
     ctx.restore();
   },
 
@@ -292,7 +306,7 @@ const Game = {
     this.phase = 'intro';
     this.phaseTimer = 0;
     this.slowmo = 0;
-    this.cam.x = clamp((a.x + b.x) / 2 - VIEW_WORLD_W / 2, 0, STAGE_RIGHT - VIEW_WORLD_W);
+    this.cam.x = SpriteBank.snap(clamp((a.x + b.x) / 2 - VIEW_WORLD_W / 2, 0, STAGE_RIGHT - VIEW_WORLD_W));
     this.announce(`ROUND ${this.roundNo}`, 'big');
     this.updateHud(true);
   },
@@ -599,10 +613,10 @@ const Game = {
     if (!a || !b) return;
     const mid = (a.x + b.x) / 2;
     const target = clamp(mid - VIEW_WORLD_W / 2, 0, STAGE_RIGHT - VIEW_WORLD_W);
-    this.cam.x = lerp(this.cam.x, target, 0.12);
+    this.cam.x = SpriteBank.snap(lerp(this.cam.x, target, 0.12));
     if (this.cam.shake > 0) {
-      this.cam.shakeX = rand(-this.cam.shake, this.cam.shake);
-      this.cam.shakeY = rand(-this.cam.shake, this.cam.shake) * 0.6;
+      this.cam.shakeX = Math.round(rand(-this.cam.shake, this.cam.shake));
+      this.cam.shakeY = Math.round(rand(-this.cam.shake, this.cam.shake) * 0.6);
       this.cam.shake *= 0.82;
       if (this.cam.shake < 0.4) { this.cam.shake = 0; this.cam.shakeX = this.cam.shakeY = 0; }
     }
@@ -694,29 +708,5 @@ const Game = {
     }
   }
 };
-
-/* 선택 화면 초상용 - 그림자/오라 없이 캐릭터만 그린다 */
-function drawFighterLocal(ctx, f, p, time) {
-  const c = f.char.colors;
-  ctx.save();
-  ctx.scale(0.78, 0.78);
-  limb(ctx, p.hip, p.legB[0], p.legB[1], 17, c.giDark);
-  limb(ctx, p.shoulderB, p.armB[0], p.armB[1], 13, c.giDark);
-  ctx.fillStyle = c.gi;
-  ctx.beginPath();
-  ctx.moveTo(p.hip[0] - 15, p.hip[1] + 6);
-  ctx.lineTo(p.chest[0] - 17, p.chest[1]);
-  ctx.lineTo(p.chest[0] + 17, p.chest[1]);
-  ctx.lineTo(p.hip[0] + 15, p.hip[1] + 6);
-  ctx.closePath();
-  ctx.fill();
-  capsule(ctx, p.hip[0] - 14, p.hip[1] + 2, p.hip[0] + 14, p.hip[1] + 2, 10, c.trim);
-  limb(ctx, p.hip, p.legF[0], p.legF[1], 18, c.gi);
-  limb(ctx, p.shoulderF, p.armF[0], p.armF[1], 14, c.gi);
-  ctx.fillStyle = c.skin;
-  ctx.beginPath(); ctx.arc(p.armF[1][0], p.armF[1][1], 7.5, 0, Math.PI * 2); ctx.fill();
-  drawHead(ctx, p, f.char, f, time);
-  ctx.restore();
-}
 
 window.addEventListener('DOMContentLoaded', () => Game.init());

@@ -40,6 +40,9 @@ function basePose() {
   };
 }
 
+/** 공격 포즈를 몇 단계로 나눌지 (스프라이트로 굽기 위해 양자화한다) */
+const ATTACK_STEPS = 4;
+
 function attackPose(f, p) {
   const a = f.attack, def = a.def;
   const phase = a.frame < def.startup ? 'startup'
@@ -47,7 +50,9 @@ function attackPose(f, p) {
   const ext = phase === 'startup' ? a.frame / Math.max(1, def.startup)
     : phase === 'active' ? 1
       : 1 - (a.frame - def.startup - def.active) / Math.max(1, def.recovery);
-  const e = clamp(ext, 0, 1);
+  const step = Math.round(clamp(ext, 0, 1) * ATTACK_STEPS);
+  const e = step / ATTACK_STEPS;
+  p.key = def.key + step;
 
   switch (def.key) {
     case 'jab':
@@ -104,7 +109,9 @@ function attackPose(f, p) {
       p.chest = mix(p.chest, P(8, -102), e);
       break;
     case 'kiBlast': {
-      const g = clamp(a.frame / def.startup, 0, 1);
+      const gs = Math.round(clamp(a.frame / def.startup, 0, 1) * ATTACK_STEPS);
+      const g = gs / ATTACK_STEPS;
+      p.key = 'kiBlast' + gs;
       p.armF = [mix(P(14, -88), P(30, -96), g), mix(P(16, -70), P(52, -96), g)];
       p.armB = [mix(P(-14, -88), P(18, -96), g), mix(P(-18, -70), P(44, -98), g)];
       break;
@@ -112,7 +119,9 @@ function attackPose(f, p) {
     case 'beam':
     case 'ultimate': {
       const charging = a.frame < def.startup;
-      const g = charging ? a.frame / def.startup : 1;
+      const gs = Math.round(clamp(a.frame / Math.max(1, def.startup), 0, 1) * ATTACK_STEPS);
+      const g = charging ? gs / ATTACK_STEPS : 1;
+      p.key = charging ? 'beamC' + gs : 'beamF';
       if (charging) {
         // 손을 뒤로 모아 기를 응축
         p.armF = [mix(P(14, -88), P(-16, -92), g), mix(P(18, -70), P(-30, -86), g)];
@@ -149,11 +158,25 @@ function crouchPose(p, amount) {
   p.legB = [P(-15, -18), P(-20, 0)];
 }
 
+/**
+ * 애니메이션 위상을 정수 프레임으로 양자화한다.
+ * 같은 키 = 같은 그림이어야 스프라이트로 구울 수 있다.
+ */
+function phaseOf(time, period, steps) {
+  const wrapped = ((time % period) + period) % period;
+  const i = Math.floor(wrapped / (period / steps)) % steps;
+  return { i, t: i * (period / steps) };
+}
+
+const WALK_PERIOD = Math.PI * 2 * 5;
+const WALK_BACK_PERIOD = Math.PI * 2 * 6;
+const BOB_PERIOD = Math.PI * 2 * 16;
+
 function poseFor(f, time) {
   const p = basePose();
-  const bob = Math.sin(time / 16) * 2;
 
   if (f.state === 'ko' || f.state === 'knockdown') {
+    p.key = 'down';
     p.hip = P(-6, -22); p.chest = P(-26, -26); p.head = P(-48, -30);
     p.shoulderF = P(-24, -26); p.shoulderB = P(-28, -22);
     p.armF = [P(-40, -14), P(-56, -8)];
@@ -166,7 +189,9 @@ function poseFor(f, time) {
 
   switch (f.state) {
     case 'walk': {
-      const s = Math.sin(time / 5);
+      const ph = phaseOf(time, WALK_PERIOD, 6);
+      const s = Math.sin(ph.t / 5);
+      p.key = 'walk' + ph.i;
       p.legF = [P(11 + s * 10, -32), P(13 + s * 22, -Math.max(0, s) * 12)];
       p.legB = [P(-11 - s * 10, -32), P(-13 - s * 22, -Math.max(0, -s) * 12)];
       p.armF = [P(16 - s * 8, -86), P(22 - s * 16, -68)];
@@ -175,7 +200,9 @@ function poseFor(f, time) {
       break;
     }
     case 'walkBack': {
-      const s = Math.sin(time / 6);
+      const ph = phaseOf(time, WALK_BACK_PERIOD, 6);
+      const s = Math.sin(ph.t / 6);
+      p.key = 'back' + ph.i;
       p.legF = [P(11 - s * 8, -32), P(13 - s * 18, -Math.max(0, -s) * 9)];
       p.legB = [P(-11 + s * 8, -32), P(-13 + s * 18, -Math.max(0, s) * 9)];
       p.armF = [P(14, -88), P(16, -70)];
@@ -183,6 +210,7 @@ function poseFor(f, time) {
       break;
     }
     case 'dash':
+      p.key = 'dash';
       p.chest = P(12, -100); p.head = P(16, -128); p.hip = P(4, -60);
       p.armF = [P(2, -90), P(-16, -84)];
       p.armB = [P(-10, -92), P(-32, -90)];
@@ -190,14 +218,17 @@ function poseFor(f, time) {
       p.legB = [P(-14, -34), P(-26, -2)];
       break;
     case 'crouch':
+      p.key = 'crouch';
       crouchPose(p, 1);
       break;
     case 'crouchGuard':
+      p.key = 'crouchGuard';
       crouchPose(p, 1);
-      p.armF = [P(12, -66), P(20, -84)];
-      p.armB = [P(4, -64), P(16, -80)];
+      p.armF = [P(12, -54), P(20, -72)];
+      p.armB = [P(4, -52), P(16, -68)];
       break;
     case 'guard':
+      p.key = 'guard';
       p.armF = [P(12, -94), P(20, -116)];
       p.armB = [P(2, -92), P(14, -112)];
       p.chest = P(-4, -102); p.head = P(0, -132);
@@ -206,6 +237,7 @@ function poseFor(f, time) {
     case 'jump':
     case 'launched': {
       const rising = f.vy < 0;
+      p.key = rising ? 'jumpUp' : 'jumpDown';
       p.legF = [P(14, -44), P(18, -18)];
       p.legB = [P(-10, -40), P(-14, -14)];
       p.armF = rising ? [P(16, -100), P(22, -124)] : [P(18, -84), P(26, -64)];
@@ -215,28 +247,41 @@ function poseFor(f, time) {
     }
     case 'hurt':
     case 'hurtAir':
+      p.key = 'hurt';
       p.chest = P(-14, -100); p.head = P(-22, -128); p.hip = P(-4, -62);
       p.armF = [P(4, -92), P(-6, -108)];
       p.armB = [P(-20, -92), P(-34, -104)];
       p.legF = [P(14, -32), P(20, 0)];
       p.legB = [P(-8, -32), P(-14, 0)];
       break;
-    case 'charge':
+    case 'charge': {
+      const ph = phaseOf(time, BOB_PERIOD, 4);
+      const bob = Math.sin(ph.t / 16) * 2;
+      p.key = 'charge' + ph.i;
       p.armF = [P(20, -84), P(14, -62)];
       p.armB = [P(-20, -84), P(-14, -62)];
       p.chest = P(0, -100 + bob * 0.4); p.head = P(2, -130 + bob * 0.4);
       p.legF = [P(18, -32), P(24, 0)];
       p.legB = [P(-18, -32), P(-24, 0)];
       break;
-    case 'win':
+    }
+    case 'win': {
+      const ph = phaseOf(time, BOB_PERIOD, 4);
+      const bob = Math.sin(ph.t / 16) * 2;
+      p.key = 'win' + ph.i;
       p.armF = [P(16, -110), P(20, -148)];
       p.armB = [P(-14, -88), P(-18, -66)];
       p.chest = P(2, -104 + bob); p.head = P(4, -134 + bob);
       break;
+    }
     case 'wakeup':
+      p.key = 'wakeup';
       crouchPose(p, 1.2);
       break;
     default: {
+      const ph = phaseOf(time, BOB_PERIOD, 4);
+      const bob = Math.sin(ph.t / 16) * 2;
+      p.key = 'idle' + ph.i;
       p.chest = P(2, -102 + bob * 0.6);
       p.head = P(4, -132 + bob * 0.6);
       p.armF = [P(18, -86 + bob * 0.3), P(24, -66 + bob * 0.4)];
@@ -424,45 +469,20 @@ function drawAura(ctx, f, time, ch) {
 }
 
 /* ---------------- 캐릭터 본체 ---------------- */
-function drawFighter(ctx, f, time) {
+
+/**
+ * 캐릭터 리그(몸통/팔다리/머리)를 원점(발끝) 기준으로 그린다.
+ * 스프라이트를 구울 때도, 스프라이트 없이 직접 그릴 때도 같은 함수를 쓴다.
+ */
+function drawFighterRig(ctx, f, p, time) {
   const ch = f.char, c = ch.colors;
-
-  // 그림자
-  ctx.save();
-  const h = clamp(1 - (GROUND_Y - f.y) / 260, 0.25, 1);
-  ctx.globalAlpha = 0.32 * h;
-  ctx.fillStyle = '#000';
-  ctx.beginPath();
-  ctx.ellipse(f.x, GROUND_Y + 4, 34 * h, 9 * h, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  ctx.save();
-  ctx.translate(f.x, f.y);
-  ctx.scale(f.facing, 1);
-
-  drawAura(ctx, f, time, ch);
-
-  const p = poseFor(f, time);
-  const knocked = f.state === 'ko' || f.state === 'knockdown';
-
-  if (f.flash > 0) {
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = clamp(f.flash / 14, 0, 0.75);
-    const fg = ctx.createRadialGradient(0, -74, 6, 0, -74, 82);
-    fg.addColorStop(0, '#fff6d0');
-    fg.addColorStop(0.45, 'rgba(255,210,120,0.5)');
-    fg.addColorStop(1, 'rgba(255,150,60,0)');
-    ctx.fillStyle = fg;
-    ctx.beginPath(); ctx.arc(0, -74, 82, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-  }
 
   // 뒤쪽 팔다리
   limb(ctx, p.hip, p.legB[0], p.legB[1], 17, c.giDark);
   capsule(ctx, p.legB[1][0], p.legB[1][1] - 5, p.legB[1][0] + 6, p.legB[1][1], 13, c.trimDark);
   limb(ctx, p.shoulderB, p.armB[0], p.armB[1], 13, c.giDark);
+  ctx.fillStyle = c.skinDark;
+  ctx.beginPath(); ctx.arc(p.armB[1][0], p.armB[1][1], 6.5, 0, Math.PI * 2); ctx.fill();
 
   // 몸통
   ctx.fillStyle = c.gi;
@@ -483,8 +503,18 @@ function drawFighter(ctx, f, time) {
     ctx.fillStyle = c.giDark;
     ctx.fillRect(p.chest[0] - 12, p.chest[1] + 6, 24, 10);
   }
-  // 벨트
+  // 도복 주름 / 몸통 음영
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  capsule(ctx, p.chest[0] - 13, p.chest[1] + 6, p.hip[0] - 11, p.hip[1] + 2, 6, c.giDark);
+  ctx.globalAlpha = 0.18;
+  capsule(ctx, p.chest[0] + 9, p.chest[1] + 5, p.hip[0] + 8, p.hip[1], 4, '#ffffff');
+  ctx.restore();
+
+  // 벨트 + 매듭
   capsule(ctx, p.hip[0] - 14, p.hip[1] + 2, p.hip[0] + 14, p.hip[1] + 2, 10, c.trim);
+  ctx.fillStyle = c.trimDark;
+  ctx.fillRect(p.hip[0] - 3, p.hip[1] - 2, 7, 9);
 
   // 앞쪽 팔다리
   limb(ctx, p.hip, p.legF[0], p.legF[1], 18, c.gi);
@@ -494,10 +524,58 @@ function drawFighter(ctx, f, time) {
   capsule(ctx, p.armF[0][0], p.armF[0][1], p.armF[1][0], p.armF[1][1], 12, c.skin);
   ctx.fillStyle = c.skin;
   ctx.beginPath(); ctx.arc(p.armF[1][0], p.armF[1][1], 7.5, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(p.armB[1][0], p.armB[1][1], 6.5, 0, Math.PI * 2); ctx.fill();
 
-  if (!knocked || true) drawHead(ctx, p, ch, f, time);
+  drawHead(ctx, p, ch, f, time);
+}
 
+function drawFighter(ctx, f, time) {
+  const ch = f.char;
+
+  // 그림자
+  ctx.save();
+  const h = clamp(1 - (GROUND_Y - f.y) / 260, 0.25, 1);
+  ctx.globalAlpha = 0.32 * h;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(f.x, GROUND_Y + 4, 34 * h, 9 * h, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  const p = poseFor(f, time);
+  const frame = SpriteBank.get(f, p, time);
+
+  ctx.save();
+  ctx.translate(SpriteBank.snap(f.x), SpriteBank.snap(f.y));
+  ctx.scale(f.facing, 1);
+
+  drawAura(ctx, f, time, ch);
+
+  if (f.flash > 0) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = clamp(f.flash / 14, 0, 0.75);
+    const fg = ctx.createRadialGradient(0, -74, 6, 0, -74, 82);
+    fg.addColorStop(0, '#fff6d0');
+    fg.addColorStop(0.45, 'rgba(255,210,120,0.5)');
+    fg.addColorStop(1, 'rgba(255,150,60,0)');
+    ctx.fillStyle = fg;
+    ctx.beginPath(); ctx.arc(0, -74, 82, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  if (frame) {
+    // 구워둔 스프라이트를 그대로 찍는다 (픽셀 보간 없음)
+    const sm = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(
+      frame.image, frame.sx, frame.sy, frame.sw, frame.sh,
+      -frame.ox * frame.scale, -frame.oy * frame.scale,
+      frame.sw * frame.scale, frame.sh * frame.scale
+    );
+    ctx.imageSmoothingEnabled = sm;
+  } else {
+    drawFighterRig(ctx, f, p, time);
+  }
   ctx.restore();
 
   // 가드 실드

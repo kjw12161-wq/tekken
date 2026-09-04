@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>스프라이트 시트 내보내기 - DRAGON FIGHTER Z</title>
+<style>
+  body { margin: 0; padding: 24px; background: #0a0d18; color: #eef1ff;
+         font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  p { color: #a4acc9; font-size: 13px; line-height: 1.7; max-width: 820px; }
+  code { background: rgba(255,255,255,.1); padding: 1px 5px; border-radius: 4px; }
+  button { font: inherit; font-weight: 700; border: 0; border-radius: 8px; padding: 10px 18px;
+           background: linear-gradient(180deg,#ff8a1f,#d5620a); color: #fff; cursor: pointer; }
+  .sheet { margin: 18px 0; padding: 12px; border: 1px solid rgba(255,255,255,.14); border-radius: 10px; }
+  .sheet h2 { font-size: 15px; margin: 0 0 8px; }
+  .sheet canvas { max-width: 100%; background:
+      repeating-conic-gradient(#1b2036 0 25%, #131728 0 50%) 0 0/16px 16px; image-rendering: pixelated; }
+  a.dl { display: inline-block; margin-top: 8px; color: #ffd76a; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>스프라이트 시트 내보내기</h1>
+<p>
+  게임이 실행 중에 굽는 스프라이트를 캐릭터별 PNG 시트와 <code>sprites.json</code> 으로 내보냅니다.
+  내보낸 PNG 를 Aseprite 같은 도트 편집기에서 원하는 그림으로 덮어 그린 뒤,
+  PNG 와 JSON 을 <code>assets/</code> 폴더에 넣으면 게임이 그 시트를 사용합니다.
+  프레임 위치와 원점은 그대로 두어야 판정과 어긋나지 않습니다.
+</p>
+<p><button id="go">시트 만들기</button></p>
+<div id="out"></div>
+
+<script src="../js/util.js"></script>
+<script src="../js/characters.js"></script>
+<script src="../js/moves.js"></script>
+<script src="../js/fighter.js"></script>
+<script src="../js/render.js"></script>
+<script src="../js/sprites.js"></script>
+<script>
+'use strict';
+const COLS = 8;
+
+function buildSheet(char) {
+  SpriteBank.init({});
+  const specs = SpriteBank.poseSpecs();
+  const frames = {};
+  const cells = [];
+  for (const spec of specs) {
+    const dummy = SpriteBank.makeDummy(char, spec.over);
+    const pose = poseFor(dummy, spec.time);
+    const frame = SpriteBank.get(dummy, pose, spec.time);
+    if (!frame || frames[pose.key]) continue;
+    frames[pose.key] = true;
+    cells.push({ key: pose.key, frame });
+  }
+  const rows = Math.ceil(cells.length / COLS);
+  const cv = document.createElement('canvas');
+  cv.width = COLS * CELL_W;
+  cv.height = rows * CELL_H;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const map = {};
+  cells.forEach((cell, i) => {
+    const x = (i % COLS) * CELL_W, y = Math.floor(i / COLS) * CELL_H;
+    ctx.drawImage(cell.frame.image, cell.frame.sx, cell.frame.sy, CELL_W, CELL_H, x, y, CELL_W, CELL_H);
+    map[cell.key] = [x, y];
+  });
+  return { canvas: cv, frames: map, count: cells.length };
+}
+
+document.getElementById('go').addEventListener('click', () => {
+  const out = document.getElementById('out');
+  out.innerHTML = '';
+  const manifest = {
+    cellWidth: CELL_W, cellHeight: CELL_H,
+    originX: CELL_OX, originY: CELL_OY, scale: SPRITE_SCALE,
+    characters: {}
+  };
+  for (const char of CHARACTERS) {
+    const sheet = buildSheet(char);
+    manifest.characters[char.id] = { image: char.id + '.png', frames: sheet.frames };
+    const box = document.createElement('div');
+    box.className = 'sheet';
+    box.innerHTML = `<h2>${char.name} <small>(${char.id}.png · ${sheet.count} 프레임)</small></h2>`;
+    box.appendChild(sheet.canvas);
+    const a = document.createElement('a');
+    a.className = 'dl';
+    a.download = char.id + '.png';
+    a.href = sheet.canvas.toDataURL('image/png');
+    a.textContent = `⬇ ${char.id}.png 내려받기`;
+    box.appendChild(document.createElement('br'));
+    box.appendChild(a);
+    out.appendChild(box);
+  }
+  const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.className = 'dl';
+  a.download = 'sprites.json';
+  a.href = URL.createObjectURL(blob);
+  a.textContent = '⬇ sprites.json 내려받기';
+  out.appendChild(a);
+  SpriteBank.init({});   // 게임용 캐시 상태로 되돌린다
+});
+</script>
+</body>
+</html>
