@@ -395,6 +395,8 @@ const Game = {
     const [a, b] = this.fighters;
     a.reset(640, 1); b.reset(1120, -1);
     a.locked = b.locked = true;
+    // 캐릭터별 등장 모션으로 라운드를 시작한다
+    a.setState('entrance'); b.setState('entrance');
     this.projectiles.length = 0;
     this.blastClashes.length = 0;
     this.endBeamClash();
@@ -459,6 +461,87 @@ const Game = {
       color: f.char.ultimate.color, minSpeed: 2, maxSpeed: 10,
       minSize: 4, maxSize: 12, minLife: 20, maxLife: 44, shape: 'shard'
     });
+  },
+
+  /** 등장 모션의 스타일별 이펙트 (착지 흙먼지, 검광, 오라 등) */
+  onEntranceFx(f, t) {
+    const style = f.char.entrance;
+    const aura = (f.char.form && f.char.form.aura) || f.char.colors.aura;
+    switch (style) {
+      case 'descend':
+        if (t === Math.round(ENTRANCE_FRAMES * 0.4)) {
+          // 착지 : 흙먼지와 충격
+          this.shake(11);
+          Sfx.play('heavy');
+          this.particles.burst(f.x, GROUND_Y, 22, {
+            color: '#e6d3ae', minSpeed: 2, maxSpeed: 9, minSize: 3, maxSize: 11, gravity: 0.16
+          });
+          this.particles.spawn({ x: f.x, y: GROUND_Y - 4, life: 22, size: 40, color: '#fff2c8', shape: 'ring' });
+        } else if (t === Math.round(ENTRANCE_FRAMES * 0.72)) {
+          // 주먹을 맞부딪히는 순간
+          Sfx.play('light');
+          this.particles.burst(f.x + f.facing * 10, f.y - 96, 10, {
+            color: '#ffffff', minSpeed: 1.5, maxSpeed: 5, minSize: 2, maxSize: 7, shape: 'spark'
+          });
+        }
+        break;
+      case 'crossArms':
+        if (t === Math.round(ENTRANCE_FRAMES * 0.7)) {
+          Sfx.play('charge');
+          this.particles.burst(f.x, f.y - 80, 16, {
+            color: aura, minSpeed: 1.5, maxSpeed: 6, minSize: 3, maxSize: 9, shape: 'shard'
+          });
+        }
+        break;
+      case 'meditate':
+        if (t % 6 === 0 && t < ENTRANCE_FRAMES * 0.55) {
+          this.particles.spawn({
+            x: f.x + rand(-24, 24), y: f.y - 74 - rand(0, 20),
+            vx: rand(-0.5, 0.5), vy: rand(-1.6, -0.5), life: randInt(18, 34),
+            size: rand(3, 7), color: aura, shape: 'shard'
+          });
+        }
+        break;
+      case 'hover':
+        if (t % 4 === 0 && t < ENTRANCE_FRAMES * 0.62) {
+          this.particles.spawn({
+            x: f.x - f.facing * rand(10, 40), y: f.y - 60 + rand(-20, 20),
+            vx: -f.facing * rand(0.6, 2), vy: rand(-0.6, 0.6), life: randInt(12, 24),
+            size: rand(2, 6), color: aura
+          });
+        }
+        break;
+      case 'shrug':
+        if (t === Math.round(ENTRANCE_FRAMES * 0.45)) {
+          Sfx.play('charge');
+          this.particles.spawn({ x: f.x, y: f.y - 90, life: 24, size: 54, color: aura, shape: 'ring' });
+        }
+        break;
+      case 'calm':
+        if (t > ENTRANCE_FRAMES * 0.4 && t % 5 === 0) {
+          this.particles.spawn({
+            x: f.x + rand(-26, 26), y: f.y - rand(0, 20),
+            vx: rand(-0.4, 0.4), vy: rand(-4, -1.8), life: randInt(16, 30),
+            size: rand(3, 8), color: aura, shape: 'shard'
+          });
+        }
+        break;
+      case 'sword':
+        if (t === Math.round(ENTRANCE_FRAMES * 0.47)) {
+          // 검광 : 앞으로 크게 베는 궤적
+          Sfx.play('heavy');
+          this.shake(6);
+          for (let i = 0; i < 16; i++) {
+            const k = i / 15;
+            this.particles.spawn({
+              x: f.x + f.facing * (16 + k * 62), y: f.y - 132 + k * 76,
+              vx: f.facing * rand(1, 4), vy: rand(0.5, 3),
+              life: randInt(10, 20), size: rand(3, 9), color: '#eaf6ff', shape: 'spark'
+            });
+          }
+        }
+        break;
+    }
   },
 
   onTransform(f) {
@@ -540,8 +623,8 @@ const Game = {
 
     switch (this.phase) {
       case 'intro':
-        if (this.phaseTimer === 70) this.announce('FIGHT!', 'fight');
-        if (this.phaseTimer > 110) {
+        if (this.phaseTimer === ENTRANCE_FRAMES + 6) this.announce('FIGHT!', 'fight');
+        if (this.phaseTimer > ENTRANCE_FRAMES + 44) {
           this.phase = 'battle';
           this.phaseTimer = 0;
           a.locked = b.locked = false;
@@ -749,8 +832,11 @@ const Game = {
       this.particles.spawn({ x: c.x, y: c.y, life: 18, size: 44, color: '#ffffff', shape: 'ring' });
     }
 
-    // 승부
-    const LIMIT = 480;
+    // 승부 (필살기가 화면에 머무는 총 시간을 5초로 제한한다)
+    const spent = Math.max(
+      a.attack.def.startup + a.attack.def.active,
+      b.attack.def.startup + b.attack.def.active);
+    const LIMIT = Math.max(60, SPECIAL_MAX_FRAMES - spent);
     if (c.t >= 0.93) this.resolveBeamClash(a, b);
     else if (c.t <= 0.07) this.resolveBeamClash(b, a);
     else if (c.timer > LIMIT) this.resolveBeamClash(null, null);

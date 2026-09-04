@@ -191,6 +191,10 @@ const SpriteBank = {
     for (let i = 0; i < 6; i++) add({ state: 'walkBack' }, mid(i, WALK_BACK_PERIOD, 6));
     for (let i = 0; i < 4; i++) add({ state: 'charge', charging: true }, mid(i, BOB_PERIOD, 4));
     for (let i = 0; i < 4; i++) add({ state: 'win' }, mid(i, BOB_PERIOD, 4));
+    // 등장 모션 : 진행도 구간마다 한 장씩
+    for (let i = 0; i < ENTRANCE_STEPS; i++) {
+      add({ state: 'entrance', stateTimer: Math.round((i + 0.5) * ENTRANCE_FRAMES / ENTRANCE_STEPS) });
+    }
     ['crouch', 'crouchGuard', 'guard', 'dash', 'wakeup', 'knockdown'].forEach(st => add({ state: st }));
     add({ state: 'jump', vy: -6 });
     add({ state: 'jump', vy: 6 });

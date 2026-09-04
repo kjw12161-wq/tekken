@@ -317,6 +317,294 @@ function crouchPose(p, amount) {
   p.legB = [P(-17, -18), P(-24, 0)];
 }
 
+/* ---------------- 등장 모션 ----------------
+ *  캐릭터마다 완전히 다른 입장 연출. (p, t, raw)
+ *   t   : 양자화된 진행도 (포즈용 - 스프라이트로 굽기 위해)
+ *   raw : 실제 진행도 0~1 (offX/offY 같은 부드러운 이동용)
+ *  offX / offY 는 스프라이트에 굽지 않고 그릴 때 더해진다.
+ * ------------------------------------------- */
+const ENTRANCE_FRAMES = 96;
+const ENTRANCE_STEPS = 8;
+
+const ENTRANCE_POSE = {
+  // 손오공 : 하늘에서 내려와 착지 → 주먹을 맞부딪히고 자세
+  descend(p, t, raw) {
+    if (raw < 0.4) {
+      // 낙하는 뒤로 갈수록 빨라진다 (중력처럼)
+      const k = raw / 0.4;
+      p.offY = -250 * (1 - k * k);
+      p.armF = [P(28, -104), P(40, -124)];
+      p.armB = [P(-26, -104), P(-38, -124)];
+      p.legF = [P(20, -40), P(28, -14)];
+      p.legB = [P(-18, -38), P(-26, -10)];
+      p.chest = P(0, -101); p.head = P(2, -124);
+      p.headTilt = 0.06;
+    } else if (t < 0.53) {
+      crouchPose(p, 1.25);              // 착지 스쿼시
+      p.armF = [P(24, -44), P(34, -26)];
+      p.armB = [P(-22, -44), P(-32, -26)];
+    } else if (t < 0.66) {
+      p.chest = P(0, -96); p.head = P(2, -118); p.hip = P(0, -58);
+      p.armF = [P(22, -84), P(8, -96)];   // 두 주먹을 가슴 앞으로
+      p.armB = [P(-20, -84), P(-6, -96)];
+      p.legF = [P(19, -30), P(26, 0)];
+      p.legB = [P(-18, -30), P(-25, 0)];
+    } else if (t < 0.79) {
+      p.chest = P(1, -100); p.head = P(3, -122);
+      p.armF = [P(20, -88), P(4, -100)];  // 맞부딪히는 순간
+      p.armB = [P(-18, -88), P(-2, -100)];
+      p.legF = [P(20, -33), P(27, 0)];
+      p.legB = [P(-19, -33), P(-27, 0)];
+    } else {
+      p.armF = [P(25, -86), P(31, -103)];
+      p.armB = [P(-23, -86), P(-27, -102)];
+    }
+  },
+
+  // 베지터 : 팔짱을 낀 채 내려다보다가 코웃음치며 자세
+  crossArms(p, t) {
+    p.legF = [P(22, -33), P(31, 0)];
+    p.legB = [P(-21, -33), P(-30, 0)];
+    if (t < 0.28) {
+      p.armF = [P(18, -86), P(-14, -84)];   // 팔짱을 끼고 눈을 감은 채
+      p.armB = [P(-18, -88), P(14, -86)];
+      p.chest = P(-3, -100); p.head = P(-2, -123);
+      p.headTilt = 0.08;
+    } else if (t < 0.53) {
+      p.armF = [P(19, -90), P(-14, -90)];   // 고개를 들어 상대를 내려다본다
+      p.armB = [P(-19, -92), P(14, -92)];
+      p.chest = P(-2, -102); p.head = P(0, -125);
+      p.headTilt = -0.16;
+    } else if (t < 0.66) {
+      p.armF = [P(20, -92), P(-12, -94)];   // 기가 치솟으며 어깨가 들린다
+      p.armB = [P(-20, -94), P(12, -96)];
+      p.chest = P(-1, -103); p.head = P(1, -126);
+      p.headTilt = -0.1;
+    } else if (t < 0.79) {
+      p.armF = [P(24, -90), P(34, -80)];    // 한 팔을 풀어 손등을 보인다
+      p.armB = [P(-20, -88), P(-10, -94)];
+      p.chest = P(2, -100); p.head = P(4, -122);
+      p.headTilt = -0.04;
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
+  // 피콜로 : 공중에서 가부좌를 틀고 명상 → 눈을 뜨고 내려선다
+  meditate(p, t, raw) {
+    if (raw < 0.55) {
+      p.offY = -74 * (1 - raw / 0.55);
+      // 다리를 접어 가부좌
+      p.legF = [P(24, -56), P(6, -48)];
+      p.legB = [P(-24, -56), P(-6, -46)];
+      p.armF = [P(20, -86), P(-10, -84)];
+      p.armB = [P(-20, -88), P(10, -86)];
+      p.hip = P(0, -66); p.chest = P(0, -102); p.head = P(1, -125);
+      p.headTilt = 0.05;
+    } else if (t < 0.72) {
+      p.legF = [P(20, -34), P(27, 0)];       // 다리를 펴며 착지
+      p.legB = [P(-20, -34), P(-27, 0)];
+      p.armF = [P(18, -86), P(-8, -82)];
+      p.armB = [P(-18, -88), P(8, -84)];
+      p.chest = P(-1, -101); p.head = P(1, -123);
+    } else if (t < 0.85) {
+      p.armF = [P(26, -88), P(36, -96)];     // 팔짱을 풀며
+      p.armB = [P(-24, -88), P(-32, -96)];
+      p.legF = [P(21, -34), P(29, 0)];
+      p.legB = [P(-21, -34), P(-29, 0)];
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
+  // 프리저 : 팔짱을 끼고 유유히 떠서 다가와 손짓으로 도발
+  hover(p, t, raw) {
+    const k = 1 - Math.min(1, raw / 0.62);
+    p.offX = -92 * k;
+    p.offY = -80 * k * (0.6 + 0.4 * k);
+    if (t < 0.66) {
+      p.armF = [P(17, -90), P(-14, -88)];
+      p.armB = [P(-17, -92), P(13, -90)];
+      p.chest = P(-2, -102); p.head = P(0, -125);
+      p.headTilt = -0.13;
+      p.legF = [P(15, -36), P(20, -6)];
+      p.legB = [P(-15, -36), P(-20, -4)];
+    } else if (t < 0.85) {
+      p.armF = [P(28, -94), P(48, -98)];     // 한 손을 내밀어 '와 보라'
+      p.armB = [P(-20, -84), P(-12, -68)];
+      p.chest = P(3, -100); p.head = P(5, -122);
+      p.headTilt = -0.06;
+      p.legF = [P(17, -34), P(23, 0)];
+      p.legB = [P(-17, -34), P(-24, 0)];
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
+  // 셀 : 어깨를 으쓱하고 두 팔을 벌려 여유를 부린다
+  shrug(p, t) {
+    if (t < 0.4) {
+      p.armF = [P(26, -96), P(20, -80)];     // 으쓱 (팔꿈치 올리고 손바닥 위로)
+      p.armB = [P(-26, -96), P(-20, -80)];
+      p.chest = P(0, -103); p.head = P(2, -125);
+      p.legF = [P(18, -33), P(24, 0)];
+      p.legB = [P(-18, -33), P(-24, 0)];
+    } else if (t < 0.66) {
+      p.armF = [P(30, -100), P(50, -112)];   // 두 팔을 크게 벌린다
+      p.armB = [P(-30, -100), P(-50, -112)];
+      p.chest = P(0, -102); p.head = P(2, -125);
+      p.headTilt = -0.12;
+      p.legF = [P(24, -33), P(34, 0)];
+      p.legB = [P(-24, -33), P(-34, 0)];
+    } else if (t < 0.85) {
+      p.armF = [P(27, -90), P(38, -84)];
+      p.armB = [P(-27, -90), P(-38, -84)];
+      p.legF = [P(21, -33), P(29, 0)];
+      p.legB = [P(-21, -33), P(-29, 0)];
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
+  // 얼티밋 오반 : 조용히 서 있다가 기를 끌어올리며 자세를 잡는다
+  calm(p, t) {
+    if (t < 0.4) {
+      p.armF = [P(19, -84), P(23, -62)];     // 손을 자연스럽게 내리고
+      p.armB = [P(-19, -84), P(-23, -62)];
+      p.chest = P(0, -101); p.head = P(2, -123);
+      p.legF = [P(15, -33), P(19, 0)];
+      p.legB = [P(-15, -33), P(-19, 0)];
+    } else if (t < 0.66) {
+      p.armF = [P(22, -88), P(14, -96)];     // 주먹을 쥐며 기를 모은다
+      p.armB = [P(-22, -88), P(-14, -96)];
+      p.chest = P(0, -99); p.head = P(2, -121);
+      p.legF = [P(19, -32), P(26, 0)];
+      p.legB = [P(-19, -32), P(-26, 0)];
+    } else if (t < 0.85) {
+      p.armF = [P(26, -90), P(30, -108)];
+      p.armB = [P(-24, -88), P(-28, -104)];
+      p.legF = [P(21, -33), P(29, 0)];
+      p.legB = [P(-21, -33), P(-29, 0)];
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
+  // 트랭크스 : 등 뒤에서 검을 뽑아 크게 베어 내리고 자세
+  sword(p, t) {
+    if (t < 0.27) {
+      p.armF = [P(4, -112), P(-18, -122)];   // 등 뒤 어깨로 손을 넘긴다
+      p.armB = [P(-20, -86), P(-24, -70)];
+      p.chest = P(-6, -101); p.head = P(-3, -124);
+      p.headTilt = -0.06;
+      p.legF = [P(18, -33), P(24, 0)];
+      p.legB = [P(-20, -33), P(-28, 0)];
+    } else if (t < 0.4) {
+      p.armF = [P(10, -126), P(24, -148)];   // 뽑아 올린다
+      p.armB = [P(-20, -88), P(-26, -76)];
+      p.chest = P(-2, -102); p.head = P(1, -125);
+      p.legF = [P(19, -33), P(26, 0)];
+      p.legB = [P(-20, -33), P(-28, 0)];
+    } else if (t < 0.53) {
+      p.armF = [P(34, -104), P(56, -84)];    // 크게 베어 내린다
+      p.armB = [P(-18, -84), P(-22, -70)];
+      p.chest = P(10, -99); p.head = P(11, -120);
+      p.headTilt = 0.08;
+      p.hip = P(4, -61);
+      p.legF = [P(26, -33), P(38, 0)];
+      p.legB = [P(-18, -34), P(-28, 0)];
+    } else if (t < 0.79) {
+      p.armF = [P(26, -92), P(34, -76)];     // 검을 되돌리며
+      p.armB = [P(-20, -86), P(-24, -74)];
+      p.legF = [P(22, -33), P(31, 0)];
+      p.legB = [P(-19, -33), P(-27, 0)];
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
+  // 기본 : 그냥 자세를 잡는다
+  stance(p) {}
+};
+
+/* ---------------- 승리 모션 ----------------
+ *  4프레임 루프. (p, i, bob)
+ * ------------------------------------------- */
+const VICTORY_POSE = {
+  // 손오공 : 뒷머리를 긁으며 웃는다
+  scratch(p, i, bob) {
+    // 팔꿈치를 크게 뒤로 들어 뒷머리를 긁는 실루엣
+    p.armB = [P(-27, -124 + bob * 0.4), P(-7, -136 + bob * 0.5)];
+    p.armF = [P(21, -84), P(17, -62)];            // 다른 손은 허리
+    p.chest = P(1, -100 + bob * 0.5); p.head = P(3, -122 + bob * 0.6);
+    p.headTilt = 0.07 + (i % 2) * 0.04;
+    p.legF = [P(17, -33), P(22, 0)];
+    p.legB = [P(-15, -33), P(-20, -3)];           // 한쪽 발끝을 살짝 든다
+  },
+  // 베지터 : 팔짱을 끼고 고개를 돌린 채 콧방귀
+  foldProud(p, i, bob) {
+    p.armF = [P(19, -93), P(-14, -93 + bob * 0.3)];
+    p.armB = [P(-19, -95), P(14, -95 + bob * 0.3)];
+    p.chest = P(-3, -101 + bob * 0.4); p.head = P(-2, -124 + bob * 0.5);
+    p.headTilt = -0.16 - (i % 2) * 0.02;
+    p.legF = [P(21, -33), P(30, 0)];
+    p.legB = [P(-21, -33), P(-30, 0)];
+  },
+  // 피콜로 : 팔짱을 끼고 눈을 감은 채 미동도 없다
+  foldQuiet(p, i, bob) {
+    p.armF = [P(15, -80), P(-13, -75 + bob * 0.2)];
+    p.armB = [P(-15, -82), P(12, -77 + bob * 0.2)];
+    p.chest = P(0, -101 + bob * 0.25); p.head = P(1, -123 + bob * 0.3);
+    p.headTilt = 0.17;
+    p.legF = [P(13, -33), P(16, 0)];
+    p.legB = [P(-13, -33), P(-16, 0)];
+  },
+  // 프리저 : 손가락을 들어 우아하게 바라본다
+  finger(p, i, bob) {
+    p.armF = [P(24, -100), P(16, -124 + bob * 0.6)];
+    p.armB = [P(-20, -82), P(-13, -66)];
+    p.chest = P(1, -101 + bob * 0.4); p.head = P(4, -123 + bob * 0.5);
+    p.headTilt = 0.08 + (i % 2) * 0.02;
+    p.legF = [P(15, -33), P(19, 0)];
+    p.legB = [P(-15, -33), P(-19, 0)];
+  },
+  // 셀 : 두 팔을 벌려 젖히고 웃는다
+  spread(p, i, bob) {
+    const sw = (i % 2) ? 1 : 0;
+    p.armF = [P(30, -104), P(50, -128 + bob + sw * 3)];
+    p.armB = [P(-30, -104), P(-50, -128 + bob - sw * 3)];
+    p.chest = P(0, -103 + bob * 0.5); p.head = P(1, -126 + bob * 0.6);
+    p.headTilt = -0.18;
+    p.legF = [P(24, -33), P(34, 0)];
+    p.legB = [P(-24, -33), P(-34, 0)];
+  },
+  // 오반 : 주먹을 하늘로 뻗는다
+  fistUp(p, i, bob) {
+    p.armF = [P(21, -108), P(25, -142 + bob)];
+    p.armB = [P(-22, -86), P(-26, -100)];
+    p.chest = P(2, -101 + bob); p.head = P(4, -123 + bob);
+    p.headTilt = -0.06;
+    p.legF = [P(18, -33), P(24, 0)];
+    p.legB = [P(-18, -33), P(-24, 0)];
+  },
+  // 트랭크스 : 검을 어깨에 걸치고 앞머리를 넘긴 자세
+  shoulder(p, i, bob) {
+    // 팔을 가슴 앞으로 가로질러 어깨에 검을 걸친 자세
+    p.armF = [P(31, -95 + bob * 0.3), P(-7, -111 + bob * 0.5)];
+    p.armB = [P(-19, -84), P(-14, -63)];
+    p.chest = P(3, -100 + bob * 0.5); p.head = P(5, -122 + bob * 0.6);
+    p.headTilt = -0.08;
+    p.legF = [P(22, -33), P(31, 0)];
+    p.legB = [P(-16, -33), P(-21, 0)];
+  }
+};
+
 /**
  * 애니메이션 위상을 정수 프레임으로 양자화한다.
  * 같은 키 = 같은 그림이어야 스프라이트로 구울 수 있다.
@@ -425,13 +713,20 @@ function poseFor(f, time) {
       p.legB = [P(-22, -34), P(-31, 0)];
       break;
     }
+    case 'entrance': {
+      const raw = clamp(f.stateTimer / ENTRANCE_FRAMES, 0, 1);
+      const step = Math.min(ENTRANCE_STEPS - 1, Math.floor(raw * ENTRANCE_STEPS));
+      p.key = 'ent' + step;
+      const fn = ENTRANCE_POSE[f.char.entrance] || ENTRANCE_POSE.stance;
+      fn(p, (step + 0.5) / ENTRANCE_STEPS, raw);
+      break;
+    }
     case 'win': {
       const ph = phaseOf(time, BOB_PERIOD, 4);
       const bob = Math.sin(ph.t / 16) * 2;
       p.key = 'win' + ph.i;
-      p.armF = [P(21, -108), P(25, -140)];
-      p.armB = [P(-22, -86), P(-26, -100)];
-      p.chest = P(2, -101 + bob); p.head = P(4, -123 + bob);
+      const fn = VICTORY_POSE[f.char.victory] || VICTORY_POSE.fistUp;
+      fn(p, ph.i, bob);
       break;
     }
     case 'wakeup':
@@ -592,9 +887,11 @@ function drawHead(ctx, p, ch, f, time) {
   ctx.save();
   ctx.translate(p.head[0], p.head[1]);
 
-  // 목 (몸통과 이어지도록 뼈로 연결)
+  // 목 (몸통과 이어지도록 뼈로 연결) - 고개 기울기 전에 그려 목이 어긋나지 않게 한다
   bone(ctx, [p.chest[0] - p.head[0], p.chest[1] - p.head[1] + 2], [0, 9],
     len => drawPart(ctx, muscle(len, 13, 0.5, 0.46), c.skinDark, skinEdge, null));
+
+  if (p.headTilt) ctx.rotate(p.headTilt);
 
   ctx.save(); ctx.scale(HAIR_SCALE, HAIR_SCALE);
   drawHairBack(ctx, ch, f, time, hair, hairLit);
@@ -977,21 +1274,27 @@ function drawFighterRig(ctx, f, p, time) {
 function drawFighter(ctx, f, time) {
   const ch = f.char;
 
-  // 그림자
+  const p = poseFor(f, time);
+
+  // 그림자 (등장 연출로 떠 있는 동안에는 작아진다)
+  const shadowY = f.y + (p.offY || 0);
+  const shadowX = f.x + (p.offX || 0) * f.facing;
   ctx.save();
-  const h = clamp(1 - (GROUND_Y - f.y) / 260, 0.25, 1);
+  const h = clamp(1 - (GROUND_Y - shadowY) / 260, 0.25, 1);
   ctx.globalAlpha = 0.32 * h;
   ctx.fillStyle = '#000';
   ctx.beginPath();
-  ctx.ellipse(f.x, GROUND_Y + 4, 34 * h, 9 * h, 0, 0, Math.PI * 2);
+  ctx.ellipse(shadowX, GROUND_Y + 4, 34 * h, 9 * h, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
-  const p = poseFor(f, time);
   const frame = SpriteBank.get(f, p, time);
 
   ctx.save();
-  ctx.translate(SpriteBank.snap(f.x), SpriteBank.snap(f.y));
+  // 등장 연출용 이동값 (스프라이트에 굽지 않고 그릴 때만 더한다)
+  ctx.translate(
+    SpriteBank.snap(f.x + (p.offX || 0) * f.facing),
+    SpriteBank.snap(f.y + (p.offY || 0)));
   ctx.scale(f.facing, 1);
 
   drawAura(ctx, f, time, ch);

@@ -208,6 +208,13 @@ class Fighter {
       this.rememberInput();
       this.updateAttack(opp); this.physics(); return;
     }
+    // 등장 연출 : 캐릭터별 입장 모션이 끝나면 대기 자세로
+    if (this.state === 'entrance') {
+      this.vx = 0;
+      this.world.onEntranceFx(this, this.stateTimer);
+      if (this.stateTimer >= ENTRANCE_FRAMES) this.setState('idle');
+      return;
+    }
     if (this.locked) { this.vx *= 0.7; this.physics(); return; }
 
     this.handleInput(opp);
