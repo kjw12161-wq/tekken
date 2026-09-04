@@ -9,6 +9,24 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const randInt = (a, b) => Math.floor(rand(a, b + 1));
 const approach = (v, target, step) => (v < target ? Math.min(v + step, target) : Math.max(v - step, target));
 
+/* ---------------------------------------------------------
+ *  색 보정 : 기본색에서 음영/하이라이트 색을 만들어 쓴다
+ * --------------------------------------------------------- */
+const _shadeCache = new Map();
+function shade(hex, amt) {
+  const key = hex + '|' + amt;
+  const hit = _shadeCache.get(key);
+  if (hit) return hit;
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  if (amt >= 0) { r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt; }
+  else { r *= 1 + amt; g *= 1 + amt; b *= 1 + amt; }
+  const out = '#' + [r, g, b]
+    .map(v => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0')).join('');
+  _shadeCache.set(key, out);
+  return out;
+}
+
 function rectsOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }

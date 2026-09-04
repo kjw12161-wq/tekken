@@ -315,6 +315,8 @@ function drawHairBack(ctx, ch, f, time, hair, hairLit) {
       }
       ctx.fillStyle = hair;
       ctx.beginPath(); ctx.arc(0, -3, 14, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = hairLit;
+      ctx.beginPath(); ctx.ellipse(3, -10, 7, 3.4, -0.4, 0, Math.PI * 2); ctx.fill();
       break;
     }
     case 'vegeta': {
@@ -334,6 +336,8 @@ function drawHairBack(ctx, ch, f, time, hair, hairLit) {
       });
       ctx.fillStyle = hair;
       ctx.beginPath(); ctx.arc(0, -3, 15, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = hairLit;
+      ctx.beginPath(); ctx.ellipse(4, -11, 7, 3.2, -0.35, 0, Math.PI * 2); ctx.fill();
       break;
     }
     case 'trunks': {
@@ -370,7 +374,7 @@ function drawHairFront(ctx, ch, f, time, hair, hairLit) {
       break;
     case 'vegeta':
       poly(ctx, [[-14, -6], [14, -8], [12, -2], [4, -6], [-1, 1], [-6, -5], [-14, -1]], hair);
-      poly(ctx, [[-2, 1], [1, 9], [4, 0]], hair);   // 이마 각(V)
+      poly(ctx, [[-2, -2], [1, 3.5], [4, -3]], hair);   // 이마 각(V)
       break;
     case 'gohan':
       poly(ctx, [[-14, -10], [-5, -17], [2, -9], [9, -16], [15, -9], [14, -3], [6, -7], [0, -2], [-6, -6], [-14, -3]], hair);
@@ -414,44 +418,63 @@ function drawHead(ctx, p, ch, f, time) {
   const superSaiyan = (ch.id === 'goku' || ch.id === 'vegeta' || ch.id === 'trunks') && f.ki >= 100;
   const hair = superSaiyan ? '#ffdf3d' : c.hair;
   const hairLit = superSaiyan ? '#fff3a0' : c.hairLit;
+  const skinLight = shade(c.skin, 0.22);
 
   ctx.save();
   ctx.translate(p.head[0], p.head[1]);
-  // 목
+
+  // 목 (턱 밑 그림자 포함)
   capsule(ctx, p.chest[0] - p.head[0], p.chest[1] - p.head[1], 0, 9, 11, c.skinDark);
+  capsule(ctx, -4, 8, 5, 8, 6, shade(c.skinDark, -0.3));
 
   drawHairBack(ctx, ch, f, time, hair, hairLit);
 
   // 얼굴
   ctx.fillStyle = c.skin;
   ctx.beginPath(); ctx.ellipse(1, 1, HEAD_R - 1, HEAD_R, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = c.skinDark;             // 턱/볼 음영
-  ctx.beginPath(); ctx.ellipse(-7, 5, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
+  // 광대 / 턱 하이라이트
+  ctx.fillStyle = skinLight;
+  ctx.beginPath(); ctx.ellipse(6, -3, 6.5, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+  // 뒤통수 쪽 그늘
+  ctx.fillStyle = c.skinDark;
+  ctx.beginPath(); ctx.ellipse(-8, 4, 6, 8.5, 0, 0, Math.PI * 2); ctx.fill();
   if (ch.hairStyle !== 'piccolo' && ch.hairStyle !== 'frieza' && ch.hairStyle !== 'cell') {
-    ctx.beginPath(); ctx.ellipse(-12, 2, 3.4, 4.4, 0, 0, Math.PI * 2); ctx.fill();  // 귀
+    ctx.beginPath(); ctx.ellipse(-12, 2, 3.4, 4.6, 0, 0, Math.PI * 2); ctx.fill();  // 귀
+    ctx.fillStyle = shade(c.skinDark, -0.25);
+    ctx.beginPath(); ctx.ellipse(-12, 2, 1.4, 2.2, 0, 0, Math.PI * 2); ctx.fill();
   }
 
   drawHairFront(ctx, ch, f, time, hair, hairLit);
 
-  // 표정
+  // ---- 표정 ----
   const hurt = f.hitstun > 0 || f.state === 'hurt' || f.state === 'hurtAir';
-  ctx.fillStyle = c.eye;
+  const angry = !!f.attack || f.charging || hurt;
   if (f.state === 'ko') {
     capsule(ctx, 3, 0, 12, 7, 2.4, c.eye);
     capsule(ctx, 12, 0, 3, 7, 2.4, c.eye);
     capsule(ctx, 3, 12, 12, 12, 3, '#8a3b3b');
   } else {
-    ctx.beginPath(); ctx.ellipse(8, 4, 2.4, hurt ? 3.6 : 2.8, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(-1, 4, 2.0, hurt ? 3.2 : 2.4, 0, 0, Math.PI * 2); ctx.fill();
-    // 눈썹 (공격 중이면 더 날카롭게)
-    const angry = !!f.attack || f.charging || hurt;
-    capsule(ctx, -4, angry ? -4 : -3, 3, angry ? -6 : -5, 1.7, c.eye);
-    capsule(ctx, 6, angry ? -7 : -6, 13, angry ? -3 : -4, 1.7, c.eye);
+    // 흰자 + 눈동자 + 하이라이트
+    ctx.fillStyle = '#f2efe8';
+    ctx.beginPath(); ctx.ellipse(8.2, 4, 3.0, hurt ? 3.4 : 2.9, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-0.4, 4, 2.5, hurt ? 3 : 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = c.eye;   // 눈동자를 바깥쪽으로 크게 - 흰자가 안쪽에 초승달로 남는다
+    ctx.beginPath(); ctx.ellipse(9.5, 4, 2.1, hurt ? 3.1 : 2.7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0.5, 4, 1.8, hurt ? 2.7 : 2.3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(10.1, 2.4, 1, 1.2);
+    // 눈썹 (눈과 붙지 않도록 한 칸 위로)
+    capsule(ctx, -4, angry ? -5 : -4, 3, angry ? -7 : -6, 2, c.eye);
+    capsule(ctx, 6.5, angry ? -8 : -7, 13, angry ? -4 : -5, 2, c.eye);
+    // 코 / 입
+    capsule(ctx, 12, 6.5, 13.5, 7.5, 1.6, shade(c.skinDark, -0.3));
     if (hurt || f.attack || f.charging) {
       ctx.fillStyle = '#7a2f2f';
-      ctx.beginPath(); ctx.ellipse(6, 11, 4, 3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(7, 11, 4.2, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#efe3dc';
+      ctx.fillRect(4.4, 9.4, 5.2, 1.4);
     } else {
-      capsule(ctx, 3, 11, 9, 11, 2, '#8a3b3b');
+      capsule(ctx, 3.5, 11, 9.5, 11, 2, '#8a3b3b');
     }
   }
   ctx.restore();
@@ -488,6 +511,45 @@ function drawAura(ctx, f, time, ch) {
 
 /* ---------------- 캐릭터 본체 ---------------- */
 
+/** 팔다리 : 아래쪽 그림자 + 기본색 + 윗면 하이라이트 3단 (빛은 항상 위에서) */
+function limbShaded(ctx, a, b, c, w, base, dark, light) {
+  capsule(ctx, a[0], a[1] + 2.2, b[0], b[1] + 2.2, w, dark);
+  capsule(ctx, b[0], b[1] + 2.2, c[0], c[1] + 2.2, w * 0.86, dark);
+  capsule(ctx, a[0], a[1], b[0], b[1], w, base);
+  capsule(ctx, b[0], b[1], c[0], c[1], w * 0.86, base);
+  capsule(ctx, a[0], a[1] - 2.4, b[0], b[1] - 2.4, w * 0.38, light);
+  capsule(ctx, b[0], b[1] - 2.2, c[0], c[1] - 2.2, w * 0.32, light);
+}
+
+/**
+ * 부츠 : 발등 + 밑창 + 광택.
+ * 다리를 세웠으면 발끝이 앞(+x), 발차기처럼 뻗었으면 다리 방향을 따라간다.
+ */
+function drawBoot(ctx, knee, foot, base, dark, light) {
+  let dx = foot[0] - knee[0], dy = foot[1] - knee[1];
+  const len = Math.hypot(dx, dy) || 1;
+  dx /= len; dy /= len;
+  let tx = 1, ty = 0;
+  if (Math.abs(dx) > Math.abs(dy)) { tx = dx; ty = dy; }
+  const bx = foot[0] - tx * 3.5, by = foot[1] - ty * 3.5;
+  const ex = foot[0] + tx * 8.5, ey = foot[1] + ty * 8.5;
+  capsule(ctx, bx, by - 5, ex, ey - 5, 14, base);
+  capsule(ctx, bx, by - 0.5, ex, ey - 0.5, 5.5, dark);                 // 밑창
+  capsule(ctx, bx + tx, by - 9, ex - tx * 3, ey - ty * 3 - 9, 4.5, light);
+}
+
+/** 주먹 : 손등 + 손가락 마디 + 하이라이트 */
+function drawFist(ctx, hand, r, skin, skinDark, skinLight) {
+  const [x, y] = hand;
+  ctx.fillStyle = skinDark;
+  ctx.beginPath(); ctx.arc(x, y + 1.4, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = skinLight;
+  ctx.beginPath(); ctx.arc(x - r * 0.2, y - r * 0.4, r * 0.3, 0, Math.PI * 2); ctx.fill();
+  capsule(ctx, x - r * 0.5, y + r * 0.3, x + r * 0.55, y + r * 0.15, 1.5, skinDark);  // 마디
+}
+
 /**
  * 캐릭터 리그(몸통/팔다리/머리)를 원점(발끝) 기준으로 그린다.
  * 스프라이트를 구울 때도, 스프라이트 없이 직접 그릴 때도 같은 함수를 쓴다.
@@ -495,57 +557,71 @@ function drawAura(ctx, f, time, ch) {
 function drawFighterRig(ctx, f, p, time) {
   const ch = f.char, c = ch.colors;
   // 캐릭터별로 소매·띠·부츠 색을 따로 줄 수 있다 (지정하지 않으면 기존 색을 쓴다)
+  const gi = c.gi, giDark = c.giDark, giLight = shade(c.gi, 0.26);
   const sleeve = c.sleeve || c.gi, sleeveDark = c.sleeveDark || c.giDark;
+  const sleeveLight = shade(sleeve, 0.26);
   const belt = c.belt || c.trim, beltDark = c.beltDark || c.trimDark;
   const boot = c.boot || c.trim, bootDark = c.bootDark || c.trimDark;
+  const bootLight = shade(boot, 0.3);
+  const skinLight = shade(c.skin, 0.24);
 
-  // 뒤쪽 팔다리
-  limb(ctx, p.hip, p.legB[0], p.legB[1], 17, c.giDark);
-  capsule(ctx, p.legB[1][0], p.legB[1][1] - 5, p.legB[1][0] + 6, p.legB[1][1], 13, bootDark);
-  limb(ctx, p.shoulderB, p.armB[0], p.armB[1], 13, sleeveDark);
-  ctx.fillStyle = c.skinDark;
-  ctx.beginPath(); ctx.arc(p.armB[1][0], p.armB[1][1], 6.5, 0, Math.PI * 2); ctx.fill();
+  // ---- 뒤쪽 팔다리 (한 단계 어둡게 해서 깊이감) ----
+  limbShaded(ctx, p.hip, p.legB[0], p.legB[1], 17,
+    giDark, shade(giDark, -0.3), shade(giDark, 0.16));
+  drawBoot(ctx, p.legB[0], p.legB[1], bootDark, shade(bootDark, -0.35), shade(bootDark, 0.18));
+  limbShaded(ctx, p.shoulderB, p.armB[0], p.armB[1], 13,
+    sleeveDark, shade(sleeveDark, -0.3), shade(sleeveDark, 0.16));
+  drawFist(ctx, p.armB[1], 6.0, c.skinDark, shade(c.skinDark, -0.25), c.skin);
 
-  // 몸통
-  ctx.fillStyle = c.gi;
-  ctx.beginPath();
-  ctx.moveTo(p.hip[0] - 15, p.hip[1] + 6);
-  ctx.lineTo(p.chest[0] - 17, p.chest[1]);
-  ctx.lineTo(p.chest[0] + 17, p.chest[1]);
-  ctx.lineTo(p.hip[0] + 15, p.hip[1] + 6);
-  ctx.closePath();
-  ctx.fill();
+  // ---- 몸통 ----
+  const hipL = [p.hip[0] - 15, p.hip[1] + 6], hipR = [p.hip[0] + 15, p.hip[1] + 6];
+  const chL = [p.chest[0] - 17, p.chest[1]], chR = [p.chest[0] + 17, p.chest[1]];
+  poly(ctx, [hipL, chL, chR, hipR], gi);
+  // 옆구리 음영 / 어깨 하이라이트
+  poly(ctx, [hipL, chL, [chL[0] + 7, chL[1] + 2], [hipL[0] + 6, hipL[1]]], giDark);
+  poly(ctx, [[chR[0] - 8, chR[1] + 3], chR, [hipR[0] - 3, hipR[1] - 4]], giLight);
+  poly(ctx, [[hipL[0] + 2, hipL[1] - 3], [hipR[0] - 2, hipR[1] - 3], hipR, hipL],
+    shade(gi, -0.16));   // 허리 접힘
   // 도복 깃 / 상의 디테일
   if (/^(goku|vegeta|trunks|piccolo|gohan)$/.test(ch.id)) {
     poly(ctx, [
-      [p.chest[0] - 4, p.chest[1] - 2], [p.chest[0] + 14, p.chest[1] - 2],
+      [p.chest[0] - 5, p.chest[1] - 2], [p.chest[0] + 14, p.chest[1] - 2],
       [p.hip[0] + 6, p.hip[1] + 4], [p.hip[0] - 2, p.hip[1] + 4]
     ], c.trim);
+    poly(ctx, [
+      [p.chest[0] + 8, p.chest[1] - 1], [p.chest[0] + 14, p.chest[1] - 2],
+      [p.hip[0] + 6, p.hip[1] + 4], [p.hip[0] + 2, p.hip[1] + 4]
+    ], shade(c.trim, -0.22));
   } else {
-    ctx.fillStyle = c.giDark;
+    ctx.fillStyle = giDark;
     ctx.fillRect(p.chest[0] - 12, p.chest[1] + 6, 24, 10);
+    ctx.fillStyle = shade(gi, 0.18);
+    ctx.fillRect(p.chest[0] - 12, p.chest[1] + 6, 24, 3);
   }
-  // 도복 주름 / 몸통 음영
+  // 가슴 근육 음영
   ctx.save();
-  ctx.globalAlpha = 0.3;
-  capsule(ctx, p.chest[0] - 13, p.chest[1] + 6, p.hip[0] - 11, p.hip[1] + 2, 6, c.giDark);
-  ctx.globalAlpha = 0.18;
-  capsule(ctx, p.chest[0] + 9, p.chest[1] + 5, p.hip[0] + 8, p.hip[1], 4, '#ffffff');
+  ctx.globalAlpha = 0.22;
+  capsule(ctx, p.chest[0] - 9, p.chest[1] + 9, p.chest[0] + 9, p.chest[1] + 9, 4, shade(gi, -0.5));
   ctx.restore();
 
-  // 벨트 + 매듭
+  // ---- 벨트 ----
   capsule(ctx, p.hip[0] - 14, p.hip[1] + 2, p.hip[0] + 14, p.hip[1] + 2, 10, belt);
+  capsule(ctx, p.hip[0] - 13, p.hip[1] + 5, p.hip[0] + 13, p.hip[1] + 5, 3.4, beltDark);
+  capsule(ctx, p.hip[0] - 12, p.hip[1] - 1, p.hip[0] + 11, p.hip[1] - 1, 2.6, shade(belt, 0.3));
   ctx.fillStyle = beltDark;
-  ctx.fillRect(p.hip[0] - 3, p.hip[1] - 2, 7, 9);
+  ctx.fillRect(p.hip[0] - 3, p.hip[1] - 3, 7, 10);
+  capsule(ctx, p.hip[0] - 2, p.hip[1] + 6, p.hip[0] - 6, p.hip[1] + 20, 4, belt);   // 늘어진 끈
+  capsule(ctx, p.hip[0] + 3, p.hip[1] + 6, p.hip[0] + 6, p.hip[1] + 17, 3.4, beltDark);
 
-  // 앞쪽 팔다리
-  limb(ctx, p.hip, p.legF[0], p.legF[1], 18, c.gi);
-  capsule(ctx, p.legF[1][0], p.legF[1][1] - 5, p.legF[1][0] + 7, p.legF[1][1], 14, boot);
-  limb(ctx, p.shoulderF, p.armF[0], p.armF[1], 14, sleeve);
-  // 손목 밴드 + 주먹
+  // ---- 앞쪽 팔다리 ----
+  limbShaded(ctx, p.hip, p.legF[0], p.legF[1], 18, gi, giDark, giLight);
+  drawBoot(ctx, p.legF[0], p.legF[1], boot, bootDark, bootLight);
+  limbShaded(ctx, p.shoulderF, p.armF[0], p.armF[1], 14, sleeve, sleeveDark, sleeveLight);
+  // 손목 밴드 + 맨살 팔뚝
   capsule(ctx, p.armF[0][0], p.armF[0][1], p.armF[1][0], p.armF[1][1], 12, c.skin);
-  ctx.fillStyle = c.skin;
-  ctx.beginPath(); ctx.arc(p.armF[1][0], p.armF[1][1], 7.5, 0, Math.PI * 2); ctx.fill();
+  capsule(ctx, p.armF[0][0], p.armF[0][1] + 2, p.armF[1][0], p.armF[1][1] + 2, 5, c.skinDark);
+  capsule(ctx, p.armF[0][0], p.armF[0][1] - 2.4, p.armF[1][0], p.armF[1][1] - 2.4, 4, skinLight);
+  drawFist(ctx, p.armF[1], 6.8, c.skin, c.skinDark, skinLight);
 
   drawHead(ctx, p, ch, f, time);
 }

@@ -8,7 +8,7 @@
  *  월드 확대율(WORLD_SCALE)은 고정해 스프라이트 픽셀이 항상
  *  정수배(2배)로 찍히게 하고, 대신 "보이는 월드 영역"을 조절한다.
  * --------------------------------------------------------- */
-const WORLD_SCALE = 1.2;          // 월드 1단위 = 캔버스 1.2px (스프라이트 1px = 2px)
+const WORLD_SCALE = 1.5;          // 월드 1단위 = 캔버스 1.5px (스프라이트 1px = 화면 2px)
 const BASE_VIEW_H = 450;          // 기준이 되는 세로 시야(월드 단위)
 const MIN_VIEW_W = 660;           // 세로 화면에서도 이만큼은 가로로 보여준다
 const MAX_VIEW_W = 1040;          // 초광각 화면에서 너무 멀어지지 않도록
@@ -233,7 +233,7 @@ const Game = {
     ctx.save();
     ctx.translate(cv.width / 2, cv.height - 8);
     if (frame) {
-      const k = 1.35;
+      const k = 1.05;
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(
         frame.image, frame.sx, frame.sy, frame.sw, frame.sh,

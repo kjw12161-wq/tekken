@@ -9,17 +9,18 @@
  * ========================================================= */
 'use strict';
 
-/** 스프라이트 1픽셀 = 월드 1/SPRITE_SCALE 단위. 화면에서 딱 정수배가 되도록 맞춘다. */
-const SPRITE_SCALE = 0.6;
+/** 스프라이트 1픽셀 = 월드 1/SPRITE_SCALE 단위. 화면에서 딱 정수배(2배)가 되도록 맞춘다. */
+const SPRITE_SCALE = 0.75;
 const SPRITE_DRAW = 1 / SPRITE_SCALE;          // 그릴 때 확대 배율
-const CELL_W = 108, CELL_H = 122;              // 셀 크기(스프라이트 픽셀)
-const CELL_OX = 42, CELL_OY = 112;             // 셀 안에서 발끝(원점) 위치
+const CELL_W = 136, CELL_H = 150;              // 셀 크기(스프라이트 픽셀)
+const CELL_OX = 50, CELL_OY = 138;             // 셀 안에서 발끝(원점) 위치
 const PAGE_SIZE = 1024;
 const ATLAS_COLS = Math.floor(PAGE_SIZE / CELL_W);
 const ATLAS_ROWS = Math.floor(PAGE_SIZE / CELL_H);
 const CELLS_PER_PAGE = ATLAS_COLS * ATLAS_ROWS;
 
 const OUTLINE = '#140f1c';
+const ALPHA_CUT = 118;          // 이 값보다 옅은 가장자리는 잘라내 도트를 또렷하게
 
 const SpriteBank = {
   enabled: true,
@@ -36,6 +37,7 @@ const SpriteBank = {
     this.count = 0;
     this._tmp = this._makeCanvas(CELL_W, CELL_H);
     this._sil = this._makeCanvas(CELL_W, CELL_H);
+    this._tmpCtx = this._tmp.getContext('2d', { willReadFrequently: true });
   },
 
   _makeCanvas(w, h) {
@@ -105,9 +107,12 @@ const SpriteBank = {
     };
   },
 
-  /** 리그를 저해상도로 그린 뒤 외곽선 + 음영을 입혀 셀에 굽는다 */
+  /**
+   * 리그를 스프라이트 해상도로 그린 뒤
+   * 알파 스냅 → 외곽선 → 림라이트 → 셀 음영 순서로 다듬어 굽는다.
+   */
   _bake(f, pose, time) {
-    const tmp = this._tmp.getContext('2d');
+    const tmp = this._tmpCtx;
     tmp.setTransform(1, 0, 0, 1, 0, 0);
     tmp.clearRect(0, 0, CELL_W, CELL_H);
     tmp.save();
@@ -115,6 +120,14 @@ const SpriteBank = {
     tmp.scale(SPRITE_SCALE, SPRITE_SCALE);
     drawFighterRig(tmp, f, pose, time);
     tmp.restore();
+
+    // 안티에일리어싱으로 생긴 반투명 가장자리를 정리한다 (도트 특유의 또렷한 윤곽)
+    const img = tmp.getImageData(0, 0, CELL_W, CELL_H);
+    const d = img.data;
+    for (let i = 3; i < d.length; i += 4) {
+      d[i] = d[i] < ALPHA_CUT ? 0 : 255;
+    }
+    tmp.putImageData(img, 0, 0);
 
     // 실루엣(외곽선 색으로 채운 판)
     const sil = this._sil.getContext('2d');
@@ -147,12 +160,12 @@ const SpriteBank = {
     ctx.rect(slot.x, slot.y, CELL_W, CELL_H);
     ctx.clip();
     ctx.globalCompositeOperation = 'source-atop';
-    const shade = ctx.createLinearGradient(0, slot.y, 0, slot.y + CELL_H);
-    shade.addColorStop(0, 'rgba(255,255,255,0.07)');
-    shade.addColorStop(0.30, 'rgba(255,255,255,0)');
-    shade.addColorStop(0.55, 'rgba(0,0,0,0.05)');
-    shade.addColorStop(1, 'rgba(0,0,0,0.30)');
-    ctx.fillStyle = shade;
+    const grad = ctx.createLinearGradient(0, slot.y, 0, slot.y + CELL_H);
+    grad.addColorStop(0, 'rgba(255,246,220,0.15)');
+    grad.addColorStop(0.28, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.58, 'rgba(18,14,40,0.05)');
+    grad.addColorStop(1, 'rgba(14,10,32,0.32)');
+    ctx.fillStyle = grad;
     ctx.fillRect(slot.x, slot.y, CELL_W, CELL_H);
     ctx.restore();
 
