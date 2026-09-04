@@ -12,8 +12,8 @@
 /** 스프라이트 1픽셀 = 월드 1/SPRITE_SCALE 단위. 화면에서 딱 정수배(2배)가 되도록 맞춘다. */
 const SPRITE_SCALE = 0.75;
 const SPRITE_DRAW = 1 / SPRITE_SCALE;          // 그릴 때 확대 배율
-const CELL_W = 136, CELL_H = 150;              // 셀 크기(스프라이트 픽셀)
-const CELL_OX = 50, CELL_OY = 138;             // 셀 안에서 발끝(원점) 위치
+const CELL_W = 136, CELL_H = 168;              // 셀 크기(스프라이트 픽셀)
+const CELL_OX = 50, CELL_OY = 154;             // 셀 안에서 발끝(원점) 위치
 const PAGE_SIZE = 1024;
 const ATLAS_COLS = Math.floor(PAGE_SIZE / CELL_W);
 const ATLAS_ROWS = Math.floor(PAGE_SIZE / CELL_H);

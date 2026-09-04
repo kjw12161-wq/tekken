@@ -1,9 +1,9 @@
 {
   "_comment": "직접 준비한 스프라이트 시트를 characters 에 등록하면 내장(코드 생성) 스프라이트 대신 사용됩니다. 형식은 assets/README.md 참고. tools/export-sprites.html 로 시작용 시트를 뽑을 수 있습니다.",
   "cellWidth": 136,
-  "cellHeight": 150,
+  "cellHeight": 168,
   "originX": 50,
-  "originY": 138,
+  "originY": 154,
   "scale": 0.75,
   "characters": {}
 }

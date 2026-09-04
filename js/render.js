@@ -30,16 +30,18 @@ const P = (x, y) => [x, y];
 const mix = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t)];
 
 /* ---------------- 포즈 정의 ----------------
- *  SD(치비) 비율 : 머리가 크고 팔다리가 짧고 굵다.
+ *  격투 게임 스프라이트 체형 : 어깨가 넓고 허리가 좁은 근육질,
+ *  팔꿈치는 몸 바깥으로 / 다리는 크게 벌린 파워 스탠스.
+ *  => 팔다리가 몸통 실루엣과 겹치지 않아 형태가 한눈에 읽힌다.
  *  발끝이 원점(0,0), +x 가 바라보는 방향.
- *  주요 높이 - 골반 -52 / 가슴 -84 / 머리 중심 -106 (반지름 21)
+ *  주요 높이 - 골반 -62 / 어깨 -100 / 머리 중심 -122 (반지름 17)
  * ------------------------------------------- */
 function basePose() {
   return {
-    hip: P(0, -52), chest: P(2, -84), head: P(3, -106),
-    shoulderF: P(8, -82), shoulderB: P(-6, -82),
-    armF: [P(16, -70), P(23, -79)], armB: [P(-14, -70), P(-8, -82)],
-    legF: [P(12, -26), P(15, 0)], legB: [P(-12, -26), P(-15, 0)],
+    hip: P(0, -62), chest: P(2, -100), head: P(4, -122),
+    shoulderF: P(15, -98), shoulderB: P(-13, -98),
+    armF: [P(25, -85), P(31, -103)], armB: [P(-23, -85), P(-27, -102)],
+    legF: [P(18, -33), P(24, 0)], legB: [P(-17, -33), P(-23, 0)],
     tilt: 0, headTilt: 0, scaleY: 1
   };
 }
@@ -60,69 +62,66 @@ function attackPose(f, p) {
 
   switch (def.key) {
     case 'jab':
-      p.armF = [mix(P(15, -74), P(30, -86), e), mix(P(19, -58), P(48, -87), e)];
-      p.armB = [P(-13, -70), P(-3, -81)];
-      p.chest = mix(p.chest, P(7, -84), e * 0.7);
-      p.head = mix(p.head, P(6, -106), e * 0.5);
+      p.armF = [mix(P(25, -88), P(38, -100), e), mix(P(31, -103), P(58, -101), e)];
+      p.chest = mix(p.chest, P(7, -100), e * 0.7);
+      p.head = mix(p.head, P(7, -122), e * 0.5);
       break;
     case 'straight':
-      p.armF = [mix(P(6, -76), P(32, -84), e), mix(P(-4, -64), P(60, -84), e)];
-      p.armB = [P(-14, -70), P(-5, -82)];
-      p.chest = mix(p.chest, P(11, -84), e);
-      p.head = mix(p.head, P(10, -106), e * 0.6);
-      p.hip = mix(p.hip, P(5, -52), e);
-      p.legB = [P(-13, -27), P(-21, 0)];
+      p.armF = [mix(P(16, -92), P(41, -99), e), mix(P(22, -104), P(70, -99), e)];
+      p.armB = [mix(P(-23, -85), P(-27, -84), e), mix(P(-27, -102), P(-33, -98), e)];
+      p.chest = mix(p.chest, P(12, -100), e);
+      p.head = mix(p.head, P(12, -122), e * 0.6);
+      p.hip = mix(p.hip, P(6, -62), e);
+      p.legB = [mix(P(-18, -33), P(-22, -34), e), mix(P(-26, 0), P(-34, 0), e)];
       break;
     case 'roundhouse':
-      p.legF = [mix(P(12, -32), P(28, -60), e), mix(P(14, -5), P(64, -70), e)];
-      p.legB = [P(-5, -27), P(-7, 0)];
-      p.armF = [P(4, -74), P(-6, -62)];
-      p.armB = [P(-15, -76), P(-28, -88)];
-      p.chest = mix(p.chest, P(-7, -86), e * 0.8);
-      p.head = mix(p.head, P(-8, -107), e * 0.6);
-      p.hip = mix(p.hip, P(-4, -53), e * 0.7);
+      p.legF = [mix(P(20, -40), P(34, -72), e), mix(P(26, -6), P(74, -84), e)];
+      p.legB = [P(-14, -34), P(-20, 0)];
+      p.armF = [P(16, -90), P(6, -106)];
+      p.armB = [P(-25, -88), P(-36, -100)];
+      p.chest = mix(p.chest, P(-8, -102), e * 0.8);
+      p.head = mix(p.head, P(-9, -123), e * 0.6);
+      p.hip = mix(p.hip, P(-5, -63), e * 0.7);
       break;
     case 'lowKick':
       crouchPose(p, 1);
-      p.legF = [mix(P(14, -20), P(26, -26), e), mix(P(17, -4), P(52, -22), e)];
+      p.legF = [mix(P(18, -24), P(30, -30), e), mix(P(24, -5), P(56, -24), e)];
       break;
     case 'sweep':
       crouchPose(p, 1.2);
-      p.legF = [mix(P(14, -15), P(32, -15), e), mix(P(18, -3), P(72, -9), e)];
-      p.armB = [P(-15, -36), P(-22, -22)];
+      p.legF = [mix(P(18, -18), P(36, -18), e), mix(P(26, -4), P(80, -10), e)];
+      p.armB = [P(-22, -46), P(-30, -30)];
       break;
     case 'uppercut':
-      p.armF = [mix(P(12, -70), P(18, -100), e), mix(P(16, -56), P(24, -134), e)];
-      p.armB = [P(-13, -70), P(-3, -81)];
-      p.chest = mix(p.chest, P(0, -90), e);
-      p.head = mix(p.head, P(1, -112), e);
-      p.legF = [P(10, -28), P(12, 0)];
-      p.legB = [mix(P(-9, -26), P(-14, -34), e), mix(P(-11, 0), P(-20, -12), e)];
+      p.armF = [mix(P(20, -84), P(25, -112), e), mix(P(28, -100), P(33, -150), e)];
+      p.chest = mix(p.chest, P(2, -104), e);
+      p.head = mix(p.head, P(4, -126), e);
+      p.legF = [P(17, -34), P(23, 0)];
+      p.legB = [mix(P(-18, -33), P(-22, -42), e), mix(P(-26, 0), P(-32, -14), e)];
       break;
     case 'airPunch':
-      p.armF = [mix(P(14, -72), P(28, -78), e), mix(P(17, -57), P(50, -74), e)];
-      p.armB = [P(-13, -71), P(-4, -82)];
-      p.legF = [P(13, -32), P(18, -12)];
-      p.legB = [P(-10, -30), P(-14, -10)];
+      p.armF = [mix(P(24, -86), P(38, -92), e), mix(P(30, -102), P(60, -90), e)];
+      p.legF = [P(20, -42), P(26, -20)];
+      p.legB = [P(-16, -40), P(-22, -16)];
       break;
     case 'airKick':
-      p.legF = [mix(P(13, -34), P(30, -46), e), mix(P(16, -14), P(62, -42), e)];
-      p.legB = [P(-10, -30), P(-13, -8)];
-      p.armB = [P(-15, -80), P(-27, -92)];
-      p.armF = [P(9, -76), P(2, -62)];
+      p.legF = [mix(P(20, -40), P(36, -56), e), mix(P(26, -18), P(70, -52), e)];
+      p.legB = [P(-15, -38), P(-20, -12)];
+      p.armB = [P(-24, -92), P(-36, -104)];
+      p.armF = [P(18, -90), P(10, -104)];
       break;
     case 'grab':
-      p.armF = [mix(P(14, -76), P(26, -86), e), mix(P(18, -60), P(44, -86), e)];
-      p.armB = [mix(P(-9, -76), P(18, -88), e), mix(P(-14, -60), P(38, -90), e)];
-      p.chest = mix(p.chest, P(7, -84), e);
+      p.armF = [mix(P(24, -88), P(34, -98), e), mix(P(30, -102), P(52, -100), e)];
+      p.armB = [mix(P(-22, -86), P(20, -100), e), mix(P(-26, -102), P(46, -104), e)];
+      p.chest = mix(p.chest, P(7, -100), e);
       break;
     case 'kiBlast': {
       const gs = Math.round(clamp(a.frame / def.startup, 0, 1) * ATTACK_STEPS);
       const g = gs / ATTACK_STEPS;
       p.key = 'kiBlast' + gs;
-      p.armF = [mix(P(14, -72), P(26, -80), g), mix(P(18, -57), P(44, -80), g)];
-      p.armB = [mix(P(-13, -72), P(16, -82), g), mix(P(-17, -57), P(38, -82), g)];
-      p.chest = mix(p.chest, P(6, -84), g * 0.6);
+      p.armF = [mix(P(25, -86), P(32, -94), g), mix(P(31, -103), P(52, -94), g)];
+      p.armB = [mix(P(-23, -86), P(20, -96), g), mix(P(-27, -102), P(46, -96), g)];
+      p.chest = mix(p.chest, P(6, -100), g * 0.6);
       break;
     }
     case 'beam':
@@ -133,22 +132,22 @@ function attackPose(f, p) {
       p.key = charging ? 'beamC' + gs : 'beamF';
       if (charging) {
         // 손을 허리 뒤로 모아 기를 응축
-        p.armF = [mix(P(14, -72), P(-12, -74), g), mix(P(18, -57), P(-26, -68), g)];
-        p.armB = [mix(P(-13, -72), P(-18, -76), g), mix(P(-17, -57), P(-30, -70), g)];
-        p.chest = mix(p.chest, P(-7, -83), g);
-        p.head = mix(p.head, P(-4, -105), g);
-        p.hip = mix(p.hip, P(-3, -50), g);
-        p.legF = [P(14, -28), P(20, 0)];
-        p.legB = [P(-14, -28), P(-22, 0)];
+        p.armF = [mix(P(25, -86), P(-16, -86), g), mix(P(31, -103), P(-32, -82), g)];
+        p.armB = [mix(P(-23, -86), P(-26, -90), g), mix(P(-27, -102), P(-38, -84), g)];
+        p.chest = mix(p.chest, P(-8, -99), g);
+        p.head = mix(p.head, P(-4, -121), g);
+        p.hip = mix(p.hip, P(-4, -61), g);
+        p.legF = [P(22, -34), P(30, 0)];
+        p.legB = [P(-20, -34), P(-30, 0)];
       } else {
         // 발사 자세
-        p.armF = [P(22, -78), P(42, -74)];
-        p.armB = [P(15, -80), P(39, -70)];
-        p.chest = P(9, -84);
-        p.head = P(8, -106);
-        p.hip = P(2, -52);
-        p.legF = [P(18, -28), P(28, 0)];
-        p.legB = [P(-16, -28), P(-26, 0)];
+        p.armF = [P(28, -92), P(50, -88)];
+        p.armB = [P(20, -94), P(47, -84)];
+        p.chest = P(10, -100);
+        p.head = P(10, -122);
+        p.hip = P(3, -62);
+        p.legF = [P(24, -34), P(34, 0)];
+        p.legB = [P(-20, -34), P(-30, 0)];
       }
       break;
     }
@@ -158,15 +157,15 @@ function attackPose(f, p) {
 
 function crouchPose(p, amount) {
   const k = amount || 1;
-  const d = 6 * (k - 1);
-  p.hip = P(0, -30 + d);
-  p.chest = P(3, -56 + d);
-  p.head = P(5, -78 + d);
-  p.shoulderF = P(9, -55 + d); p.shoulderB = P(-5, -55 + d);
-  p.armF = [P(14, -44 + d), P(19, -32 + d)];
-  p.armB = [P(-12, -44 + d), P(-17, -32 + d)];
-  p.legF = [P(15, -14), P(19, 0)];
-  p.legB = [P(-13, -14), P(-17, 0)];
+  const d = 7 * (k - 1);
+  p.hip = P(0, -38 + d);
+  p.chest = P(3, -70 + d);
+  p.head = P(6, -92 + d);
+  p.shoulderF = P(15, -68 + d); p.shoulderB = P(-12, -68 + d);
+  p.armF = [P(22, -60 + d), P(26, -76 + d)];
+  p.armB = [P(-20, -60 + d), P(-24, -76 + d)];
+  p.legF = [P(18, -18), P(25, 0)];
+  p.legB = [P(-17, -18), P(-24, 0)];
 }
 
 /**
@@ -188,12 +187,12 @@ function poseFor(f, time) {
 
   if (f.state === 'ko' || f.state === 'knockdown') {
     p.key = 'down';
-    p.hip = P(-5, -18); p.chest = P(-22, -22); p.head = P(-44, -26);
-    p.shoulderF = P(-20, -22); p.shoulderB = P(-24, -18);
-    p.armF = [P(-34, -12), P(-48, -8)];
-    p.armB = [P(-30, -30), P(-46, -34)];
-    p.legF = [P(14, -20), P(30, -8)];
-    p.legB = [P(12, -12), P(28, -3)];
+    p.hip = P(-6, -22); p.chest = P(-26, -28); p.head = P(-50, -32);
+    p.shoulderF = P(-26, -28); p.shoulderB = P(-30, -24);
+    p.armF = [P(-40, -16), P(-56, -12)];
+    p.armB = [P(-36, -36), P(-54, -40)];
+    p.legF = [P(16, -24), P(34, -10)];
+    p.legB = [P(14, -14), P(32, -4)];
     return p;
   }
   if (f.attack) return attackPose(f, p);
@@ -203,31 +202,31 @@ function poseFor(f, time) {
       const ph = phaseOf(time, WALK_PERIOD, 6);
       const s = Math.sin(ph.t / 5);
       p.key = 'walk' + ph.i;
-      p.legF = [P(12 + s * 9, -26), P(15 + s * 18, -Math.max(0, s) * 10)];
-      p.legB = [P(-12 - s * 9, -26), P(-15 - s * 18, -Math.max(0, -s) * 10)];
-      p.armF = [P(15 - s * 4, -70), P(22 - s * 7, -79)];
-      p.armB = [P(-13 + s * 4, -70), P(-7 + s * 7, -82)];
-      p.chest = P(3, -84 + Math.abs(s) * 1.6);
-      p.head = P(4, -106 + Math.abs(s) * 1.6);
+      p.legF = [P(18 + s * 10, -33), P(24 + s * 16, -Math.max(0, s) * 11)];
+      p.legB = [P(-17 - s * 10, -33), P(-23 - s * 16, -Math.max(0, -s) * 11)];
+      p.armF = [P(25 - s * 4, -85), P(31 - s * 6, -103)];
+      p.armB = [P(-23 + s * 4, -85), P(-27 + s * 6, -102)];
+      p.chest = P(3, -100 + Math.abs(s) * 1.8);
+      p.head = P(5, -122 + Math.abs(s) * 1.8);
       break;
     }
     case 'walkBack': {
       const ph = phaseOf(time, WALK_BACK_PERIOD, 6);
       const s = Math.sin(ph.t / 6);
       p.key = 'back' + ph.i;
-      p.legF = [P(12 - s * 7, -26), P(15 - s * 14, -Math.max(0, -s) * 7)];
-      p.legB = [P(-12 + s * 7, -26), P(-15 + s * 14, -Math.max(0, s) * 7)];
-      p.armF = [P(15, -71), P(21, -80)];
-      p.armB = [P(-12, -71), P(-3, -82)];
+      p.legF = [P(18 - s * 8, -33), P(24 - s * 13, -Math.max(0, -s) * 8)];
+      p.legB = [P(-17 + s * 8, -33), P(-23 + s * 13, -Math.max(0, s) * 8)];
+      p.armF = [P(24, -86), P(30, -104)];
+      p.armB = [P(-22, -86), P(-26, -103)];
       break;
     }
     case 'dash':
       p.key = 'dash';
-      p.chest = P(11, -83); p.head = P(14, -105); p.hip = P(4, -51);
-      p.armF = [P(2, -72), P(-12, -66)];
-      p.armB = [P(-8, -74), P(-26, -72)];
-      p.legF = [P(17, -26), P(26, -6)];
-      p.legB = [P(-12, -28), P(-22, -2)];
+      p.chest = P(13, -99); p.head = P(17, -121); p.hip = P(5, -61);
+      p.armF = [P(6, -88), P(-10, -80)];
+      p.armB = [P(-14, -90), P(-34, -86)];
+      p.legF = [P(26, -33), P(38, -8)];
+      p.legB = [P(-18, -35), P(-30, -2)];
       break;
     case 'crouch':
       p.key = 'crouch';
@@ -236,54 +235,54 @@ function poseFor(f, time) {
     case 'crouchGuard':
       p.key = 'crouchGuard';
       crouchPose(p, 1);
-      p.armF = [P(12, -50), P(18, -64)];
-      p.armB = [P(3, -48), P(11, -60)];
+      p.armF = [P(18, -62), P(24, -80)];
+      p.armB = [P(6, -60), P(14, -76)];
       break;
     case 'guard':
       p.key = 'guard';
-      p.armF = [P(13, -76), P(19, -92)];
-      p.armB = [P(3, -74), P(11, -88)];
-      p.chest = P(-3, -84); p.head = P(0, -106);
-      p.legF = [P(11, -26), P(14, 0)]; p.legB = [P(-13, -26), P(-17, 0)];
+      p.armF = [P(19, -90), P(25, -110)];
+      p.armB = [P(7, -88), P(15, -106)];
+      p.chest = P(-4, -100); p.head = P(0, -122);
+      p.legF = [P(16, -33), P(22, 0)]; p.legB = [P(-19, -33), P(-28, 0)];
       break;
     case 'jump':
     case 'launched': {
       const rising = f.vy < 0;
       p.key = rising ? 'jumpUp' : 'jumpDown';
-      p.legF = [P(13, -34), P(17, -16)];
-      p.legB = [P(-9, -32), P(-13, -14)];
-      p.armF = rising ? [P(14, -92), P(18, -108)] : [P(16, -71), P(24, -80)];
-      p.armB = rising ? [P(-12, -92), P(-16, -106)] : [P(-14, -71), P(-6, -82)];
-      p.chest = P(2, -84); p.head = P(3, -106);
+      p.legF = [P(21, -44), P(27, -22)];
+      p.legB = [P(-16, -42), P(-22, -18)];
+      p.armF = rising ? [P(22, -108), P(26, -128)] : [P(25, -86), P(32, -100)];
+      p.armB = rising ? [P(-20, -108), P(-24, -126)] : [P(-23, -86), P(-28, -100)];
+      p.chest = P(2, -100); p.head = P(4, -122);
       break;
     }
     case 'hurt':
     case 'hurtAir':
       p.key = 'hurt';
-      p.chest = P(-10, -84); p.head = P(-16, -104); p.hip = P(-3, -52);
-      p.armF = [P(6, -76), P(0, -92)];
-      p.armB = [P(-16, -76), P(-28, -88)];
-      p.legF = [P(11, -26), P(16, 0)];
-      p.legB = [P(-6, -26), P(-11, 0)];
+      p.chest = P(-12, -100); p.head = P(-21, -120); p.hip = P(-4, -62);
+      p.armF = [P(12, -92), P(4, -112)];
+      p.armB = [P(-26, -90), P(-40, -104)];
+      p.legF = [P(18, -33), P(25, 0)];
+      p.legB = [P(-12, -33), P(-19, 0)];
       break;
     case 'charge': {
       const ph = phaseOf(time, BOB_PERIOD, 4);
       const bob = Math.sin(ph.t / 16) * 2;
       p.key = 'charge' + ph.i;
-      p.armF = [P(17, -68), P(12, -52)];
-      p.armB = [P(-15, -68), P(-10, -52)];
-      p.chest = P(0, -84 + bob * 0.4); p.head = P(2, -106 + bob * 0.4);
-      p.legF = [P(15, -26), P(20, 0)];
-      p.legB = [P(-15, -26), P(-20, 0)];
+      p.armF = [P(27, -84), P(23, -64)];
+      p.armB = [P(-25, -84), P(-21, -64)];
+      p.chest = P(0, -100 + bob * 0.4); p.head = P(3, -122 + bob * 0.4);
+      p.legF = [P(23, -34), P(32, 0)];
+      p.legB = [P(-22, -34), P(-31, 0)];
       break;
     }
     case 'win': {
       const ph = phaseOf(time, BOB_PERIOD, 4);
       const bob = Math.sin(ph.t / 16) * 2;
       p.key = 'win' + ph.i;
-      p.armF = [P(14, -90), P(17, -118)];
-      p.armB = [P(-12, -70), P(-3, -81)];
-      p.chest = P(2, -85 + bob); p.head = P(3, -107 + bob);
+      p.armF = [P(21, -108), P(25, -140)];
+      p.armB = [P(-22, -86), P(-26, -100)];
+      p.chest = P(2, -101 + bob); p.head = P(4, -123 + bob);
       break;
     }
     case 'wakeup':
@@ -292,20 +291,20 @@ function poseFor(f, time) {
       break;
     default: {
       const ph = phaseOf(time, BOB_PERIOD, 4);
-      const bob = Math.sin(ph.t / 16) * 1.6;
+      const bob = Math.sin(ph.t / 16) * 1.8;
       p.key = 'idle' + ph.i;
-      p.chest = P(2, -84 + bob * 0.6);
-      p.head = P(3, -106 + bob * 0.6);
-      p.armF = [P(16, -70 + bob * 0.3), P(23, -79 + bob * 0.5)];
-      p.armB = [P(-14, -70 + bob * 0.3), P(-8, -82 + bob * 0.5)];
+      p.chest = P(2, -100 + bob * 0.6);
+      p.head = P(4, -122 + bob * 0.6);
+      p.armF = [P(25, -85 + bob * 0.4), P(31, -103 + bob * 0.5)];
+      p.armB = [P(-23, -85 + bob * 0.4), P(-27, -102 + bob * 0.5)];
     }
   }
   return p;
 }
 
 /* ---------------- 헤어 / 머리 ---------------- */
-const HEAD_R = 21;
-const HAIR_SCALE = HEAD_R / 15;   // 기존 헤어 도형을 커진 머리에 맞춰 확대
+const HEAD_R = 17;
+const HAIR_SCALE = 1.42;          // 헤어는 머리보다 크게 (레퍼런스의 볼륨감)
 
 /** 머리 뒤쪽 실루엣(얼굴보다 아래 레이어) */
 function drawHairBack(ctx, ch, f, time, hair, hairLit) {
@@ -437,8 +436,8 @@ function drawHead(ctx, p, ch, f, time) {
   ctx.translate(p.head[0], p.head[1]);
 
   // 목 (짧고 굵게) + 턱밑 그림자
-  capsule(ctx, p.chest[0] - p.head[0], p.chest[1] - p.head[1], 0, 13, 13, c.skinDark);
-  capsule(ctx, -5, 12, 6, 12, 7, shade(c.skinDark, -0.3));
+  capsule(ctx, p.chest[0] - p.head[0], p.chest[1] - p.head[1], 0, 11, 13, c.skinDark);
+  capsule(ctx, -5, 10, 5, 10, 6, shade(c.skinDark, -0.3));
 
   ctx.save(); ctx.scale(HAIR_SCALE, HAIR_SCALE);
   drawHairBack(ctx, ch, f, time, hair, hairLit);
@@ -450,56 +449,56 @@ function drawHead(ctx, p, ch, f, time) {
   ctx.fillStyle = c.skin;
   ctx.beginPath(); ctx.ellipse(1, 1, HEAD_R - 1, HEAD_R, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = skinLight;
-  ctx.beginPath(); ctx.ellipse(7, -5, 9, 7.5, 0, 0, Math.PI * 2); ctx.fill();     // 이마 하이라이트
+  ctx.beginPath(); ctx.ellipse(6, -4, 7.5, 6, 0, 0, Math.PI * 2); ctx.fill();      // 이마 하이라이트
   ctx.fillStyle = c.skinDark;
-  ctx.beginPath(); ctx.ellipse(-11, 5, 8, 12, 0, 0, Math.PI * 2); ctx.fill();     // 뒤통수 그늘
+  ctx.beginPath(); ctx.ellipse(-9, 4, 6.5, 10, 0, 0, Math.PI * 2); ctx.fill();     // 뒤통수 그늘
   if (ch.hairStyle !== 'piccolo' && ch.hairStyle !== 'frieza' && ch.hairStyle !== 'cell') {
-    ctx.beginPath(); ctx.ellipse(-17, 2, 4.4, 6, 0, 0, Math.PI * 2); ctx.fill();  // 귀
+    ctx.beginPath(); ctx.ellipse(-14, 2, 3.6, 5, 0, 0, Math.PI * 2); ctx.fill();  // 귀
     ctx.fillStyle = shade(c.skinDark, -0.25);
-    ctx.beginPath(); ctx.ellipse(-17, 2, 1.8, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-14, 2, 1.5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
   }
 
   ctx.save(); ctx.scale(HAIR_SCALE, HAIR_SCALE);
   drawHairFront(ctx, ch, f, time, hair, hairLit);
   ctx.restore();
 
-  // ---- 표정 (SD 애니 얼굴 : 눈이 크고 또렷하다) ----
+  // ---- 표정 (작아진 머리에 맞춘 날카로운 애니 얼굴) ----
   const hurt = f.hitstun > 0 || f.state === 'hurt' || f.state === 'hurtAir';
   const angry = !!f.attack || f.charging || hurt;
+  const iris = superSaiyan ? '#2fbf6a' : c.eye;   // 초사이어인은 녹색 눈
   if (f.state === 'ko') {
-    capsule(ctx, 2, 1, 13, 10, 3, c.eye);
-    capsule(ctx, 13, 1, 2, 10, 3, c.eye);
-    capsule(ctx, -6, 2, 2, 9, 3, c.eye);
-    capsule(ctx, 2, 2, -6, 9, 3, c.eye);
+    capsule(ctx, 2, 1, 11, 8, 2.6, c.eye);
+    capsule(ctx, 11, 1, 2, 8, 2.6, c.eye);
+    capsule(ctx, -5, 2, 1, 7, 2.6, c.eye);
+    capsule(ctx, 1, 2, -5, 7, 2.6, c.eye);
     ctx.fillStyle = '#7a2f2f';
-    ctx.beginPath(); ctx.ellipse(5, 15, 5, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(4, 12, 4, 2.8, 0, 0, Math.PI * 2); ctx.fill();
   } else {
     // 흰자
     ctx.fillStyle = '#f6f3ec';
-    ctx.beginPath(); ctx.ellipse(11, 4, 5.2, hurt ? 6.4 : 5.6, -0.12, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(-0.5, 4, 4.4, hurt ? 5.6 : 4.9, 0.12, 0, Math.PI * 2); ctx.fill();
-    // 눈동자 (바깥쪽으로 붙여 흰자가 안쪽에 남게)
-    ctx.fillStyle = c.eye;
-    ctx.beginPath(); ctx.ellipse(12.4, 4.4, 3.4, hurt ? 5.2 : 4.4, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0.7, 4.4, 3.0, hurt ? 4.6 : 3.9, 0, 0, Math.PI * 2); ctx.fill();
-    // 눈 하이라이트
+    ctx.beginPath(); ctx.ellipse(9, 3.5, 4.2, hurt ? 5.2 : 4.5, -0.12, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-0.4, 3.5, 3.6, hurt ? 4.5 : 4, 0.12, 0, Math.PI * 2); ctx.fill();
+    // 눈동자 (바깥쪽으로 붙여 흰자가 안쪽에 초승달로 남는다)
+    ctx.fillStyle = iris;
+    ctx.beginPath(); ctx.ellipse(10.2, 3.8, 2.8, hurt ? 4.2 : 3.6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0.5, 3.8, 2.4, hurt ? 3.7 : 3.2, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(13.2, 1.8, 1.8, 2);
-    ctx.fillRect(1.4, 2, 1.4, 1.6);
-    // 윗눈꺼풀 라인 + 눈썹
-    capsule(ctx, 7, -1.6, 16, -2.4, 2.4, c.eye);
-    capsule(ctx, -4.6, -1.6, 3.6, -2.2, 2.2, c.eye);
-    capsule(ctx, -5, angry ? -7 : -6, 4, angry ? -10 : -9, 2.6, c.eye);
-    capsule(ctx, 8, angry ? -11.5 : -10.5, 17, angry ? -6.5 : -7.5, 2.6, c.eye);
+    ctx.fillRect(10.8, 1.5, 1.5, 1.6);
+    ctx.fillRect(1.1, 1.7, 1.2, 1.3);
+    // 윗눈꺼풀 + 눈썹 (레퍼런스처럼 굵고 각지게)
+    capsule(ctx, 5.5, -1.4, 13.5, -2, 2.2, c.eye);
+    capsule(ctx, -4, -1.4, 3, -1.8, 2, c.eye);
+    capsule(ctx, -4.4, angry ? -6 : -5, 3, angry ? -8.4 : -7.4, 2.4, c.eye);
+    capsule(ctx, 6.5, angry ? -9.6 : -8.6, 14, angry ? -5.4 : -6.4, 2.4, c.eye);
     // 코 / 입
-    capsule(ctx, 16, 8, 17.5, 9.5, 2, shade(c.skinDark, -0.3));
+    capsule(ctx, 13, 6.5, 14.2, 7.8, 1.8, shade(c.skinDark, -0.3));
     if (hurt || f.attack || f.charging) {
       ctx.fillStyle = '#7a2f2f';
-      ctx.beginPath(); ctx.ellipse(8, 14, 5.4, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(7, 11.5, 4.4, 3.2, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#efe3dc';
-      ctx.fillRect(4.4, 11.6, 7, 1.8);
+      ctx.fillRect(4.2, 9.6, 5.6, 1.5);
     } else {
-      capsule(ctx, 4, 14, 11, 14, 2.4, '#8a3b3b');
+      capsule(ctx, 3.5, 11.5, 9.5, 11.5, 2.2, '#8a3b3b');
     }
   }
   ctx.restore();
@@ -545,14 +544,15 @@ const edgeOf = col => shade(col, -0.62);
  */
 function limbShaded(ctx, a, b, c, w, base, dark, light) {
   const edge = edgeOf(base);
+  const w2 = w * 0.74;                    // 아래팔/종아리는 가늘게 (근육질 테이퍼)
   capsule(ctx, a[0], a[1], b[0], b[1], w + 3, edge);
-  capsule(ctx, b[0], b[1], c[0], c[1], w * 0.88 + 3, edge);
+  capsule(ctx, b[0], b[1], c[0], c[1], w2 + 3, edge);
   capsule(ctx, a[0], a[1] + 2.4, b[0], b[1] + 2.4, w, dark);
-  capsule(ctx, b[0], b[1] + 2.4, c[0], c[1] + 2.4, w * 0.88, dark);
+  capsule(ctx, b[0], b[1] + 2.4, c[0], c[1] + 2.4, w2, dark);
   capsule(ctx, a[0], a[1], b[0], b[1], w, base);
-  capsule(ctx, b[0], b[1], c[0], c[1], w * 0.88, base);
-  capsule(ctx, a[0], a[1] - 2.6, b[0], b[1] - 2.6, w * 0.36, light);
-  capsule(ctx, b[0], b[1] - 2.4, c[0], c[1] - 2.4, w * 0.3, light);
+  capsule(ctx, b[0], b[1], c[0], c[1], w2, base);
+  capsule(ctx, a[0], a[1] - 2.8, b[0] - (b[0] - a[0]) * 0.15, b[1] - 2.8, w * 0.34, light);
+  capsule(ctx, b[0], b[1] - 2.4, c[0], c[1] - 2.4, w2 * 0.32, light);
 }
 
 /** 방향 벡터 : 관절 -> 끝. 세운 상태면 앞(+x), 뻗었으면 팔다리 방향 */
@@ -610,66 +610,68 @@ function drawFighterRig(ctx, f, p, time) {
   const gloveLight = shade(glove, 0.26);
 
   // ---- 뒤쪽 팔다리 (한 단계 어둡게 해서 깊이감) ----
-  limbShaded(ctx, p.hip, p.legB[0], p.legB[1], 18.5,
+  limbShaded(ctx, p.hip, p.legB[0], p.legB[1], 23.5,
     giDark, shade(giDark, -0.3), shade(giDark, 0.14));
   drawBoot(ctx, p.legB[0], p.legB[1], bootDark, shade(bootDark, -0.35), shade(bootDark, 0.16));
-  limbShaded(ctx, p.shoulderB, p.armB[0], p.armB[1], 13,
+  limbShaded(ctx, p.shoulderB, p.armB[0], p.armB[1], 15,
     sleeveDark, shade(sleeveDark, -0.3), shade(sleeveDark, 0.14));
   drawGlove(ctx, p.armB[0], p.armB[1], 6.8, gloveDark, shade(gloveDark, -0.28), glove);
 
-  // ---- 몸통 (SD 비율이라 짧고 두툼하게) ----
-  const hipL = [p.hip[0] - 16, p.hip[1] + 6], hipR = [p.hip[0] + 16, p.hip[1] + 6];
-  const chL = [p.chest[0] - 19, p.chest[1] - 2], chR = [p.chest[0] + 19, p.chest[1] - 2];
+  // ---- 몸통 : 어깨가 넓고 허리로 갈수록 좁아지는 V 실루엣 ----
+  const shW = 21, waW = 14;
+  const chY = p.chest[1], hipY = p.hip[1] + 6;
+  const shL = [p.chest[0] - shW, chY], shR = [p.chest[0] + shW, chY];
+  const waL = [p.hip[0] - waW, hipY], waR = [p.hip[0] + waW, hipY];
+  const midL = [lerp(shL[0], waL[0], 0.45) - 2, lerp(chY, hipY, 0.45)];
+  const midR = [lerp(shR[0], waR[0], 0.45) + 2, lerp(chY, hipY, 0.45)];
+  const body = [shL, midL, waL, waR, midR, shR];
   ctx.save();
-  ctx.strokeStyle = edgeOf(gi); ctx.lineWidth = 3.2; ctx.lineJoin = 'round';
+  ctx.strokeStyle = edgeOf(gi); ctx.lineWidth = 3.4; ctx.lineJoin = 'round';
   ctx.beginPath();
-  ctx.moveTo(hipL[0], hipL[1]); ctx.lineTo(chL[0], chL[1]);
-  ctx.lineTo(chR[0], chR[1]); ctx.lineTo(hipR[0], hipR[1]);
+  ctx.moveTo(body[0][0], body[0][1]);
+  for (let i = 1; i < body.length; i++) ctx.lineTo(body[i][0], body[i][1]);
   ctx.closePath(); ctx.stroke();
   ctx.restore();
-  poly(ctx, [hipL, chL, chR, hipR], gi);
-  poly(ctx, [hipL, chL, [chL[0] + 8, chL[1] + 3], [hipL[0] + 7, hipL[1]]], giDark);
-  poly(ctx, [[chR[0] - 9, chR[1] + 4], chR, [hipR[0] - 3, hipR[1] - 5]], giLight);
+  poly(ctx, body, gi);
+  // 등쪽 그늘 / 앞쪽 하이라이트
+  poly(ctx, [shL, midL, waL, [waL[0] + 8, hipY], [midL[0] + 9, midL[1]], [shL[0] + 9, chY]], giDark);
+  poly(ctx, [[shR[0] - 8, chY], shR, midR, [midR[0] - 7, midR[1]]], giLight);
+  // 가슴 근육 / 복근 음영
+  ctx.save();
+  ctx.globalAlpha = 0.34;
+  capsule(ctx, p.chest[0] - 11, chY + 13, p.chest[0] + 11, chY + 13, 5, shade(gi, -0.55));
+  ctx.globalAlpha = 0.22;
+  capsule(ctx, p.chest[0] + 1, chY + 16, p.hip[0] + 1, hipY - 4, 4, shade(gi, -0.55));
+  ctx.restore();
 
   // 도복 깃 / 상의 디테일
   if (/^(goku|vegeta|trunks|piccolo|gohan)$/.test(ch.id)) {
     poly(ctx, [
-      [p.chest[0] - 6, p.chest[1] - 4], [p.chest[0] + 16, p.chest[1] - 4],
-      [p.hip[0] + 7, p.hip[1] + 4], [p.hip[0] - 3, p.hip[1] + 4]
+      [p.chest[0] - 7, chY + 1], [p.chest[0] + 17, chY + 1],
+      [p.hip[0] + 8, hipY], [p.hip[0] - 4, hipY]
     ], c.trim);
     poly(ctx, [
-      [p.chest[0] + 9, p.chest[1] - 3], [p.chest[0] + 16, p.chest[1] - 4],
-      [p.hip[0] + 7, p.hip[1] + 4], [p.hip[0] + 3, p.hip[1] + 4]
-    ], shade(c.trim, -0.22));
+      [p.chest[0] + 9, chY + 1], [p.chest[0] + 17, chY + 1],
+      [p.hip[0] + 8, hipY], [p.hip[0] + 3, hipY]
+    ], shade(c.trim, -0.24));
   } else {
     ctx.fillStyle = giDark;
-    ctx.fillRect(p.chest[0] - 13, p.chest[1] + 6, 26, 12);
+    ctx.fillRect(p.chest[0] - 14, chY + 10, 28, 13);
     ctx.fillStyle = shade(gi, 0.18);
-    ctx.fillRect(p.chest[0] - 13, p.chest[1] + 6, 26, 3);
+    ctx.fillRect(p.chest[0] - 14, chY + 10, 28, 3);
   }
 
   // 전투복 갑옷 (있는 캐릭터만)
   if (c.armor) {
     const ar = c.armor;
-    poly(ctx, [
-      [p.chest[0] - 18, p.chest[1] - 1], [p.chest[0] + 18, p.chest[1] - 1],
-      [p.chest[0] + 15, p.chest[1] + 20], [p.chest[0] - 15, p.chest[1] + 20]
-    ], ar.plate);
-    poly(ctx, [
-      [p.chest[0] + 6, p.chest[1] - 1], [p.chest[0] + 18, p.chest[1] - 1],
-      [p.chest[0] + 15, p.chest[1] + 20], [p.chest[0] + 5, p.chest[1] + 20]
-    ], ar.plateDark);
-    // 어깨 패드
-    capsule(ctx, p.shoulderF[0] - 2, p.shoulderF[1] - 1, p.shoulderF[0] + 8, p.shoulderF[1] + 1, 13, ar.pad);
-    capsule(ctx, p.shoulderB[0] + 1, p.shoulderB[1] - 1, p.shoulderB[0] - 7, p.shoulderB[1] + 1, 12, ar.padDark);
-    capsule(ctx, p.shoulderF[0] - 1, p.shoulderF[1] - 4, p.shoulderF[0] + 6, p.shoulderF[1] - 3, 4, shade(ar.pad, 0.3));
+    poly(ctx, [[shL[0] + 2, chY + 1], [shR[0] - 2, chY + 1],
+    [midR[0] - 3, midR[1] + 3], [midL[0] + 3, midL[1] + 3]], ar.plate);
+    poly(ctx, [[p.chest[0] + 6, chY + 1], [shR[0] - 2, chY + 1],
+    [midR[0] - 3, midR[1] + 3], [p.chest[0] + 5, midR[1] + 3]], ar.plateDark);
+    capsule(ctx, p.shoulderF[0] - 3, p.shoulderF[1], p.shoulderF[0] + 9, p.shoulderF[1] + 2, 14, ar.pad);
+    capsule(ctx, p.shoulderB[0] + 2, p.shoulderB[1], p.shoulderB[0] - 8, p.shoulderB[1] + 2, 13, ar.padDark);
+    capsule(ctx, p.shoulderF[0] - 2, p.shoulderF[1] - 4, p.shoulderF[0] + 7, p.shoulderF[1] - 3, 4.5, shade(ar.pad, 0.3));
   }
-
-  // 가슴 음영
-  ctx.save();
-  ctx.globalAlpha = 0.2;
-  capsule(ctx, p.chest[0] - 10, p.chest[1] + 12, p.chest[0] + 10, p.chest[1] + 12, 4, shade(gi, -0.5));
-  ctx.restore();
 
   // ---- 벨트 ----
   capsule(ctx, p.hip[0] - 15, p.hip[1] + 3, p.hip[0] + 15, p.hip[1] + 3, 11, belt);
@@ -681,9 +683,9 @@ function drawFighterRig(ctx, f, p, time) {
   capsule(ctx, p.hip[0] + 3, p.hip[1] + 8, p.hip[0] + 6, p.hip[1] + 17, 3.4, beltDark);
 
   // ---- 앞쪽 팔다리 ----
-  limbShaded(ctx, p.hip, p.legF[0], p.legF[1], 19.5, gi, giDark, giLight);
+  limbShaded(ctx, p.hip, p.legF[0], p.legF[1], 26, gi, giDark, giLight);
   drawBoot(ctx, p.legF[0], p.legF[1], boot, bootDark, bootLight);
-  limbShaded(ctx, p.shoulderF, p.armF[0], p.armF[1], 14.5, sleeve, sleeveDark, sleeveLight);
+  limbShaded(ctx, p.shoulderF, p.armF[0], p.armF[1], 17, sleeve, sleeveDark, sleeveLight);
   drawGlove(ctx, p.armF[0], p.armF[1], 7.6, glove, gloveDark, gloveLight);
 
   drawHead(ctx, p, ch, f, time);
@@ -715,12 +717,12 @@ function drawFighter(ctx, f, time) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = clamp(f.flash / 14, 0, 0.75);
-    const fg = ctx.createRadialGradient(0, -66, 6, 0, -66, 78);
+    const fg = ctx.createRadialGradient(0, -80, 6, 0, -80, 84);
     fg.addColorStop(0, '#fff6d0');
     fg.addColorStop(0.45, 'rgba(255,210,120,0.5)');
     fg.addColorStop(1, 'rgba(255,150,60,0)');
     ctx.fillStyle = fg;
-    ctx.beginPath(); ctx.arc(0, -66, 78, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -80, 84, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 
@@ -746,7 +748,7 @@ function drawFighter(ctx, f, time) {
     ctx.strokeStyle = '#9fe8ff';
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.ellipse(f.x + f.facing * 16, f.y - 58, 32, 58, 0, 0, Math.PI * 2);
+    ctx.ellipse(f.x + f.facing * 16, f.y - 70, 34, 70, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
@@ -789,7 +791,7 @@ function drawBeam(ctx, f, time) {
     ctx.fillRect(rect.x, cy - hh / 2, rect.w, hh);
   }
   // 발사구 플레어
-  const ox = f.x + f.facing * 38;
+  const ox = f.x + f.facing * 42;
   const g = ctx.createRadialGradient(ox, cy, 0, ox, cy, rect.h * 1.6);
   g.addColorStop(0, '#ffffff');
   g.addColorStop(0.4, color);

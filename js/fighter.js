@@ -7,10 +7,10 @@ const GRAVITY = 0.86;
 const GROUND_Y = 470;          // 발이 닿는 y 좌표
 const STAGE_LEFT = 0;
 const STAGE_RIGHT = 1760;      // 월드 폭
-const PUSH_RADIUS = 46;        // 캐릭터끼리 밀어내는 반경
+const PUSH_RADIUS = 54;        // 캐릭터끼리 밀어내는 반경 (넓은 스탠스에 맞춤)
 
 const HURT_STAND = { x: -30, y: -152, w: 60, h: 152 };
-const HURT_CROUCH = { x: -34, y: -112, w: 68, h: 112 };
+const HURT_CROUCH = { x: -34, y: -108, w: 68, h: 108 };
 const HURT_AIR = { x: -30, y: -142, w: 60, h: 134 };
 const HURT_DOWN = { x: -54, y: -44, w: 108, h: 44 };
 
@@ -89,8 +89,8 @@ class Fighter {
     const bm = def.beam;
     const grow = clamp(0.42 + (f - def.startup) / 6, 0, 1);
     const h = bm.height * grow;
-    const originX = this.x + this.facing * 38;
-    const originY = this.y - 74;
+    const originX = this.x + this.facing * 42;
+    const originY = this.y - 88;
     const x = this.facing > 0 ? originX : originX - bm.reach;
     return { x, y: originY - h / 2, w: bm.reach, h, grow };
   }
@@ -302,7 +302,7 @@ class Fighter {
       const bm = this.beamRect();
       if (bm && this.stateTimer % 2 === 0) {
         this.world.particles.spawn({
-          x: this.x + this.facing * 42, y: this.y - 74,
+          x: this.x + this.facing * 46, y: this.y - 88,
           vx: rand(-1, 1) + this.facing * rand(1, 4), vy: rand(-2.2, 2.2),
           life: randInt(10, 22), size: rand(4, 11),
           color: def === MOVES.ultimate ? this.char.ultimate.color : this.char.special.color
@@ -313,8 +313,8 @@ class Fighter {
     if ((def.beam || def.projectile) && a.frame < def.startup && a.frame % 3 === 0) {
       const ang = rand(0, Math.PI * 2), r = rand(40, 90);
       this.world.particles.spawn({
-        x: this.x + this.facing * 38 + Math.cos(ang) * r,
-        y: this.y - 74 + Math.sin(ang) * r,
+        x: this.x + this.facing * 42 + Math.cos(ang) * r,
+        y: this.y - 88 + Math.sin(ang) * r,
         vx: -Math.cos(ang) * 3.2, vy: -Math.sin(ang) * 3.2,
         life: 14, size: rand(3, 7),
         color: def === MOVES.ultimate ? this.char.ultimate.color : this.char.special.color
