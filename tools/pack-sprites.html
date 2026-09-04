@@ -33,6 +33,17 @@
   .note { border-left: 3px solid #ff8a1f; padding: 8px 12px; background: rgba(255,138,31,.07);
           border-radius: 0 8px 8px 0; margin: 12px 0; }
   #status { font-size: 12px; color: #ffd76a; min-height: 18px; }
+  #dropSheet { border: 2px dashed rgba(120,220,255,.3); border-radius: 12px; padding: 18px;
+               text-align: center; color: var(--muted); font-size: 13px; cursor: pointer; }
+  #dropSheet.over { border-color: #5ad2ff; background: rgba(90,210,255,.08); }
+  #strip { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 16px; }
+  #strip .chip { border: 1px solid var(--line); border-radius: 8px; background: #101728;
+                 padding: 3px; cursor: pointer; position: relative; }
+  #strip .chip.held { border-color: #5ad2ff; box-shadow: 0 0 0 2px rgba(90,210,255,.45); }
+  #strip .chip.used { opacity: .35; }
+  #strip .chip canvas { display: block; height: 76px; width: auto; image-rendering: pixelated; }
+  #strip .chip b { position: absolute; left: 3px; top: 2px; font-size: 10px; color: #ffd76a;
+                   text-shadow: 0 0 3px #000; }
 </style>
 </head>
 <body>
@@ -59,8 +70,16 @@
 </div>
 <div id="status"></div>
 
-<div id="drop">여기에 PNG 파일을 끌어다 놓으세요 (여러 장 한 번에 가능) · 또는 클릭해서 선택
+<div id="drop">프레임 낱장 PNG 를 끌어다 놓으세요 (여러 장 한 번에 가능) · 또는 클릭해서 선택
   <input type="file" id="file" accept="image/png,image/webp" multiple hidden>
+</div>
+
+<div id="sheetBox">
+  <div id="dropSheet">격자로 된 <b>스프라이트 시트 한 장</b>을 여기에 넣으면 자동으로 잘라 줍니다
+    · 체크무늬 배경과 격자선도 제거합니다
+    <input type="file" id="sheetFile" accept="image/png,image/webp" hidden>
+  </div>
+  <div id="strip"></div>
 </div>
 <div id="grid"></div>
 
@@ -205,7 +224,10 @@ function build() {
     const label = document.createElement('span');
     label.textContent = item.key;
     cell.appendChild(label);
-    cell.addEventListener('click', () => { selected = item.key; build(); });
+    cell.addEventListener('click', () => {
+      if (!placeHeld(item.key)) selected = item.key;
+      build();
+    });
     grid.appendChild(cell);
     paintCell(cv, item);
     item.cv = cv;
@@ -312,8 +334,172 @@ document.getElementById('btnClear').addEventListener('click', () => {
   frames.clear(); selected = null; build();
 });
 
+/* ---------- 시트 한 장 통째로 불러오기 ---------- */
+let sliced = [];          // { canvas, used }
+let held = -1;            // 지금 들고 있는 조각
+
+/** 체크무늬/단색 배경과 격자선을 지운다 (알파가 있으면 그대로 둔다) */
+function cleanSheet(img) {
+  const W = img.width, H = img.height;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const id = ctx.getImageData(0, 0, W, H), d = id.data;
+
+  let hasAlpha = false;
+  for (let i = 3; i < d.length; i += 4) if (d[i] < 250) { hasAlpha = true; break; }
+
+  if (!hasAlpha) {
+    const at = (x, y) => { const i = (y * W + x) * 4; return [d[i], d[i + 1], d[i + 2]]; };
+    const near = (a, b, tol) => Math.abs(a[0] - b[0]) <= tol && Math.abs(a[1] - b[1]) <= tol && Math.abs(a[2] - b[2]) <= tol;
+    // 체크무늬 타일 주기 추정
+    const c0 = at(0, 0);
+    let t = 0;
+    for (let x = 1; x < Math.min(W, 128); x++) if (!near(at(x, 0), c0, 10)) { t = x; break; }
+    let checker = null;
+    if (t >= 4 && t <= 64) {
+      const c1 = at(t, 0);
+      let ok = 0, tot = 0, step = Math.max(1, (t / 2) | 0);
+      for (let y = 0; y < H; y += step) for (let x = 0; x < W; x += step) {
+        const exp = (((x / t) | 0) + ((y / t) | 0)) % 2 ? c1 : c0;
+        tot++; if (near(at(x, y), exp, 10)) ok++;
+      }
+      if (ok / tot > 0.45) checker = { t, c0, c1 };
+    }
+    if (checker) {
+      // 위치에 맞는 체크무늬 색과 일치하는 픽셀만 (그림 속 같은 색은 보존)
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const exp = (((x / checker.t) | 0) + ((y / checker.t) | 0)) % 2 ? checker.c1 : checker.c0;
+        const i = (y * W + x) * 4;
+        if (Math.abs(d[i] - exp[0]) <= 10 && Math.abs(d[i + 1] - exp[1]) <= 10 && Math.abs(d[i + 2] - exp[2]) <= 10) d[i + 3] = 0;
+      }
+    } else {
+      // 단색 배경은 테두리에서 flood fill
+      const bg = at(0, 0), seen = new Uint8Array(W * H), stack = [];
+      for (let x = 0; x < W; x++) { stack.push([x, 0], [x, H - 1]); }
+      for (let y = 0; y < H; y++) { stack.push([0, y], [W - 1, y]); }
+      while (stack.length) {
+        const [x, y] = stack.pop();
+        if (x < 0 || y < 0 || x >= W || y >= H) continue;
+        const p = y * W + x;
+        if (seen[p]) continue;
+        seen[p] = 1;
+        const i = p * 4;
+        if (!near([d[i], d[i + 1], d[i + 2]], bg, 16)) continue;
+        d[i + 3] = 0;
+        stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+      }
+    }
+    // 격자선 : 거의 전체를 가로지르는 어두운 줄만
+    const dark = (x, y) => { const i = (y * W + x) * 4; return d[i + 3] > 24 && d[i] < 60 && d[i + 1] < 60 && d[i + 2] < 60; };
+    for (let y = 0; y < H; y++) {
+      let n = 0; for (let x = 0; x < W; x++) if (dark(x, y)) n++;
+      if (n > W * 0.85) for (let x = 0; x < W; x++) if (dark(x, y)) d[(y * W + x) * 4 + 3] = 0;
+    }
+    for (let x = 0; x < W; x++) {
+      let n = 0; for (let y = 0; y < H; y++) if (dark(x, y)) n++;
+      if (n > H * 0.85) for (let y = 0; y < H; y++) if (dark(x, y)) d[(y * W + x) * 4 + 3] = 0;
+    }
+    ctx.putImageData(id, 0, 0);
+  }
+  return { canvas: cv, ctx, W, H };
+}
+
+/** 정리된 시트에서 캐릭터 덩어리를 찾아 조각으로 나눈다 */
+function sliceSheet(clean) {
+  const { ctx, W, H } = clean;
+  const d = ctx.getImageData(0, 0, W, H).data;
+  const on = (x, y) => d[(y * W + x) * 4 + 3] > 24;
+  const bands = [];
+  let start = -1;
+  for (let y = 0; y <= H; y++) {
+    let has = false;
+    if (y < H) for (let x = 0; x < W; x++) if (on(x, y)) { has = true; break; }
+    if (has && start < 0) start = y;
+    if (!has && start >= 0) { if (y - start > 12) bands.push([start, y - 1]); start = -1; }
+  }
+  const out = [];
+  for (const [y0, y1] of bands) {
+    let cs = -1;
+    for (let x = 0; x <= W; x++) {
+      let has = false;
+      if (x < W) for (let y = y0; y <= y1; y++) if (on(x, y)) { has = true; break; }
+      if (has && cs < 0) cs = x;
+      if (!has && cs >= 0) {
+        if (x - cs > 10) {
+          let ty = y1, by = y0;
+          for (let y = y0; y <= y1; y++) for (let x2 = cs; x2 < x; x2++)
+            if (on(x2, y)) { if (y < ty) ty = y; if (y > by) by = y; }
+          const w = x - cs, h = by - ty + 1;
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(clean.canvas, cs, ty, w, h, 0, 0, w, h);
+          out.push({ canvas: c, used: false });
+        }
+        cs = -1;
+      }
+    }
+  }
+  return out;
+}
+
+function renderStrip() {
+  const strip = document.getElementById('strip');
+  strip.innerHTML = '';
+  sliced.forEach((sl, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (held === i ? ' held' : '') + (sl.used ? ' used' : '');
+    chip.appendChild(sl.canvas.cloneNode(false));
+    chip.lastChild.getContext('2d').drawImage(sl.canvas, 0, 0);
+    const n = document.createElement('b');
+    n.textContent = i;
+    chip.appendChild(n);
+    chip.addEventListener('click', () => { held = held === i ? -1 : i; renderStrip(); });
+    strip.appendChild(chip);
+  });
+  if (sliced.length) {
+    document.getElementById('status').textContent =
+      `조각 ${sliced.length}개 · 조각을 고른 뒤 아래 칸을 클릭하면 배치됩니다 (배치하면 다음 조각으로 자동 이동)`;
+  }
+}
+
+async function loadSheet(file) {
+  const img = await new Promise(res => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.src = URL.createObjectURL(file);
+  });
+  sliced = sliceSheet(cleanSheet(img));
+  held = sliced.length ? 0 : -1;
+  renderStrip();
+}
+
+/** 들고 있는 조각을 프레임 키에 배치 */
+function placeHeld(key) {
+  if (held < 0 || !sliced[held]) return false;
+  const sl = sliced[held];
+  const entry = { img: sl.canvas, box: { x: 0, y: 0, w: sl.canvas.width, h: sl.canvas.height }, scale: 1, sx: 0, sy: 0 };
+  frames.set(key, entry);
+  sl.used = true;
+  autoAlign(entry);
+  if (frames.has(refKey)) frames.forEach(f => autoAlign(f));
+  held = sliced.findIndex((s, i) => i > held && !s.used);
+  if (held < 0) held = sliced.findIndex(s => !s.used);
+  renderStrip();
+  return true;
+}
+
 /* ---------- 드래그 & 키보드 ---------- */
 const drop = document.getElementById('drop'), fileInput = document.getElementById('file');
+const dropSheet = document.getElementById('dropSheet'), sheetInput = document.getElementById('sheetFile');
+dropSheet.addEventListener('click', () => sheetInput.click());
+sheetInput.addEventListener('change', e => { if (e.target.files[0]) loadSheet(e.target.files[0]); });
+['dragenter', 'dragover'].forEach(ev =>
+  dropSheet.addEventListener(ev, e => { e.preventDefault(); dropSheet.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev =>
+  dropSheet.addEventListener(ev, e => { e.preventDefault(); dropSheet.classList.remove('over'); }));
+dropSheet.addEventListener('drop', e => { if (e.dataTransfer.files[0]) loadSheet(e.dataTransfer.files[0]); });
 drop.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', e => addFiles(e.target.files));
 ['dragenter', 'dragover'].forEach(ev =>
