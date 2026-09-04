@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DRAGON FIGHTER Z - 드래곤볼 대전 격투</title>
+<meta name="description" content="브라우저에서 즐기는 드래곤볼 2D 대전 격투 게임. 6명의 전사, 필살기와 초필살기, CPU 대전과 2인 대전을 지원합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23ff9f1c'/><circle cx='38' cy='40' r='8' fill='%23e63946'/><circle cx='62' cy='42' r='8' fill='%23e63946'/><circle cx='50' cy='62' r='8' fill='%23e63946'/></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <div class="stage-wrap">
+    <canvas id="game" width="960" height="540"></canvas>
+
+    <!-- ===================== HUD ===================== -->
+    <div id="hud" class="is-hidden">
+      <div class="hud-row">
+        <div class="hud-side side-p1">
+          <div class="hud-meta"><span class="tag" id="tag-p1">1P</span><span class="fighter-name" id="name-p1">손오공</span></div>
+          <div class="hp-track"><div class="hp-lag" id="hplag-p1"></div><div class="hp-fill" id="hp-p1"></div></div>
+          <div class="ki-track"><div class="ki-fill" id="ki-p1"></div></div>
+          <div class="rounds" id="rounds-p1"><i></i><i></i></div>
+        </div>
+
+        <div class="hud-center">
+          <div class="timer" id="timer">99</div>
+          <div class="stage-tag" id="stage-name">황무지</div>
+          <div class="hud-tools">
+            <button id="btn-pause" class="mini-btn" title="일시정지 (Esc)">⏸</button>
+            <button id="btn-mute" class="mini-btn" title="소리 켜기/끄기">🔊</button>
+          </div>
+        </div>
+
+        <div class="hud-side side-p2">
+          <div class="hud-meta"><span class="fighter-name" id="name-p2">베지터</span><span class="tag" id="tag-p2">CPU</span></div>
+          <div class="hp-track"><div class="hp-lag" id="hplag-p2"></div><div class="hp-fill" id="hp-p2"></div></div>
+          <div class="ki-track"><div class="ki-fill" id="ki-p2"></div></div>
+          <div class="rounds" id="rounds-p2"><i></i><i></i></div>
+        </div>
+      </div>
+
+      <div class="combo combo-p1" id="combo-p1"><span class="combo-num">2</span><span class="combo-lbl">HIT COMBO!</span></div>
+      <div class="combo combo-p2" id="combo-p2"><span class="combo-num">2</span><span class="combo-lbl">HIT COMBO!</span></div>
+      <div class="announce" id="announce"></div>
+    </div>
+
+    <!-- ===================== 터치 패드 ===================== -->
+    <div id="touchpad" class="is-hidden">
+      <div class="pad pad-left">
+        <button data-touch="left" data-player="0" class="pad-btn">◀</button>
+        <button data-touch="up" data-player="0" class="pad-btn">▲</button>
+        <button data-touch="down" data-player="0" class="pad-btn">▼</button>
+        <button data-touch="right" data-player="0" class="pad-btn">▶</button>
+      </div>
+      <div class="pad pad-right">
+        <button data-touch="light" data-player="0" class="pad-btn atk">약</button>
+        <button data-touch="heavy" data-player="0" class="pad-btn atk">강</button>
+        <button data-touch="kick" data-player="0" class="pad-btn atk">킥</button>
+        <button data-touch="blast" data-player="0" class="pad-btn ki">기</button>
+        <button data-touch="ultimate" data-player="0" class="pad-btn ult">초</button>
+        <button data-touch="charge" data-player="0" class="pad-btn chg">충전</button>
+      </div>
+    </div>
+
+    <!-- ===================== 타이틀 ===================== -->
+    <section class="screen is-active" id="screen-title">
+      <div class="title-block">
+        <div class="dragon-balls">
+          <i style="--n:1"></i><i style="--n:2"></i><i style="--n:3"></i><i style="--n:4"></i>
+          <i style="--n:5"></i><i style="--n:6"></i><i style="--n:7"></i>
+        </div>
+        <h1 class="logo"><span class="logo-top">DRAGON</span><span class="logo-main">FIGHTER<em>Z</em></span></h1>
+        <p class="tagline">철권 스타일 2D 대전 격투 · 드래곤볼 전사 6인 참전</p>
+
+        <div class="diff-row">
+          <span class="diff-label">난이도</span>
+          <button data-diff="easy" class="chip">쉬움</button>
+          <button data-diff="normal" class="chip is-on">보통</button>
+          <button data-diff="hard" class="chip">어려움</button>
+          <button data-diff="zenkai" class="chip">초사이어인</button>
+        </div>
+
+        <div class="menu">
+          <button id="btn-cpu" class="btn btn-main">1P vs CPU</button>
+          <button id="btn-versus" class="btn">2P 대전</button>
+          <button id="btn-howto" class="btn btn-ghost">조작 방법</button>
+        </div>
+        <p class="hint">Enter 키로 바로 시작</p>
+      </div>
+    </section>
+
+    <!-- ===================== 캐릭터 선택 ===================== -->
+    <section class="screen" id="screen-select">
+      <div class="select-wrap">
+        <header class="select-head">
+          <button id="btn-select-back" class="btn btn-ghost btn-sm">← 뒤로</button>
+          <h2 id="sel-turn">1P 캐릭터를 선택하세요</h2>
+          <div class="slots">
+            <span class="slot" id="slot-p1">???</span>
+            <span class="vs">VS</span>
+            <span class="slot" id="slot-p2">???</span>
+          </div>
+        </header>
+
+        <div class="select-body">
+          <div id="char-grid" class="char-grid"></div>
+          <aside class="char-info">
+            <h3 id="sel-name">손오공</h3>
+            <p class="info-title" id="sel-title">지구에서 자란 사이어인</p>
+            <p class="info-quote" id="sel-quote">"자, 붙어보자!"</p>
+            <ul class="stats">
+              <li><span>체력</span><div class="bar"><i id="stat-hp"></i></div></li>
+              <li><span>공격</span><div class="bar"><i id="stat-power"></i></div></li>
+              <li><span>스피드</span><div class="bar"><i id="stat-speed"></i></div></li>
+              <li><span>방어</span><div class="bar"><i id="stat-defense"></i></div></li>
+            </ul>
+            <p class="info-special">필살기<br><b id="sel-special">에네르기파 / 초 에네르기파</b></p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 전투(투명) ===================== -->
+    <section class="screen screen-transparent" id="screen-fight"></section>
+
+    <!-- ===================== 결과 ===================== -->
+    <section class="screen" id="screen-result">
+      <div class="result-card">
+        <div class="result-tag" id="result-tag">1P WIN</div>
+        <canvas id="result-portrait" width="140" height="150"></canvas>
+        <h2 id="result-name">손오공</h2>
+        <p class="result-quote" id="result-quote"></p>
+        <p class="result-score" id="result-score"></p>
+        <div class="menu menu-row">
+          <button id="btn-rematch" class="btn btn-main">다시 대결</button>
+          <button id="btn-tochars" class="btn">캐릭터 선택</button>
+          <button id="btn-totitle" class="btn btn-ghost">타이틀</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 조작법 ===================== -->
+    <section class="screen overlay" id="screen-help">
+      <div class="help-card">
+        <h2>조작 방법</h2>
+        <div class="help-grid">
+          <div>
+            <h3>1P</h3>
+            <table>
+              <tr><td>이동 / 점프 / 앉기</td><td><kbd>A</kbd><kbd>D</kbd> / <kbd>W</kbd> / <kbd>S</kbd></td></tr>
+              <tr><td>약 · 강 · 킥</td><td><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></td></tr>
+              <tr><td>기탄 / 초필살기</td><td><kbd>U</kbd> / <kbd>I</kbd></td></tr>
+              <tr><td>기 모으기</td><td><kbd>Space</kbd></td></tr>
+            </table>
+          </div>
+          <div>
+            <h3>2P</h3>
+            <table>
+              <tr><td>이동 / 점프 / 앉기</td><td><kbd>←</kbd><kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd></td></tr>
+              <tr><td>약 · 강 · 킥</td><td><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></td></tr>
+              <tr><td>기탄 / 초필살기</td><td><kbd>4</kbd> / <kbd>5</kbd></td></tr>
+              <tr><td>기 모으기</td><td><kbd>0</kbd></td></tr>
+            </table>
+          </div>
+        </div>
+        <h3 class="help-sub">전투 시스템</h3>
+        <ul class="help-list">
+          <li><b>가드</b> — 상대 반대 방향을 누르면 자동 가드. 하단 공격은 <b>앉아 가드</b>, 점프 공격은 <b>서서 가드</b>로만 막힙니다.</li>
+          <li><b>대시</b> — 같은 방향 키를 두 번 빠르게. 뒤 대시에는 짧은 무적이 있습니다.</li>
+          <li><b>잡기</b> — 약 + 강 동시 입력. 가드 불가!</li>
+          <li><b>앉아 강</b> — 승룡 어퍼(대공기), <b>앉아 킥</b> — 다리 후리기(다운).</li>
+          <li><b>필살기</b> — 기 게이지 15로 기탄, <b>↓ + 기탄키</b>로 기 40을 소모해 빔 필살기.</li>
+          <li><b>초필살기</b> — 기 게이지 100을 모두 사용하는 역전기. 발동 시 무적 시간이 있습니다.</li>
+          <li>기 게이지는 공격·피격·기 모으기로 충전되며, 100이 되면 오라가 폭발합니다.</li>
+        </ul>
+        <button id="btn-help-close" class="btn btn-main">닫기</button>
+      </div>
+    </section>
+
+    <!-- ===================== 일시정지 ===================== -->
+    <div class="overlay" id="pause-overlay">
+      <div class="pause-card">
+        <h2>일시정지</h2>
+        <button id="btn-resume" class="btn btn-main">계속하기</button>
+        <button id="btn-quit" class="btn btn-ghost">타이틀로</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="rotate-hint">📱 화면을 가로로 돌리면 더 크게 즐길 수 있어요</p>
+
+  <footer class="site-foot">
+    <span>DRAGON FIGHTER Z</span> · 팬메이드 브라우저 대전 격투 데모 · 키보드 / 터치 지원
+  </footer>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/moves.js"></script>
+<script src="js/input.js"></script>
+<script src="js/fighter.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/render.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
