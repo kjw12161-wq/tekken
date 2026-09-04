@@ -3,11 +3,17 @@
  * ========================================================= */
 'use strict';
 
-const VIEW_W = 960, VIEW_H = 540;
-const WORLD_SCALE = 1.2;                       // 캐릭터를 크게 보여주기 위한 줌
-const VIEW_WORLD_W = VIEW_W / WORLD_SCALE;     // 화면이 비추는 월드 폭
-const VIEW_WORLD_H = VIEW_H / WORLD_SCALE;
-const CAM_Y = GROUND_Y - (VIEW_H - 46) / WORLD_SCALE;   // 지면이 화면 하단 46px 위에 오도록
+/* ---------------------------------------------------------
+ *  화면 해상도는 컨테이너 크기에 맞춰 자동으로 정해진다.
+ *  월드 확대율(WORLD_SCALE)은 고정해 스프라이트 픽셀이 항상
+ *  정수배(2배)로 찍히게 하고, 대신 "보이는 월드 영역"을 조절한다.
+ * --------------------------------------------------------- */
+const WORLD_SCALE = 1.2;          // 월드 1단위 = 캔버스 1.2px (스프라이트 1px = 2px)
+const BASE_VIEW_H = 450;          // 기준이 되는 세로 시야(월드 단위)
+const MIN_VIEW_W = 660;           // 세로 화면에서도 이만큼은 가로로 보여준다
+const MAX_VIEW_W = 1040;          // 초광각 화면에서 너무 멀어지지 않도록
+const GROUND_PAD = 38;            // 지면 아래로 보이는 여백(월드 단위)
+const MIN_ASPECT = 0.5, MAX_ASPECT = 2.8;
 const ROUND_TIME = 99;            // 초
 const ROUNDS_TO_WIN = 2;
 
@@ -38,9 +44,9 @@ const Game = {
   /* ==================== 초기화 ==================== */
   init() {
     this.canvas = document.getElementById('game');
-    this.canvas.width = VIEW_W;
-    this.canvas.height = VIEW_H;
     this.ctx = this.canvas.getContext('2d');
+    this.resize();
+    this.bindResize();
     this.debug = /[?&]debug=1/.test(location.search);
     // ?vector=1 로 스프라이트를 끄고 벡터 렌더링을 그대로 볼 수 있다
     SpriteBank.init({ disabled: /[?&]vector=1/.test(location.search) });
@@ -53,6 +59,78 @@ const Game = {
     this.bindUI();
     this.show('screen-title');
     requestAnimationFrame(t => this.loop(t));
+  },
+
+  /* ==================== 화면 크기 자동 맞춤 ==================== */
+  /**
+   * 캔버스 해상도와 "보이는 월드 영역"을 컨테이너 비율에 맞춰 다시 계산한다.
+   * - 가로가 넓은 화면 : 스테이지를 더 넓게 보여준다
+   * - 세로로 긴 화면   : 최소 가로 시야를 확보하기 위해 조금 물러난다(하늘이 더 보임)
+   */
+  resize() {
+    const wrap = this.canvas.parentElement;
+    const box = wrap.getBoundingClientRect();
+    const cssW = Math.max(200, box.width);
+    const cssH = Math.max(140, box.height);
+    const aspect = clamp(cssW / cssH, MIN_ASPECT, MAX_ASPECT);
+
+    let vw = BASE_VIEW_H * aspect;
+    let vh = BASE_VIEW_H;
+    if (vw < MIN_VIEW_W) { vw = MIN_VIEW_W; vh = vw / aspect; }
+    else if (vw > MAX_VIEW_W) { vw = MAX_VIEW_W; vh = vw / aspect; }
+
+    this.viewW = vw;
+    this.viewH = vh;
+    this.camY = GROUND_Y + GROUND_PAD - vh;      // 지면이 화면 아래쪽에 오도록
+    this.canvas.width = Math.round(vw * WORLD_SCALE);
+    this.canvas.height = Math.round(vh * WORLD_SCALE);
+    this.ctx.imageSmoothingEnabled = false;
+
+    if (this.fighters.length) {
+      this.cam.x = SpriteBank.snap(this.clampCam(
+        (this.fighters[0].x + this.fighters[1].x) / 2 - vw / 2));
+    }
+  },
+
+  clampCam(x) {
+    const max = Math.max(0, STAGE_RIGHT - this.viewW);
+    return clamp(x, 0, max);
+  },
+
+  bindResize() {
+    let pending = false;
+    const onResize = () => {
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(() => { pending = false; this.resize(); });
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
+    if (window.ResizeObserver) {
+      new ResizeObserver(onResize).observe(this.canvas.parentElement);
+    }
+  },
+
+  /** 전체 화면 전환 (가능하면 가로 방향으로 고정) */
+  async toggleFullscreen() {
+    const el = document.documentElement;
+    try {
+      if (!document.fullscreenElement) {
+        await (el.requestFullscreen ? el.requestFullscreen() : el.webkitRequestFullscreen());
+        if (screen.orientation && screen.orientation.lock) {
+          try { await screen.orientation.lock('landscape'); } catch (e) { /* 지원 안 하면 무시 */ }
+        }
+      } else {
+        if (screen.orientation && screen.orientation.unlock) {
+          try { screen.orientation.unlock(); } catch (e) { /* 무시 */ }
+        }
+        await document.exitFullscreen();
+      }
+    } catch (e) {
+      console.warn('전체 화면을 사용할 수 없습니다', e);
+    }
+    setTimeout(() => this.resize(), 120);
   },
 
   /* ==================== UI ==================== */
@@ -86,6 +164,16 @@ const Game = {
       document.getElementById('pause-overlay').classList.remove('is-active');
       this.state = 'title'; this.show('screen-title');
     });
+    const fsBtn = q('btn-fullscreen');
+    if (document.fullscreenEnabled || document.documentElement.webkitRequestFullscreen) {
+      fsBtn.addEventListener('click', () => { Sfx.play('ui'); this.toggleFullscreen(); });
+      document.addEventListener('fullscreenchange', () => {
+        fsBtn.textContent = document.fullscreenElement ? '⤡' : '⤢';
+        this.resize();
+      });
+    } else {
+      fsBtn.hidden = true;
+    }
     q('btn-mute').addEventListener('click', () => {
       Sfx.muted = !Sfx.muted;
       Sfx.setMuted(Sfx.muted);
@@ -309,7 +397,7 @@ const Game = {
     this.phase = 'intro';
     this.phaseTimer = 0;
     this.slowmo = 0;
-    this.cam.x = SpriteBank.snap(clamp((a.x + b.x) / 2 - VIEW_WORLD_W / 2, 0, STAGE_RIGHT - VIEW_WORLD_W));
+    this.cam.x = SpriteBank.snap(this.clampCam((a.x + b.x) / 2 - this.viewW / 2));
     this.announce(`ROUND ${this.roundNo}`, 'big');
     this.updateHud(true);
   },
@@ -615,7 +703,7 @@ const Game = {
     const [a, b] = this.fighters;
     if (!a || !b) return;
     const mid = (a.x + b.x) / 2;
-    const target = clamp(mid - VIEW_WORLD_W / 2, 0, STAGE_RIGHT - VIEW_WORLD_W);
+    const target = this.clampCam(mid - this.viewW / 2);
     this.cam.x = SpriteBank.snap(lerp(this.cam.x, target, 0.12));
     if (this.cam.shake > 0) {
       this.cam.shakeX = Math.round(rand(-this.cam.shake, this.cam.shake));
@@ -646,31 +734,32 @@ const Game = {
 
   /* ==================== 그리기 ==================== */
   view() {
-    return { x: this.cam.x, y: CAM_Y, w: VIEW_WORLD_W, h: VIEW_WORLD_H };
+    return { x: this.cam.x, y: this.camY, w: this.viewW, h: this.viewH };
   },
 
   applyWorldTransform(ctx) {
     ctx.setTransform(
       WORLD_SCALE, 0, 0, WORLD_SCALE,
       -this.cam.x * WORLD_SCALE + this.cam.shakeX,
-      -CAM_Y * WORLD_SCALE + this.cam.shakeY
+      -this.camY * WORLD_SCALE + this.cam.shakeY
     );
   },
 
   draw() {
     const ctx = this.ctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+    const CW = this.canvas.width, CH = this.canvas.height;
+    ctx.clearRect(0, 0, CW, CH);
 
     if (this.state !== 'fight' && this.state !== 'matchEnd') {
       // 타이틀 / 선택 화면 : 배경만 천천히 흐르게
-      const drift = (this.time * 0.35) % (STAGE_RIGHT - VIEW_WORLD_W);
+      const drift = (this.time * 0.35) % Math.max(1, STAGE_RIGHT - this.viewW);
       this.cam.x = drift;
       this.applyWorldTransform(ctx);
       drawStage(ctx, this.stage, this.view(), this.time);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = 'rgba(6,8,20,0.55)';
-      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      ctx.fillRect(0, 0, CW, CH);
       return;
     }
 
@@ -692,19 +781,20 @@ const Game = {
     this.drawOffscreenMarkers(ctx);
     if (this.phase === 'ko') {
       ctx.fillStyle = 'rgba(255,60,60,0.08)';
-      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      ctx.fillRect(0, 0, CW, CH);
     }
   },
 
   drawOffscreenMarkers(ctx) {
     for (const f of this.fighters) {
       const sx = (f.x - this.cam.x) * WORLD_SCALE;
-      if (sx < 16 || sx > VIEW_W - 16) {
-        const x = sx < 16 ? 16 : VIEW_W - 16;
+      const w = this.canvas.width, cy = this.canvas.height * 0.55;
+      if (sx < 16 || sx > w - 16) {
+        const x = sx < 16 ? 16 : w - 16;
         ctx.save();
         ctx.fillStyle = f.index === 0 ? '#5ad2ff' : '#ff6b6b';
         ctx.beginPath();
-        ctx.moveTo(x, 292); ctx.lineTo(x + (sx < 16 ? -12 : 12), 302); ctx.lineTo(x, 312);
+        ctx.moveTo(x, cy - 10); ctx.lineTo(x + (sx < 16 ? -12 : 12), cy); ctx.lineTo(x, cy + 10);
         ctx.closePath(); ctx.fill();
         ctx.restore();
       }

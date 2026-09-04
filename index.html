@@ -28,6 +28,7 @@
           <div class="stage-tag" id="stage-name">황무지</div>
           <div class="hud-tools">
             <button id="btn-pause" class="mini-btn" title="일시정지 (Esc)">⏸</button>
+            <button id="btn-fullscreen" class="mini-btn" title="전체 화면">⤢</button>
             <button id="btn-mute" class="mini-btn" title="소리 켜기/끄기">🔊</button>
           </div>
         </div>
@@ -43,24 +44,6 @@
       <div class="combo combo-p1" id="combo-p1"><span class="combo-num">2</span><span class="combo-lbl">HIT COMBO!</span></div>
       <div class="combo combo-p2" id="combo-p2"><span class="combo-num">2</span><span class="combo-lbl">HIT COMBO!</span></div>
       <div class="announce" id="announce"></div>
-    </div>
-
-    <!-- ===================== 터치 패드 ===================== -->
-    <div id="touchpad" class="is-hidden">
-      <div class="pad pad-left">
-        <button data-touch="left" data-player="0" class="pad-btn">◀</button>
-        <button data-touch="up" data-player="0" class="pad-btn">▲</button>
-        <button data-touch="down" data-player="0" class="pad-btn">▼</button>
-        <button data-touch="right" data-player="0" class="pad-btn">▶</button>
-      </div>
-      <div class="pad pad-right">
-        <button data-touch="light" data-player="0" class="pad-btn atk">약</button>
-        <button data-touch="heavy" data-player="0" class="pad-btn atk">강</button>
-        <button data-touch="kick" data-player="0" class="pad-btn atk">킥</button>
-        <button data-touch="blast" data-player="0" class="pad-btn ki">기</button>
-        <button data-touch="ultimate" data-player="0" class="pad-btn ult">초</button>
-        <button data-touch="charge" data-player="0" class="pad-btn chg">충전</button>
-      </div>
     </div>
 
     <!-- ===================== 타이틀 ===================== -->
@@ -155,6 +138,15 @@
             </table>
           </div>
           <div>
+            <h3>터치</h3>
+            <table>
+              <tr><td>이동 / 점프 / 앉기</td><td>왼쪽 십자 버튼</td></tr>
+              <tr><td>약 · 강 · 킥</td><td><kbd>약</kbd><kbd>강</kbd><kbd>킥</kbd></td></tr>
+              <tr><td>기탄 / 초필살기</td><td><kbd>기</kbd> / <kbd>초</kbd></td></tr>
+              <tr><td>기 모으기</td><td><kbd>충전</kbd></td></tr>
+            </table>
+          </div>
+          <div>
             <h3>2P</h3>
             <table>
               <tr><td>이동 / 점프 / 앉기</td><td><kbd>←</kbd><kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd></td></tr>
@@ -185,6 +177,24 @@
         <button id="btn-resume" class="btn btn-main">계속하기</button>
         <button id="btn-quit" class="btn btn-ghost">타이틀로</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ===================== 터치 패드 ===================== -->
+  <div id="touchpad" class="is-hidden">
+    <div class="pad pad-left">
+      <button data-touch="left" data-player="0" class="pad-btn">◀</button>
+      <button data-touch="up" data-player="0" class="pad-btn">▲</button>
+      <button data-touch="down" data-player="0" class="pad-btn">▼</button>
+      <button data-touch="right" data-player="0" class="pad-btn">▶</button>
+    </div>
+    <div class="pad pad-right">
+      <button data-touch="light" data-player="0" class="pad-btn atk">약</button>
+      <button data-touch="heavy" data-player="0" class="pad-btn atk">강</button>
+      <button data-touch="kick" data-player="0" class="pad-btn atk">킥</button>
+      <button data-touch="blast" data-player="0" class="pad-btn ki">기</button>
+      <button data-touch="ultimate" data-player="0" class="pad-btn ult">초</button>
+      <button data-touch="charge" data-player="0" class="pad-btn chg">충전</button>
     </div>
   </div>
 
