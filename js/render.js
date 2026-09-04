@@ -46,6 +46,169 @@ function basePose() {
   };
 }
 
+/* ---------------- 필살기 자세 ----------------
+ *  moves.js 의 SPECIAL_MOTION 과 짝을 이룬다.
+ *  (p, charging, g, gs) : g = 기 모으기 진행도 0~1, gs = 양자화된 단계
+ * ------------------------------------------- */
+const MOTION_POSE = {
+  // 에네르기파 - 허리 뒤에 두 손을 겹쳐 모았다가 정면으로
+  cupped(p, charging, g) {
+    if (charging) {
+      p.armF = [mix(P(25, -86), P(-16, -86), g), mix(P(31, -103), P(-32, -82), g)];
+      p.armB = [mix(P(-23, -86), P(-26, -90), g), mix(P(-27, -102), P(-38, -84), g)];
+      p.chest = mix(p.chest, P(-8, -99), g);
+      p.head = mix(p.head, P(-4, -121), g);
+      p.hip = mix(p.hip, P(-4, -61), g);
+      p.legF = [P(22, -34), P(30, 0)];
+      p.legB = [P(-20, -34), P(-30, 0)];
+    } else {
+      p.armF = [P(28, -92), P(50, -90)];
+      p.armB = [P(18, -95), P(46, -95)];
+      p.chest = P(10, -100); p.head = P(10, -122); p.hip = P(3, -62);
+      p.legF = [P(24, -34), P(34, 0)];
+      p.legB = [P(-20, -34), P(-30, 0)];
+    }
+  },
+  // 갤릭포 - 옆구리에 모은 한 손, 다른 손은 손목을 받친다
+  onehand(p, charging, g) {
+    if (charging) {
+      p.armF = [mix(P(25, -86), P(12, -80), g), mix(P(31, -103), P(-9, -84), g)];
+      p.armB = [mix(P(-23, -86), P(-19, -84), g), mix(P(-27, -102), P(-16, -88), g)];
+      p.chest = mix(p.chest, P(-6, -100), g);
+      p.head = mix(p.head, P(-2, -122), g * 0.8);
+      p.hip = mix(p.hip, P(-3, -61), g);
+      p.legF = [P(21, -34), P(29, 0)];
+      p.legB = [P(-21, -34), P(-31, 0)];
+    } else {
+      p.armF = [P(30, -92), P(54, -95)];
+      p.armB = [P(6, -92), P(32, -90)];
+      p.chest = P(9, -100); p.head = P(9, -122); p.hip = P(4, -62);
+      p.legF = [P(25, -34), P(35, 0)];
+      p.legB = [P(-19, -34), P(-29, 0)];
+    }
+  },
+  // 마관광살포 - 이마에 두 손가락, 반대 손으로 팔꿈치를 받친다
+  fingers(p, charging, g) {
+    if (charging) {
+      p.armF = [mix(P(25, -86), P(24, -100), g), mix(P(31, -103), P(14, -126), g)];
+      p.armB = [mix(P(-23, -86), P(-18, -92), g), mix(P(-27, -102), P(16, -101), g)];
+      p.chest = mix(p.chest, P(2, -101), g);
+      p.head = mix(p.head, P(5, -123), g);
+      p.legF = [P(18, -34), P(25, 0)];
+      p.legB = [P(-18, -34), P(-26, 0)];
+    } else {
+      // 손가락은 이마에 붙인 채, 반대 손으로 팔꿈치를 단단히 받친다
+      p.armF = [P(27, -114), P(23, -125)];
+      p.armB = [P(-13, -96), P(15, -107)];
+      p.chest = P(5, -102); p.head = P(8, -124); p.hip = P(2, -62);
+      p.legF = [P(24, -34), P(34, 0)];
+      p.legB = [P(-21, -34), P(-32, 0)];
+    }
+  },
+  // 마섬광 - 머리 위에서 손목을 교차했다가 앞으로 밀어낸다
+  overhead(p, charging, g) {
+    if (charging) {
+      p.armF = [mix(P(25, -86), P(18, -122), g), mix(P(31, -103), P(9, -151), g)];
+      p.armB = [mix(P(-23, -86), P(-13, -122), g), mix(P(-27, -102), P(1, -149), g)];
+      p.chest = mix(p.chest, P(-2, -102), g);
+      p.head = mix(p.head, P(1, -124), g);
+      p.legF = [P(19, -34), P(27, 0)];
+      p.legB = [P(-19, -34), P(-28, 0)];
+    } else {
+      p.armF = [P(24, -126), P(33, -141)];
+      p.armB = [P(3, -124), P(26, -138)];
+      p.chest = P(8, -101); p.head = P(8, -123); p.hip = P(3, -62);
+      p.legF = [P(25, -34), P(35, 0)];
+      p.legB = [P(-19, -34), P(-29, 0)];
+    }
+  },
+  // 파이널 플래시 - 양팔을 크게 벌려 모았다가 정면으로 합친다
+  flash(p, charging, g) {
+    if (charging) {
+      p.armF = [mix(P(25, -86), P(27, -84), g), mix(P(31, -103), P(41, -70), g)];
+      p.armB = [mix(P(-23, -86), P(-27, -84), g), mix(P(-27, -102), P(-41, -70), g)];
+      p.chest = mix(p.chest, P(0, -102), g);
+      p.head = mix(p.head, P(2, -124), g);
+      p.legF = [mix(P(18, -33), P(27, -32), g), mix(P(24, 0), P(39, 0), g)];
+      p.legB = [mix(P(-17, -33), P(-27, -32), g), mix(P(-23, 0), P(-39, 0), g)];
+    } else {
+      p.armF = [P(29, -95), P(53, -95)];
+      p.armB = [P(15, -99), P(49, -101)];
+      p.chest = P(9, -100); p.head = P(9, -122); p.hip = P(4, -62);
+      p.legF = [P(26, -34), P(37, 0)];
+      p.legB = [P(-21, -34), P(-33, 0)];
+    }
+  },
+  // 초 폭렬마파 - 팔을 높이 들어 모았다가 두 손으로 밀어낸다
+  wave(p, charging, g) {
+    if (charging) {
+      p.armF = [mix(P(25, -86), P(-5, -111), g), mix(P(31, -103), P(-20, -121), g)];
+      p.armB = [mix(P(-23, -86), P(-22, -91), g), mix(P(-27, -102), P(-8, -101), g)];
+      p.chest = mix(p.chest, P(-9, -100), g);
+      p.head = mix(p.head, P(-6, -122), g);
+      p.hip = mix(p.hip, P(-4, -61), g);
+      p.legF = [P(22, -34), P(31, 0)];
+      p.legB = [P(-20, -34), P(-31, 0)];
+    } else {
+      p.armF = [P(26, -90), P(46, -87)];
+      p.armB = [P(12, -100), P(43, -104)];
+      p.chest = P(11, -99); p.head = P(10, -121); p.hip = P(5, -62);
+      p.legF = [P(26, -34), P(37, 0)];
+      p.legB = [P(-20, -34), P(-31, 0)];
+    }
+  },
+  // 데스 빔 - 손가락 하나만 세운 여유로운 자세
+  point(p, charging, g) {
+    p.armB = [mix(P(-23, -86), P(-21, -80), g), mix(P(-27, -102), P(-13, -67), g)];
+    if (charging) {
+      p.armF = [mix(P(25, -86), P(24, -92), g), mix(P(31, -103), P(34, -105), g)];
+      p.chest = mix(p.chest, P(1, -101), g);
+      p.head = mix(p.head, P(4, -123), g);
+    } else {
+      p.armF = [P(34, -104), P(59, -104)];
+      p.chest = P(4, -100); p.head = P(6, -122);
+    }
+    p.legF = [P(17, -34), P(23, 0)];
+    p.legB = [P(-17, -34), P(-24, 0)];
+  },
+  // 데스 볼 / 히트 돔 - 머리 위 구슬을 앞으로 내려꽂는다
+  orb(p, charging, g) {
+    p.armB = [mix(P(-23, -86), P(-21, -85), g), mix(P(-27, -102), P(-15, -71), g)];
+    if (charging) {
+      p.armF = [mix(P(25, -86), P(19, -127), g), mix(P(31, -103), P(11, -164), g)];
+      p.chest = mix(p.chest, P(-1, -102), g);
+      p.head = mix(p.head, P(2, -125), g);
+      p.headTilt = -0.12 * g;
+      p.legF = [P(18, -34), P(25, 0)];
+      p.legB = [P(-18, -34), P(-27, 0)];
+    } else {
+      p.armF = [P(27, -132), P(29, -163)];
+      p.armB = [P(-16, -89), P(-6, -97)];
+      p.chest = P(6, -101); p.head = P(7, -123); p.hip = P(2, -62);
+      p.legF = [P(24, -34), P(34, 0)];
+      p.legB = [P(-20, -34), P(-30, 0)];
+    }
+  },
+  // 버닝 어택 - 손을 빠르게 교차해 감았다가 양손을 앞으로
+  weave(p, charging, g, gs) {
+    if (charging) {
+      const sw = gs % 2 ? 1 : -1;
+      p.armF = [P(21, -92 + 6 * sw), P(7, -99 - 9 * sw)];
+      p.armB = [P(-19, -92 - 6 * sw), P(-3, -99 + 9 * sw)];
+      p.chest = mix(p.chest, P(1, -101), g);
+      p.head = mix(p.head, P(4, -123), g);
+      p.legF = [P(18, -34), P(25, 0)];
+      p.legB = [P(-18, -34), P(-26, 0)];
+    } else {
+      p.armF = [P(28, -92), P(51, -93)];
+      p.armB = [P(16, -98), P(47, -99)];
+      p.chest = P(10, -100); p.head = P(10, -122); p.hip = P(4, -62);
+      p.legF = [P(25, -34), P(35, 0)];
+      p.legB = [P(-20, -34), P(-30, 0)];
+    }
+  }
+};
+
 /** 공격 포즈를 몇 단계로 나눌지 (스프라이트로 굽기 위해 양자화한다) */
 const ATTACK_STEPS = 4;
 
@@ -129,26 +292,12 @@ function attackPose(f, p) {
       const charging = a.frame < def.startup;
       const gs = Math.round(clamp(a.frame / Math.max(1, def.startup), 0, 1) * ATTACK_STEPS);
       const g = charging ? gs / ATTACK_STEPS : 1;
-      p.key = charging ? 'beamC' + gs : 'beamF';
-      if (charging) {
-        // 손을 허리 뒤로 모아 기를 응축
-        p.armF = [mix(P(25, -86), P(-16, -86), g), mix(P(31, -103), P(-32, -82), g)];
-        p.armB = [mix(P(-23, -86), P(-26, -90), g), mix(P(-27, -102), P(-38, -84), g)];
-        p.chest = mix(p.chest, P(-8, -99), g);
-        p.head = mix(p.head, P(-4, -121), g);
-        p.hip = mix(p.hip, P(-4, -61), g);
-        p.legF = [P(22, -34), P(30, 0)];
-        p.legB = [P(-20, -34), P(-30, 0)];
-      } else {
-        // 발사 자세
-        p.armF = [P(28, -92), P(50, -88)];
-        p.armB = [P(20, -94), P(47, -84)];
-        p.chest = P(10, -100);
-        p.head = P(10, -122);
-        p.hip = P(3, -62);
-        p.legF = [P(24, -34), P(34, 0)];
-        p.legB = [P(-20, -34), P(-30, 0)];
-      }
+      const src = def === MOVES.ultimate ? f.char.ultimate : f.char.special;
+      const name = (src && src.motion) || 'cupped';
+      // 필살기와 초필살기가 서로 다른 모션일 수 있으므로 키를 분리한다
+      const pre = def === MOVES.ultimate ? 'ult' : 'beam';
+      p.key = charging ? pre + 'C' + gs : pre + 'F';
+      (MOTION_POSE[name] || MOTION_POSE.cupped)(p, charging, g, gs);
       break;
     }
   }
@@ -912,27 +1061,198 @@ function drawBeam(ctx, f, time) {
   const rect = f.beamRect();
   if (!rect) return;
   const def = f.attack.def;
-  const color = def === MOVES.ultimate ? f.char.ultimate.color : f.char.special.color;
-  const core = def === MOVES.ultimate ? f.char.ultimate.core : f.char.special.core;
-  const cy = rect.y + rect.h / 2;
+  const ult = def === MOVES.ultimate;
+  const src = ult ? f.char.ultimate : f.char.special;
+  const m = motionFor(f.char, def);
+  const color = src.color, core = src.core;
+  const dir = f.facing;
+  const mx = f.x + dir * m.handX;         // 총구 (실제 손 위치)
+  const my = f.y + m.handY;
+  const cy = rect.y + rect.h / 2;          // 판정 사각형의 중심
+  const farX = dir > 0 ? rect.x + rect.w : rect.x;
+  const hh = rect.h / 2;
+  const mh = Math.max(3, hh * (m.style === 'thin' ? 0.55 : 0.34)); // 총구 쪽 두께
+  const puls = 1 + Math.sin(time / 3) * 0.05;
+
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 3; i++) {
-    const hh = rect.h * (1 - i * 0.28) * (1 + Math.sin(time / 3 + i) * 0.05);
-    ctx.globalAlpha = i === 2 ? 0.95 : 0.4;
-    ctx.fillStyle = i === 2 ? core : color;
-    ctx.fillRect(rect.x, cy - hh / 2, rect.w, hh);
+
+  // 본체 : 총구에서 끝으로 퍼지는 사다리꼴 (여러 겹)
+  const band = (k, alpha, col) => {
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(mx, my - mh * k * puls);
+    ctx.lineTo(farX, cy - hh * k * puls);
+    ctx.lineTo(farX, cy + hh * k * puls);
+    ctx.lineTo(mx, my + mh * k * puls);
+    ctx.closePath();
+    ctx.fill();
+  };
+  band(1.28, 0.22, color);
+  band(1.0, 0.55, color);
+  band(m.style === 'wide' ? 0.52 : 0.44, 0.95, core);
+
+  // 스타일별 추가 이펙트
+  if (m.style === 'spiral') {
+    // 빔을 감고 도는 두 가닥의 나선
+    ctx.globalAlpha = 0.75;
+    ctx.strokeStyle = core;
+    ctx.lineWidth = Math.max(2, hh * 0.16);
+    for (let s = 0; s < 2; s++) {
+      ctx.beginPath();
+      for (let t = 0; t <= 1.0001; t += 0.05) {
+        const x = lerp(mx, farX, t);
+        const half = lerp(mh, hh, t);
+        const y = lerp(my, cy, t) + Math.sin(t * 12 - time / 2.4 + s * Math.PI) * half * 0.82;
+        t === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
   }
-  // 발사구 플레어
-  const ox = f.x + f.facing * 42;
-  const g = ctx.createRadialGradient(ox, cy, 0, ox, cy, rect.h * 1.6);
+  if (m.style === 'wide') {
+    // 굵은 기둥을 가르는 세로 결
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = core;
+    ctx.lineWidth = Math.max(1.5, hh * 0.07);
+    for (let s = -2; s <= 2; s++) {
+      if (!s) continue;
+      ctx.beginPath();
+      for (let t = 0; t <= 1.0001; t += 0.1) {
+        const x = lerp(mx, farX, t);
+        const half = lerp(mh, hh, t);
+        const y = lerp(my, cy, t) + half * (s / 2.6) * (1 + Math.sin(t * 7 + time / 4) * 0.08);
+        t === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  }
+  if (m.style === 'thin') {
+    // 관통형 : 바늘처럼 곧은 흰 심지
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = Math.max(1.6, hh * 0.5);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(mx, my);
+    ctx.lineTo(farX, cy);
+    ctx.stroke();
+  }
+  if (m.style === 'orb') {
+    // 총구에 거대한 에너지 구체
+    const r = hh * 1.15;
+    const og = ctx.createRadialGradient(mx, my, r * 0.15, mx, my, r);
+    og.addColorStop(0, '#ffffff');
+    og.addColorStop(0.45, core);
+    og.addColorStop(1, color);
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = og;
+    ctx.beginPath();
+    ctx.arc(mx, my, r * (1 + Math.sin(time / 4) * 0.05), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (m.rings) {
+    // 빔을 타고 흘러가는 충격 링
+    ctx.strokeStyle = core;
+    for (let k = 0; k < 3; k++) {
+      const t = ((time / 9 + k / 3) % 1);
+      const x = lerp(mx, farX, t);
+      const half = lerp(mh, hh, t) * 1.3;
+      ctx.globalAlpha = 0.34 * (1 - t);
+      ctx.lineWidth = Math.max(1.2, hh * 0.07);
+      ctx.beginPath();
+      ctx.ellipse(x, lerp(my, cy, t), half * 0.17, half, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  if (m.sparks) {
+    // 빔에서 튀어나오는 번개
+    ctx.globalAlpha = 0.6;
+    ctx.strokeStyle = core;
+    ctx.lineWidth = 1.6;
+    for (let k = 0; k < 5; k++) {
+      const t = ((time / 5 + k * 0.21) % 1);
+      const x = lerp(mx, farX, t);
+      const half = lerp(mh, hh, t);
+      const sy = lerp(my, cy, t) + (k % 2 ? half : -half) * 0.95;
+      const s = k % 2 ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(x, sy);
+      ctx.lineTo(x + dir * 6, sy + s * 6);
+      ctx.lineTo(x - dir * 1, sy + s * 11);
+      ctx.stroke();
+    }
+  }
+
+  // 총구 플레어 (너무 커져 캐릭터를 덮지 않도록 상한을 둔다)
+  const fr = clamp(rect.h * 0.9, 26, 72) * (m.style === 'orb' ? 0.72 : 1);
+  const g = ctx.createRadialGradient(mx, my, 0, mx, my, fr);
   g.addColorStop(0, '#ffffff');
-  g.addColorStop(0.4, color);
+  g.addColorStop(0.38, core);
+  g.addColorStop(0.62, color);
   g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.globalAlpha = 1;
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.arc(ox, cy, rect.h * 1.6, 0, Math.PI * 2);
+  ctx.arc(mx, my, fr * puls, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * 필살기 발동 전, 기를 모으는 연출.
+ * 모션마다 기가 모이는 위치가 다르다 (허리 뒤 / 이마 / 머리 위 / 양손).
+ */
+function drawSpecialCharge(ctx, f, time) {
+  if (!f.attack) return;
+  const def = f.attack.def;
+  if (!def.beam || f.attack.frame >= def.startup) return;
+  const t = clamp(f.attack.frame / Math.max(1, def.startup), 0, 1);
+  const m = motionFor(f.char, def);
+  const src = def === MOVES.ultimate ? f.char.ultimate : f.char.special;
+  const spots = m.twin
+    ? [[m.chargeX, m.chargeY], [-m.chargeX, m.chargeY]]
+    : [[m.chargeX, m.chargeY]];
+  const r0 = m.chargeR * (def === MOVES.ultimate ? 1.35 : 1);
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const [sx, sy] of spots) {
+    const x = f.x + f.facing * sx, y = f.y + sy;
+    const r = r0 * (0.42 + t * 0.72) * (1 + Math.sin(time / 2.6) * 0.07);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(0.3, src.core);
+    g.addColorStop(0.6, src.color);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalAlpha = 0.55 + t * 0.45;
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, r * 2, 0, Math.PI * 2); ctx.fill();
+
+    // 구체를 감싸는 회전 링
+    ctx.globalAlpha = 0.5 * t;
+    ctx.strokeStyle = src.core;
+    ctx.lineWidth = 2;
+    for (let k = 0; k < 2; k++) {
+      const a = time / 12 + k * 1.05;
+      ctx.beginPath();
+      ctx.ellipse(x, y, r * 1.75, r * 0.55, a, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // 모일수록 강해지는 스파크
+    if (t > 0.45) {
+      ctx.globalAlpha = 0.7 * t;
+      ctx.lineWidth = 1.6;
+      for (let k = 0; k < 3; k++) {
+        const a = time / 4 + k * 2.1;
+        const rr = r * 1.9;
+        ctx.beginPath();
+        ctx.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+        ctx.lineTo(x + Math.cos(a + 0.5) * rr * 1.5, y + Math.sin(a + 0.5) * rr * 1.5);
+        ctx.stroke();
+      }
+    }
+  }
   ctx.restore();
 }
 

@@ -305,6 +305,8 @@ html, body {
   100% { opacity: 0; transform: scale(.9) translateY(-14px); }
 }
 .combo-num { font-size: clamp(24px, 6cqw, 42px); font-weight: 900; color: #ffd76a; text-shadow: 0 3px 0 #a5450a, 0 0 20px rgba(255,190,60,.8); }
+.combo.is-air .combo-num { color: #8ef0ff; text-shadow: 0 3px 0 #06304a, 0 0 22px rgba(140,240,255,.9); }
+.combo.is-air .combo-lbl { color: #d9f6ff; }
 .combo-lbl { font-size: clamp(9px, 1.8cqw, 13px); font-weight: 800; color: #fff; text-shadow: 0 2px 6px #000; }
 
 /* 아나운스 */

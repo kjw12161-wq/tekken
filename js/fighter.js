@@ -8,6 +8,11 @@ const GROUND_Y = 470;          // 발이 닿는 y 좌표
 const STAGE_LEFT = 0;
 const STAGE_RIGHT = 1760;      // 월드 폭
 const PUSH_RADIUS = 54;        // 캐릭터끼리 밀어내는 반경 (넓은 스탠스에 맞춤)
+const MAX_AIR_ATTACKS = 3;     // 한 번 뜬 동안 낼 수 있는 공중기 수
+const MAX_AIR_JUMPS = 1;       // 2단 점프 횟수
+const JUGGLE_LIMIT = 4;        // 이 횟수까지만 다시 띄워진다 (무한 콤보 방지)
+const JUMP_CANCEL_FRAMES = 16; // 상대를 띄운 뒤 후딜을 점프로 캔슬할 수 있는 시간
+const INPUT_BUFFER = 14;       // 후딜 중 눌린 입력을 이만큼 기억해 다음 동작으로 이어준다
 
 const HURT_STAND = { x: -30, y: -152, w: 60, h: 152 };
 const HURT_CROUCH = { x: -34, y: -108, w: 68, h: 108 };
@@ -50,7 +55,13 @@ class Fighter {
     this.charging = false;
     this.flash = 0;
     this.hitPause = 0;
-    this.airActionUsed = false;
+    this.airAttacks = 0;      // 공중기 사용 횟수
+    this.airJumps = 0;        // 2단 점프 사용 횟수
+    this.juggle = 0;          // 공중에서 연속으로 맞은 횟수
+    this.jumpCancel = 0;      // 점프 캔슬 가능 시간
+    this.hardKnockdown = false;
+    this.buffered = null;     // 후딜 중 눌린 입력
+    this.bufferTimer = 0;
   }
 
   /* ---------------- 조회 ---------------- */
@@ -87,10 +98,11 @@ class Fighter {
     const def = this.attack.def, f = this.attack.frame;
     if (f < def.startup || f >= def.startup + def.active) return null;
     const bm = def.beam;
+    const m = motionFor(this.char, def);
     const grow = clamp(0.42 + (f - def.startup) / 6, 0, 1);
-    const h = bm.height * grow;
-    const originX = this.x + this.facing * 42;
-    const originY = this.y - 88;
+    const h = bm.height * m.width * grow;
+    const originX = this.x + this.facing * m.handX;
+    const originY = this.y + m.oy;
     const x = this.facing > 0 ? originX : originX - bm.reach;
     return { x, y: originY - h / 2, w: bm.reach, h, grow };
   }
@@ -103,6 +115,8 @@ class Fighter {
     if (this.invuln > 0) this.invuln--;
     if (this.flash > 0) this.flash--;
     if (this.dashCooldown > 0) this.dashCooldown--;
+    if (this.jumpCancel > 0) this.jumpCancel--;
+    if (this.bufferTimer > 0 && --this.bufferTimer === 0) this.buffered = null;
     if (this.comboTimer > 0) { this.comboTimer--; if (this.comboTimer === 0) this.comboCount = 0; }
     for (let i = 0; i < 2; i++) if (this.tapTimer[i] > 0) this.tapTimer[i]--;
 
@@ -115,6 +129,7 @@ class Fighter {
 
     if (this.hitstun > 0) {
       this.hitstun--;
+      this.rememberInput();
       this.physics();
       if (this.hitstun === 0 && !this.airborne) this.setState('idle');
       return;
@@ -126,7 +141,11 @@ class Fighter {
     }
     if (this.state === 'knockdown') {
       this.physics();
-      if (this.stateTimer > 42 && !this.airborne) { this.setState('wakeup'); this.invuln = 14; }
+      if (this.stateTimer > (this.hardKnockdown ? 64 : 42) && !this.airborne) {
+        this.hardKnockdown = false;
+        this.setState('wakeup');
+        this.invuln = 14;
+      }
       return;
     }
     if (this.state === 'wakeup') {
@@ -135,7 +154,21 @@ class Fighter {
       return;
     }
 
-    if (this.attack) { this.updateAttack(opp); this.physics(); return; }
+    if (this.attack) {
+      // 공중 콤보 : 상대를 띄운 직후에는 후딜을 점프로 캔슬해 따라 올라갈 수 있다
+      if (this.jumpCancel > 0 && !this.locked && !this.airborne && this.inputPressed('up')) {
+        this.attack = null;
+        this.jumpCancel = 0;
+        this.doJump(1.04);
+        this.world.particles.burst(this.x, this.y - 4, 8, {
+          color: '#ffffff', minSpeed: 1.5, maxSpeed: 4.5, minSize: 2, maxSize: 6, gravity: 0.12
+        });
+        this.physics();
+        return;
+      }
+      this.rememberInput();
+      this.updateAttack(opp); this.physics(); return;
+    }
     if (this.locked) { this.vx *= 0.7; this.physics(); return; }
 
     this.handleInput(opp);
@@ -143,6 +176,33 @@ class Fighter {
   }
 
   setState(s) { if (this.state !== s) { this.state = s; this.stateTimer = 0; } }
+
+  /** 후딜·경직 중 눌린 입력을 짧게 기억한다 (콤보 입력이 버려지지 않도록) */
+  rememberInput() {
+    for (const a of ['light', 'heavy', 'kick', 'up', 'blast', 'ultimate']) {
+      if (this.ctrl.pressed(a)) { this.buffered = a; this.bufferTimer = INPUT_BUFFER; return; }
+    }
+  }
+
+  /** 지금 눌렸거나, 방금 버퍼에 들어온 입력 */
+  inputPressed(a) {
+    if (this.ctrl.pressed(a)) return true;
+    if (this.bufferTimer > 0 && this.buffered === a) {
+      this.buffered = null; this.bufferTimer = 0;
+      return true;
+    }
+    return false;
+  }
+
+  /** 점프 (mult 로 도약력 조절) */
+  doJump(mult) {
+    const c = this.ctrl;
+    this.vy = -this.char.jump * (mult || 1);
+    this.airborne = true;
+    const dir = (c.held('right') ? 1 : 0) + (c.held('left') ? -1 : 0);
+    this.vx = dir * this.char.speed * 1.35;
+    this.setState('jump');
+  }
 
   handleInput(opp) {
     const c = this.ctrl;
@@ -171,10 +231,10 @@ class Fighter {
     }
 
     /* 필살기 계열 */
-    if (c.pressed('ultimate') && this.ki >= MOVES.ultimate.kiCost && !this.airborne) {
+    if (this.inputPressed('ultimate') && this.ki >= MOVES.ultimate.kiCost && !this.airborne) {
       this.startAttack(MOVES.ultimate); return;
     }
-    if (c.pressed('blast') && !this.airborne) {
+    if (this.inputPressed('blast') && !this.airborne) {
       if (holdDown && this.ki >= MOVES.beam.kiCost) { this.startAttack(MOVES.beam); return; }
       if (!holdDown && this.ki >= MOVES.kiBlast.kiCost) { this.startAttack(MOVES.kiBlast); return; }
     }
@@ -185,26 +245,37 @@ class Fighter {
 
     /* 타격기 */
     if (this.airborne) {
-      if (c.pressed('light')) { this.startAttack(MOVES.airPunch); return; }
-      if (c.pressed('heavy') || c.pressed('kick')) { this.startAttack(MOVES.airKick); return; }
+      if (this.airAttacks < MAX_AIR_ATTACKS) {
+        if (this.inputPressed('light')) { this.airAttacks++; this.startAttack(MOVES.airPunch); return; }
+        if (this.inputPressed('heavy')) {
+          this.airAttacks++;
+          this.startAttack(holdDown ? MOVES.airSlam : MOVES.airKick);   // ↓+강 = 공중 내려찍기
+          return;
+        }
+        if (this.inputPressed('kick')) { this.airAttacks++; this.startAttack(MOVES.airKick); return; }
+      }
+      // 2단 점프 : 띄운 상대를 공중에서 계속 쫓아갈 수 있다
+      if (this.inputPressed('up') && this.airJumps < MAX_AIR_JUMPS) {
+        this.airJumps++;
+        this.doJump(0.9);
+        this.world.particles.burst(this.x, this.y - 16, 10, {
+          color: '#dff0ff', minSpeed: 1.5, maxSpeed: 5, minSize: 2, maxSize: 7, gravity: 0.1
+        });
+        return;
+      }
     } else if (this.crouching) {
-      if (c.pressed('light')) { this.startAttack(MOVES.lowKick); return; }
-      if (c.pressed('heavy')) { this.startAttack(MOVES.uppercut); return; }
-      if (c.pressed('kick')) { this.startAttack(MOVES.sweep); return; }
+      if (this.inputPressed('light')) { this.startAttack(MOVES.lowKick); return; }
+      if (this.inputPressed('heavy')) { this.startAttack(MOVES.uppercut); return; }
+      if (this.inputPressed('kick')) { this.startAttack(MOVES.sweep); return; }
     } else {
-      if (c.pressed('light')) { this.startAttack(MOVES.jab); return; }
-      if (c.pressed('heavy')) { this.startAttack(MOVES.straight); return; }
-      if (c.pressed('kick')) { this.startAttack(MOVES.roundhouse); return; }
+      if (this.inputPressed('light')) { this.startAttack(MOVES.jab); return; }
+      if (this.inputPressed('heavy')) { this.startAttack(MOVES.straight); return; }
+      if (this.inputPressed('kick')) { this.startAttack(MOVES.roundhouse); return; }
     }
 
     /* 점프 */
-    if (c.pressed('up') && !this.airborne) {
-      this.vy = -this.char.jump;
-      this.airborne = true;
-      this.airActionUsed = false;
-      const dir = (c.held('right') ? 1 : 0) + (c.held('left') ? -1 : 0);
-      this.vx = dir * this.char.speed * 1.35;
-      this.setState('jump');
+    if (this.inputPressed('up') && !this.airborne) {
+      this.doJump(1);
       return;
     }
 
@@ -293,16 +364,29 @@ class Fighter {
     // 빔 시작
     if (def.beam && !a.spawned && a.frame >= def.startup) {
       a.spawned = true;
+      const m = motionFor(this.char, def);
       Sfx.play(def.sfx);
-      this.world.shake(def === MOVES.ultimate ? 14 : 7);
+      // 굵은 기술일수록 화면이 크게 흔들린다
+      this.world.shake((def === MOVES.ultimate ? 14 : 7) * clamp(0.55 + m.width * 0.5, 0.6, 1.6));
+      // 총구에서 앞으로 터지는 발사 섬광
+      const src = def === MOVES.ultimate ? this.char.ultimate : this.char.special;
+      for (let i = 0; i < 16; i++) {
+        this.world.particles.spawn({
+          x: this.x + this.facing * m.handX, y: this.y + m.handY,
+          vx: this.facing * rand(2, 11), vy: rand(-4, 4) * m.width,
+          life: randInt(8, 20), size: rand(3, 10),
+          color: i % 3 ? src.color : src.core, shape: 'spark'
+        });
+      }
     }
     // 빔 반동
     if (def.beam && a.frame >= def.startup && a.frame < def.startup + def.active) {
       this.vx = approach(this.vx, -this.facing * 0.6, 0.2);
       const bm = this.beamRect();
+      const mo = motionFor(this.char, def);
       if (bm && this.stateTimer % 2 === 0) {
         this.world.particles.spawn({
-          x: this.x + this.facing * 46, y: this.y - 88,
+          x: this.x + this.facing * mo.handX, y: this.y + mo.handY,
           vx: rand(-1, 1) + this.facing * rand(1, 4), vy: rand(-2.2, 2.2),
           life: randInt(10, 22), size: rand(4, 11),
           color: def === MOVES.ultimate ? this.char.ultimate.color : this.char.special.color
@@ -311,10 +395,13 @@ class Fighter {
     }
     // 기 모으는 연출 (필살기 발동 전)
     if ((def.beam || def.projectile) && a.frame < def.startup && a.frame % 3 === 0) {
+      const cm = def.beam ? motionFor(this.char, def) : null;
+      const cx = this.x + this.facing * (cm ? cm.chargeX : 42);
+      const cy = this.y + (cm ? cm.chargeY : -88);
       const ang = rand(0, Math.PI * 2), r = rand(40, 90);
       this.world.particles.spawn({
-        x: this.x + this.facing * 42 + Math.cos(ang) * r,
-        y: this.y - 88 + Math.sin(ang) * r,
+        x: cx + Math.cos(ang) * r,
+        y: cy + Math.sin(ang) * r,
         vx: -Math.cos(ang) * 3.2, vy: -Math.sin(ang) * 3.2,
         life: 14, size: rand(3, 7),
         color: def === MOVES.ultimate ? this.char.ultimate.color : this.char.special.color
@@ -334,19 +421,31 @@ class Fighter {
       this.y += this.vy;
       if (this.y >= GROUND_Y) {
         this.y = GROUND_Y;
+        const fallSpeed = this.vy;
         this.vy = 0;
         this.airborne = false;
+        this.airAttacks = 0;
+        this.airJumps = 0;
+        this.juggle = 0;
         const wasHurt = this.hitstun > 0 || this.state === 'hurtAir';
         if (this.state === 'ko') {
           // 그대로 눕는다
         } else if (wasHurt || this.state === 'launched') {
           this.setState('knockdown');
           this.hitstun = 0;
-          this.vx *= 0.3;
-          this.world.shake(5);
-          this.world.particles.burst(this.x, GROUND_Y, 10, {
-            color: '#d9c9a8', minSpeed: 1.5, maxSpeed: 5, gravity: 0.35, minSize: 3, maxSize: 8
+          this.vx *= this.hardKnockdown ? 0.15 : 0.3;
+          const hard = this.hardKnockdown || fallSpeed > 13;
+          this.world.shake(hard ? 12 : 5);
+          this.world.particles.burst(this.x, GROUND_Y, hard ? 22 : 10, {
+            color: '#d9c9a8', minSpeed: hard ? 2.5 : 1.5, maxSpeed: hard ? 9 : 5,
+            gravity: 0.35, minSize: 3, maxSize: hard ? 12 : 8
           });
+          if (hard) {
+            // 강제 다운 : 바닥에 충격파
+            this.world.particles.spawn({
+              x: this.x, y: GROUND_Y - 4, life: 22, size: 26, color: '#fff2c8', shape: 'ring'
+            });
+          }
         } else if (this.attack) {
           // 공중기 착지 시 후딜 유지
         } else {
@@ -406,7 +505,25 @@ class Fighter {
       this.flash = 8;
       this.vx = dir * push;
       const lift = opts.lift != null ? opts.lift : (def.lift || 0);
-      if (lift < 0 || def.launcher) {
+      if (def.spike) {
+        // 공중 마무리 : 그대로 바닥으로 내려찍는다
+        this.vy = 16;
+        this.airborne = true;
+        this.hardKnockdown = true;
+        this.juggle = JUGGLE_LIMIT + 1;
+        this.setState('launched');
+      } else if (this.airborne) {
+        // 이미 떠 있는 상대는 다시 띄워 공중 콤보로 이어진다 (반복될수록 낮게)
+        this.juggle++;
+        if (this.juggle <= JUGGLE_LIMIT) {
+          this.vy = -Math.max(3.5, 8 - this.juggle * 1.1);
+        } else {
+          this.vy = Math.max(this.vy, 3);      // 한계를 넘으면 더 이상 떠오르지 않는다
+        }
+        this.setState('launched');
+        // 때린 쪽도 같이 떠 있게 해서 후속타가 닿는다
+        if (attacker && attacker.airborne) attacker.vy = Math.min(attacker.vy, -3.4);
+      } else if (lift < 0 || def.launcher) {
         this.vy = lift || -12;
         this.airborne = true;
         this.setState('launched');
@@ -415,7 +532,7 @@ class Fighter {
         this.airborne = true;
         this.setState('launched');
       } else {
-        this.setState(this.airborne ? 'hurtAir' : 'hurt');
+        this.setState('hurt');
       }
       Sfx.play(def.sfx === 'light' ? 'light' : 'heavy');
       const big = dmg > 40;
@@ -434,7 +551,9 @@ class Fighter {
         attacker.comboCount++;
         attacker.comboTimer = 70;
         attacker.ki = clamp(attacker.ki + (def.kiGain || 6), 0, 100);
-        this.world.onCombo(attacker);
+        // 상대를 띄웠으면 후딜을 점프로 캔슬해 공중으로 따라갈 수 있다
+        if (!def.spike && (this.airborne || def.launcher)) attacker.jumpCancel = JUMP_CANCEL_FRAMES;
+        this.world.onCombo(attacker, this.airborne);
       }
     }
 

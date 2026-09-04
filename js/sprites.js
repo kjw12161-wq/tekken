@@ -204,6 +204,10 @@ const SpriteBank = {
           : def.startup + Math.max(0, Math.floor(def.active / 2));
         add({ state: 'attack', attack: { def, frame, hitApplied: false, spawned: true } });
       }
+      // 빔기는 기 모으기 마지막 단계(C4)가 위 샘플에 잡히지 않으므로 따로 넣는다
+      if (def.beam) {
+        add({ state: 'attack', attack: { def, frame: def.startup - 1, hitApplied: false, spawned: false } });
+      }
     });
     return specs;
   },

@@ -432,11 +432,13 @@ const Game = {
     this.shake(3);
   },
 
-  onCombo(attacker) {
+  onCombo(attacker, inAir) {
     if (attacker.comboCount >= 2) {
       const side = attacker.index === 0 ? 'p1' : 'p2';
       const el = document.getElementById('combo-' + side);
       el.querySelector('.combo-num').textContent = attacker.comboCount;
+      el.querySelector('.combo-lbl').textContent = inAir ? 'AIR COMBO!' : 'HIT COMBO!';
+      el.classList.toggle('is-air', !!inAir);
       el.classList.remove('is-show');
       void el.offsetWidth;
       el.classList.add('is-show');
@@ -772,6 +774,7 @@ const Game = {
     for (const f of order) {
       drawBeam(ctx, f, this.time);
       drawFighter(ctx, f, this.time);
+      drawSpecialCharge(ctx, f, this.time);
     }
     for (const p of this.projectiles) drawProjectile(ctx, p, this.time);
     this.particles.draw(ctx);

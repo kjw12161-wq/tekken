@@ -74,13 +74,28 @@ class AIController {
       else this.hold.add(away);
       return;
     }
-    // 3) 대공
-    if (opp.airborne && dist < 130 && opp.y < GROUND_Y - 40 && Math.random() < cfg.antiAir) {
+    // 3) 공중 콤보 추격 : 내가 띄운 상대(상승 중)를 쫓아 올라간다
+    if (opp.airborne && opp.y < GROUND_Y - 24 && dist < 170 && opp.vy < 2 && Math.random() < cfg.antiAir) {
+      if (!self.airborne) {
+        this.hold.add(dirToOpp);
+        this._tap('up');                       // 점프(공격 후딜이면 점프 캔슬로 이어진다)
+      } else if (self.y > opp.y - 30) {
+        this._tap('up');                       // 2단 점프로 더 높이
+      } else {
+        const r = Math.random();
+        if (r < 0.45) this._tap('light');
+        else if (r < 0.8) this._tap('heavy');
+        else { this.hold.add('down'); this._tap('heavy'); }   // 공중 내려찍기 마무리
+      }
+      return;
+    }
+    // 4) 대공 : 뛰어드는 상대는 승룡 어퍼로 받아친다
+    if (opp.airborne && dist < 130 && opp.vy >= 0 && !self.airborne && Math.random() < cfg.antiAir) {
       this.hold.add('down'); this._tap('heavy');
       return;
     }
-    // 4) 초필살기 마무리
-    if (self.ki >= 100 && dist < 520 && Math.random() < cfg.special * 0.5) {
+    // 5) 초필살기 마무리
+    if (self.ki >= 100 && dist < 520 && !self.airborne && Math.random() < cfg.special * 0.5) {
       this._tap('ultimate');
       return;
     }

@@ -38,18 +38,24 @@ const MOVES = {
   },
   uppercut: {
     key: 'uppercut', label: '승룡 어퍼', startup: 7, active: 6, recovery: 26,
-    damage: 70, chip: 8, hitstun: 30, blockstun: 16, pushback: 5, lift: -13,
+    damage: 70, chip: 8, hitstun: 34, blockstun: 16, pushback: 4, lift: -15,
     level: 'mid', launcher: true, invuln: 8, kiGain: 14,
     box: { x: 14, y: -152, w: 56, h: 84 }, sfx: 'heavy'
   },
   /* ---------- 공중기 ---------- */
   airPunch: {
-    key: 'airPunch', label: '공중 펀치', startup: 5, active: 6, recovery: 10,
+    key: 'airPunch', label: '공중 펀치', startup: 5, active: 6, recovery: 8,
     damage: 34, chip: 4, hitstun: 18, blockstun: 10, pushback: 4, lift: 0,
     level: 'overhead', air: true, kiGain: 8, box: { x: 20, y: -92, w: 60, h: 36 }, sfx: 'light'
   },
+  airSlam: {
+    key: 'airSlam', label: '공중 내려찍기', startup: 9, active: 10, recovery: 18,
+    damage: 78, chip: 9, hitstun: 30, blockstun: 15, pushback: 4, lift: 0,
+    level: 'overhead', air: true, spike: true, kiGain: 14,
+    box: { x: 8, y: -46, w: 64, h: 66 }, sfx: 'heavy'
+  },
   airKick: {
-    key: 'airKick', label: '공중 킥', startup: 7, active: 8, recovery: 12,
+    key: 'airKick', label: '공중 킥', startup: 7, active: 8, recovery: 10,
     damage: 56, chip: 6, hitstun: 24, blockstun: 13, pushback: 6, lift: 0,
     level: 'overhead', air: true, knockdown: true, kiGain: 10,
     box: { x: 18, y: -66, w: 72, h: 42 }, sfx: 'heavy'
@@ -78,6 +84,69 @@ const MOVES = {
     box: { x: 18, y: -112, w: 48, h: 76 }, sfx: 'heavy'
   }
 };
+
+/* =========================================================
+ *  필살기 모션 정의
+ *  만화 원작의 대표 자세를 캐릭터별로 다르게 재현한다.
+ *   handX/handY : 빔이 실제로 나가는 손(총구) 위치
+ *   oy          : 판정 사각형의 세로 중심 (총구와 달라도 된다 → 빔이 기울어진다)
+ *   width       : 빔 두께 배율
+ *   style       : 'beam' 기본 / 'thin' 관통 / 'wide' 광역 / 'spiral' 나선 / 'orb' 구체
+ *   chargeX/Y/R : 기를 모으는 위치와 크기, twin 이면 좌우 양손에 하나씩
+ * ========================================================= */
+const SPECIAL_MOTION = {
+  // 에네르기파 : 허리 뒤에 모아 두 손을 앞으로 내민다
+  cupped: {
+    handX: 46, handY: -92, oy: -92, width: 1.00, style: 'beam', rings: true,
+    chargeX: -32, chargeY: -84, chargeR: 15
+  },
+  // 갤릭포 : 옆구리에 모은 한 손을 정면으로 뻗는다
+  onehand: {
+    handX: 54, handY: -96, oy: -96, width: 0.84, style: 'spiral', rings: true,
+    chargeX: -11, chargeY: -83, chargeR: 13
+  },
+  // 마관광살포 : 이마에 두 손가락, 가늘고 관통하는 빔
+  fingers: {
+    handX: 27, handY: -124, oy: -100, width: 0.40, style: 'thin', pierce: true,
+    chargeX: 16, chargeY: -126, chargeR: 9
+  },
+  // 마섬광 : 머리 위에서 손목을 교차해 아래로 뿜는다
+  overhead: {
+    handX: 30, handY: -140, oy: -108, width: 0.92, style: 'beam', rings: true,
+    chargeX: 8, chargeY: -152, chargeR: 16
+  },
+  // 파이널 플래시 : 양팔을 벌려 모았다가 정면으로 합친다
+  flash: {
+    handX: 50, handY: -98, oy: -98, width: 1.45, style: 'wide', rings: true, sparks: true,
+    chargeX: 38, chargeY: -72, chargeR: 17, twin: true
+  },
+  // 초 폭렬마파 : 두 손으로 밀어내는 광역 충격파
+  wave: {
+    handX: 44, handY: -96, oy: -96, width: 1.60, style: 'wide', rings: true, sparks: true,
+    chargeX: -20, chargeY: -120, chargeR: 18
+  },
+  // 데스 빔 : 손가락 하나로 쏘는 바늘 같은 빔
+  point: {
+    handX: 58, handY: -104, oy: -104, width: 0.28, style: 'thin', pierce: true,
+    chargeX: 36, chargeY: -104, chargeR: 7
+  },
+  // 데스 볼 / 히트 돔 : 머리 위 구슬에서 내려꽂는다
+  orb: {
+    handX: 28, handY: -162, oy: -112, width: 1.22, style: 'orb', rings: true,
+    chargeX: 10, chargeY: -170, chargeR: 22
+  },
+  // 버닝 어택 : 손을 교차해 감았다가 양손을 앞으로
+  weave: {
+    handX: 48, handY: -96, oy: -96, width: 0.98, style: 'spiral', rings: true, sparks: true,
+    chargeX: 8, chargeY: -100, chargeR: 14
+  }
+};
+
+/** 캐릭터 + 기술로 필살기 모션을 찾는다 */
+function motionFor(char, def) {
+  const src = def === MOVES.ultimate ? char.ultimate : char.special;
+  return SPECIAL_MOTION[src && src.motion] || SPECIAL_MOTION.cupped;
+}
 
 /* 콤보 보정: 히트 수가 늘어날수록 데미지 감소 */
 function comboScaling(hits) {
