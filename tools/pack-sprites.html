@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>스프라이트 시트 조립 - DRAGON FIGHTER Z</title>
+<style>
+  :root { --line: rgba(255,255,255,.14); --muted: #a4acc9; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px; background: #0a0d18; color: #eef1ff;
+         font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  p, li { color: var(--muted); font-size: 13px; line-height: 1.7; }
+  code { background: rgba(255,255,255,.1); padding: 1px 5px; border-radius: 4px; color: #ffd76a; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0; }
+  label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  input[type=text], input[type=number], select {
+    font: inherit; font-size: 13px; padding: 6px 9px; border-radius: 7px;
+    border: 1px solid var(--line); background: rgba(255,255,255,.06); color: #fff;
+  }
+  button { font: inherit; font-weight: 700; font-size: 13px; border: 0; border-radius: 8px;
+           padding: 9px 16px; background: linear-gradient(180deg,#ff8a1f,#d5620a); color: #fff; cursor: pointer; }
+  button.ghost { background: rgba(255,255,255,.08); color: #dfe4f5; border: 1px solid var(--line); }
+  #drop { border: 2px dashed rgba(255,255,255,.25); border-radius: 12px; padding: 26px;
+          text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  #drop.over { border-color: #ff8a1f; background: rgba(255,138,31,.08); }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .cell { border: 1px solid var(--line); border-radius: 8px; padding: 4px; background: #131a2e; cursor: pointer; }
+  .cell.sel { border-color: #ff8a1f; box-shadow: 0 0 0 2px rgba(255,138,31,.4); }
+  .cell.has { background: #16233c; }
+  .cell canvas { width: 100%; height: auto; display: block; image-rendering: pixelated; }
+  .cell span { display: block; font: 11px/1.6 monospace; text-align: center; color: var(--muted); }
+  .cell.has span { color: #8affc0; }
+  .note { border-left: 3px solid #ff8a1f; padding: 8px 12px; background: rgba(255,138,31,.07);
+          border-radius: 0 8px 8px 0; margin: 12px 0; }
+  #status { font-size: 12px; color: #ffd76a; min-height: 18px; }
+</style>
+</head>
+<body>
+<h1>스프라이트 시트 조립</h1>
+<p>
+  프레임 키 이름으로 저장한 이미지들(<code>idle0.png</code>, <code>straight4.png</code> …)을 아래에 끌어다 놓으면
+  게임 규격에 맞춰 크기·위치를 자동으로 맞추고 시트와 <code>sprites.json</code> 을 만들어 줍니다.
+  각 칸에는 내장 스프라이트가 반투명 가이드로 깔려 있어 자세와 정렬을 눈으로 비교할 수 있습니다.
+  프롬프트는 <code>docs/SPRITE-PROMPTS.md</code> 를 참고하세요.
+</p>
+<div class="note">
+  <b>정렬 방법</b> · 칸을 클릭해 선택한 뒤 <b>방향키</b>로 1px, <b>Shift+방향키</b>로 8px 이동합니다.
+  <b>+ / −</b> 키로 크기를 조절하고, <b>0</b> 으로 자동 정렬을 되돌립니다.
+</div>
+
+<div class="bar">
+  <label>캐릭터 <select id="charSel"></select></label>
+  <label>기준 프레임 <select id="refSel"></select></label>
+  <label>가이드 <input type="checkbox" id="ghost" checked></label>
+  <button id="btnSheet">시트 PNG 내려받기</button>
+  <button id="btnJson" class="ghost">sprites.json 내려받기</button>
+  <button id="btnGuide" class="ghost">정렬 가이드 PNG</button>
+  <button id="btnClear" class="ghost">모두 비우기</button>
+</div>
+<div id="status"></div>
+
+<div id="drop">여기에 PNG 파일을 끌어다 놓으세요 (여러 장 한 번에 가능) · 또는 클릭해서 선택
+  <input type="file" id="file" accept="image/png,image/webp" multiple hidden>
+</div>
+<div id="grid"></div>
+
+<script src="../js/util.js"></script>
+<script src="../js/characters.js"></script>
+<script src="../js/moves.js"></script>
+<script src="../js/fighter.js"></script>
+<script src="../js/render.js"></script>
+<script src="../js/sprites.js"></script>
+<script>
+'use strict';
+const COLS = 8;
+const ZOOM = 1;                       // 미리보기 배율
+let charId = 'goku';
+let refKey = 'idle0';
+let selected = null;
+const frames = new Map();             // key -> { img, sx, sy, scale, auto }
+
+/* ---------- 프레임 키 목록 (게임과 동일한 순서) ---------- */
+function frameKeys() {
+  SpriteBank.init({});
+  const out = [], seen = {};
+  for (const spec of SpriteBank.poseSpecs()) {
+    const d = SpriteBank.makeDummy(CHAR_BY_ID[charId], spec.over);
+    const k = poseFor(d, spec.time).key;
+    if (!seen[k]) { seen[k] = 1; out.push({ key: k, spec }); }
+  }
+  return out;
+}
+
+/* ---------- 내장 스프라이트(가이드) ---------- */
+function builtinFrame(spec) {
+  const d = SpriteBank.makeDummy(CHAR_BY_ID[charId], spec.over);
+  const pose = poseFor(d, spec.time);
+  return SpriteBank.get(d, pose, spec.time);
+}
+
+/* ---------- 이미지 여백 잘라내기 ---------- */
+function trim(img) {
+  const cv = document.createElement('canvas');
+  cv.width = img.width; cv.height = img.height;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+  let x0 = cv.width, y0 = cv.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < cv.height; y++) {
+    for (let x = 0; x < cv.width; x++) {
+      if (d[(y * cv.width + x) * 4 + 3] > 24) {
+        if (x < x0) x0 = x; if (x > x1) x1 = x;
+        if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+    }
+  }
+  if (x1 < 0) return { x: 0, y: 0, w: img.width, h: img.height };
+  return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+
+/** 기준 프레임의 내장 스프라이트 높이 (모든 프레임이 이 크기에 맞춰진다) */
+let targetHeightCache = null;
+function targetHeight() {
+  if (targetHeightCache != null) return targetHeightCache;
+  const refItem = (items.length ? items : frameKeys()).find(i => i.key === refKey);
+  const fr = refItem ? builtinFrame(refItem.spec) : null;
+  targetHeightCache = fr ? measureBuiltin(fr) : 128;
+  return targetHeightCache;
+}
+
+/**
+ * 기준 프레임의 배율을 모든 프레임에 똑같이 적용하고(상대 크기 보존),
+ * 이미지의 가장 아래 픽셀이 지면선에, 가로 중심이 원점에 오도록 놓는다.
+ */
+function autoAlign(entry) {
+  const ref = frames.get(refKey);
+  const scale = (ref ? targetHeight() / ref.box.h : targetHeight() / entry.box.h);
+  entry.scale = scale;
+  entry.sx = CELL_OX - (entry.box.w * scale) / 2;
+  entry.sy = CELL_OY - entry.box.h * scale;
+}
+
+const builtinH = new Map();
+function measureBuiltin(fr) {
+  const key = fr.sx + ',' + fr.sy;
+  if (builtinH.has(key)) return builtinH.get(key);
+  const cv = document.createElement('canvas');
+  cv.width = CELL_W; cv.height = CELL_H;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(fr.image, fr.sx, fr.sy, CELL_W, CELL_H, 0, 0, CELL_W, CELL_H);
+  const d = ctx.getImageData(0, 0, CELL_W, CELL_H).data;
+  let top = CELL_H, bot = -1;
+  for (let y = 0; y < CELL_H; y++) {
+    for (let x = 0; x < CELL_W; x++) {
+      if (d[(y * CELL_W + x) * 4 + 3] > 24) { if (y < top) top = y; if (y > bot) bot = y; }
+    }
+  }
+  const h = bot < 0 ? 128 : bot - top + 1;
+  builtinH.set(key, h);
+  return h;
+}
+
+/* ---------- 한 칸 그리기 ---------- */
+function paintCell(cv, item) {
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, CELL_W, CELL_H);
+  ctx.imageSmoothingEnabled = false;
+  // 격자 / 지면선 / 원점
+  ctx.fillStyle = '#0f1526'; ctx.fillRect(0, 0, CELL_W, CELL_H);
+  ctx.strokeStyle = 'rgba(255,255,255,.10)'; ctx.lineWidth = 1;
+  ctx.strokeRect(.5, .5, CELL_W - 1, CELL_H - 1);
+  ctx.strokeStyle = 'rgba(120,220,255,.45)';
+  ctx.beginPath(); ctx.moveTo(0, CELL_OY + .5); ctx.lineTo(CELL_W, CELL_OY + .5); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,138,31,.5)';
+  ctx.beginPath(); ctx.moveTo(CELL_OX + .5, CELL_OY - 10); ctx.lineTo(CELL_OX + .5, CELL_OY + 6); ctx.stroke();
+
+  if (document.getElementById('ghost').checked) {
+    const fr = builtinFrame(item.spec);
+    if (fr) {
+      ctx.save(); ctx.globalAlpha = 0.28;
+      ctx.drawImage(fr.image, fr.sx, fr.sy, CELL_W, CELL_H, 0, 0, CELL_W, CELL_H);
+      ctx.restore();
+    }
+  }
+  const f = frames.get(item.key);
+  if (f) {
+    ctx.drawImage(f.img, f.box.x, f.box.y, f.box.w, f.box.h,
+      f.sx, f.sy, f.box.w * f.scale, f.box.h * f.scale);
+  }
+}
+
+/* ---------- 화면 구성 ---------- */
+let items = [];
+function build() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  items = frameKeys();
+  for (const item of items) {
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (frames.has(item.key) ? ' has' : '') + (selected === item.key ? ' sel' : '');
+    const cv = document.createElement('canvas');
+    cv.width = CELL_W; cv.height = CELL_H;
+    cell.appendChild(cv);
+    const label = document.createElement('span');
+    label.textContent = item.key;
+    cell.appendChild(label);
+    cell.addEventListener('click', () => { selected = item.key; build(); });
+    grid.appendChild(cell);
+    paintCell(cv, item);
+    item.cv = cv;
+  }
+  const have = items.filter(i => frames.has(i.key)).length;
+  document.getElementById('status').textContent =
+    `${have} / ${items.length} 프레임 준비됨` + (have < items.length ? ' · 나머지는 내장 스프라이트가 사용됩니다' : '');
+}
+
+function repaint(key) {
+  const item = items.find(i => i.key === key);
+  if (item && item.cv) paintCell(item.cv, item);
+}
+
+/* ---------- 파일 읽기 ---------- */
+function keyFromName(name) {
+  const base = name.replace(/\.[^.]+$/, '');
+  const valid = items.map(i => i.key);
+  // goku_straight4 / 03_straight4 처럼 앞에 뭐가 붙어도 인식
+  const hit = valid
+    .filter(k => base === k || base.endsWith('_' + k) || base.endsWith('-' + k))
+    .sort((a, b) => b.length - a.length)[0];
+  return hit || null;
+}
+
+async function addFiles(fileList) {
+  for (const file of fileList) {
+    if (!/image\/(png|webp)/.test(file.type)) continue;
+    const key = keyFromName(file.name);
+    if (!key) { console.warn('프레임 키를 알 수 없는 파일:', file.name); continue; }
+    const img = await new Promise(res => {
+      const im = new Image();
+      im.onload = () => res(im);
+      im.src = URL.createObjectURL(file);
+    });
+    const entry = { img, box: trim(img), scale: 1, sx: 0, sy: 0 };
+    frames.set(key, entry);
+    autoAlign(entry);
+  }
+  frames.forEach(f => autoAlign(f));   // 기준 프레임 배율로 전체를 다시 맞춘다
+  build();
+}
+
+/* ---------- 내보내기 ---------- */
+function buildSheet() {
+  const used = items.filter(i => frames.has(i.key));
+  if (!used.length) { alert('먼저 프레임 이미지를 넣어 주세요.'); return null; }
+  const rows = Math.ceil(used.length / COLS);
+  const cv = document.createElement('canvas');
+  cv.width = COLS * CELL_W; cv.height = rows * CELL_H;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const map = {};
+  used.forEach((item, i) => {
+    const x = (i % COLS) * CELL_W, y = Math.floor(i / COLS) * CELL_H;
+    const f = frames.get(item.key);
+    ctx.drawImage(f.img, f.box.x, f.box.y, f.box.w, f.box.h,
+      x + f.sx, y + f.sy, f.box.w * f.scale, f.box.h * f.scale);
+    map[item.key] = [x, y];
+  });
+  return { canvas: cv, frames: map };
+}
+
+function download(href, name) {
+  const a = document.createElement('a');
+  a.href = href; a.download = name; a.click();
+}
+
+document.getElementById('btnSheet').addEventListener('click', () => {
+  const sheet = buildSheet();
+  if (sheet) download(sheet.canvas.toDataURL('image/png'), charId + '.png');
+});
+
+document.getElementById('btnJson').addEventListener('click', () => {
+  const sheet = buildSheet();
+  if (!sheet) return;
+  const manifest = {
+    cellWidth: CELL_W, cellHeight: CELL_H,
+    originX: CELL_OX, originY: CELL_OY, scale: SPRITE_SCALE,
+    characters: { [charId]: { image: charId + '.png', frames: sheet.frames } }
+  };
+  const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+  download(URL.createObjectURL(blob), 'sprites.json');
+});
+
+document.getElementById('btnGuide').addEventListener('click', () => {
+  const cv = document.createElement('canvas');
+  cv.width = CELL_W; cv.height = CELL_H;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.04; ctx.fillRect(0, 0, CELL_W, CELL_H);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#5ad2ff'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, CELL_OY + .5); ctx.lineTo(CELL_W, CELL_OY + .5); ctx.stroke();
+  ctx.strokeStyle = '#ff8a1f';
+  ctx.beginPath(); ctx.moveTo(CELL_OX + .5, 0); ctx.lineTo(CELL_OX + .5, CELL_H); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.35)';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(0, CELL_OY - 105 + .5); ctx.lineTo(CELL_W, CELL_OY - 105 + .5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, CELL_OY - 130 + .5); ctx.lineTo(CELL_W, CELL_OY - 130 + .5); ctx.stroke();
+  download(cv.toDataURL('image/png'), 'align-guide.png');
+});
+
+document.getElementById('btnClear').addEventListener('click', () => {
+  frames.clear(); selected = null; build();
+});
+
+/* ---------- 드래그 & 키보드 ---------- */
+const drop = document.getElementById('drop'), fileInput = document.getElementById('file');
+drop.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => addFiles(e.target.files));
+['dragenter', 'dragover'].forEach(ev =>
+  drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev =>
+  drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+
+window.addEventListener('keydown', e => {
+  if (!selected || !frames.has(selected)) return;
+  const f = frames.get(selected);
+  const step = e.shiftKey ? 8 : 1;
+  let used = true;
+  switch (e.key) {
+    case 'ArrowLeft': f.sx -= step; break;
+    case 'ArrowRight': f.sx += step; break;
+    case 'ArrowUp': f.sy -= step; break;
+    case 'ArrowDown': f.sy += step; break;
+    case '+': case '=': f.scale *= 1.02; break;
+    case '-': case '_': f.scale /= 1.02; break;
+    case '0': autoAlign(f); break;
+    default: used = false;
+  }
+  if (used) { e.preventDefault(); repaint(selected); }
+});
+
+document.getElementById('ghost').addEventListener('change', build);
+
+/* ---------- 초기화 ---------- */
+const charSel = document.getElementById('charSel');
+CHARACTERS.forEach(c => {
+  const o = document.createElement('option');
+  o.value = c.id; o.textContent = `${c.name} (${c.id})`;
+  charSel.appendChild(o);
+});
+charSel.addEventListener('change', () => {
+  charId = charSel.value; SpriteBank.init({}); builtinH.clear(); targetHeightCache = null;
+  frames.forEach(f => autoAlign(f)); build();
+});
+
+build();
+const refSel = document.getElementById('refSel');
+items.forEach(i => {
+  const o = document.createElement('option');
+  o.value = i.key; o.textContent = i.key;
+  refSel.appendChild(o);
+});
+refSel.value = refKey;
+refSel.addEventListener('change', () => {
+  refKey = refSel.value;
+  targetHeightCache = null;
+  frames.forEach(f => autoAlign(f));
+  build();
+});
+</script>
+</body>
+</html>
