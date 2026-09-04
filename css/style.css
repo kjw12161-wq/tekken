@@ -266,6 +266,21 @@ html, body {
 .ki-fill { height: 100%; width: 0; background: linear-gradient(90deg, #3d7dff, #8ae7ff); transition: width .1s linear; }
 .side-p2 .ki-fill { margin-left: auto; background: linear-gradient(270deg, #3d7dff, #8ae7ff); }
 .ki-fill.is-max { background: linear-gradient(90deg, #ffd24a, #fff6c9); animation: kiPulse .5s ease-in-out infinite alternate; }
+/* 변신 중 : 기 게이지가 황금색으로 타오른다 */
+.ki-fill.is-form {
+  background: linear-gradient(90deg, #ff9d1f, #ffe066, #fffbe0);
+  box-shadow: 0 0 10px rgba(255,214,74,.85);
+  animation: kiPulse .34s ease-in-out infinite alternate;
+}
+.side-p2 .ki-fill.is-form { background: linear-gradient(270deg, #ff9d1f, #ffe066, #fffbe0); }
+/* 변신 조건을 못 갖췄을 때의 거부 피드백 */
+.ki-fill.is-deny { animation: kiDeny .36s ease-out 1; }
+@keyframes kiDeny {
+  0%, 100% { filter: none; }
+  25% { filter: brightness(2.2) saturate(0.2); }
+  60% { filter: brightness(0.5); }
+}
+.fighter-name.is-form { color: #ffe066; text-shadow: 0 0 8px rgba(255,214,74,.7); }
 @keyframes kiPulse { from { filter: brightness(1); } to { filter: brightness(1.6); } }
 
 .rounds { display: flex; gap: clamp(4px, 0.8cqw, 6px); }
@@ -319,9 +334,19 @@ html, body {
 .announce.is-show { animation: annPop 1.2s cubic-bezier(.2,1.4,.4,1) forwards; }
 .announce.ko { color: #ff5a5a; text-shadow: 0 5px 0 #480000, 0 0 46px rgba(255,60,60,.9); }
 .announce.fight { color: #ffd24a; }
+.announce.form {
+  font-size: clamp(20px, 8cqw, 58px); color: #ffe066;
+  text-shadow: 0 4px 0 #5a3a00, 0 0 44px rgba(255,214,74,.95);
+}
 .announce.ult {
   font-size: clamp(18px, 7cqw, 52px); color: #8ef0ff;
   text-shadow: 0 4px 0 #06304a, 0 0 40px rgba(140,240,255,.9);
+}
+/* 힘겨루기 안내 : 화면을 가리지 않게 위쪽에 작게 */
+.announce.clash {
+  font-size: clamp(16px, 5.2cqw, 38px); color: #fff3a8;
+  text-shadow: 0 3px 0 #5a3a00, 0 0 34px rgba(255,220,120,.9);
+  align-items: flex-start; padding-top: 11%;
 }
 @keyframes annPop {
   0% { opacity: 0; transform: scale(2.4); }
@@ -394,6 +419,16 @@ kbd {
 .pad-left [data-touch="up"] { grid-area: 1 / 2; }
 .pad-left [data-touch="down"] { grid-area: 2 / 2; }
 .pad-left [data-touch="right"] { grid-area: 2 / 3; }
+/* 오른쪽 패드는 위에 한 줄을 더 둬서 변신 버튼을 따로 놓는다
+   (아래에서 위로 쌓이므로 기존 버튼 위치는 그대로 유지된다) */
+.pad-right { grid-template-rows: repeat(3, var(--key)); }
+.pad-right [data-touch="transform"] { grid-area: 1 / 1; }
+.pad-right [data-touch="light"] { grid-area: 2 / 1; }
+.pad-right [data-touch="heavy"] { grid-area: 2 / 2; }
+.pad-right [data-touch="kick"] { grid-area: 2 / 3; }
+.pad-right [data-touch="blast"] { grid-area: 3 / 1; }
+.pad-right [data-touch="ultimate"] { grid-area: 3 / 2; }
+.pad-right [data-touch="charge"] { grid-area: 3 / 3; }
 .pad-btn {
   appearance: none; border: 1px solid rgba(255,255,255,.3); border-radius: 50%;
   background: rgba(10,14,30,.55); color: #fff; font-family: inherit;
@@ -405,6 +440,11 @@ kbd {
 .pad-btn.ki { background: rgba(47,107,255,.4); }
 .pad-btn.ult { background: rgba(255,77,94,.4); }
 .pad-btn.chg { background: rgba(120,255,180,.25); font-size: clamp(9px, 2.6vmin, 13px); }
+.pad-btn.form {
+  background: rgba(255,223,74,.32);
+  border-color: rgba(255,223,74,.55);
+  font-size: clamp(9px, 2.6vmin, 13px);
+}
 
 /* 터치 기기에서만 가상 패드 노출 */
 @media (hover: none) and (pointer: coarse) {

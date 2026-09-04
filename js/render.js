@@ -458,7 +458,7 @@ const HAIR_SCALE = 1.3;           // 헤어는 머리보다 크게 (레퍼런스
 /** 머리 뒤쪽 실루엣(얼굴보다 아래 레이어) */
 function drawHairBack(ctx, ch, f, time, hair, hairLit) {
   const c = ch.colors;
-  const wobble = (f.charging || f.ki >= 100) ? 2.2 : 0;
+  const wobble = (f.charging || f.superSaiyan || f.ki >= 100) ? 2.2 : 0;
   switch (ch.hairStyle) {
     case 'goku': {
       const n = 8;
@@ -582,9 +582,10 @@ function drawHairFront(ctx, ch, f, time, hair, hairLit) {
  */
 function drawHead(ctx, p, ch, f, time) {
   const c = ch.colors;
-  const superSaiyan = (ch.id === 'goku' || ch.id === 'vegeta' || ch.id === 'trunks') && f.ki >= 100;
-  const hair = superSaiyan ? '#ffdf3d' : c.hair;
-  const hairLit = superSaiyan ? '#fff3a0' : c.hairLit;
+  const form = ch.form || null;
+  const superSaiyan = !!f.superSaiyan && !!(form && form.saiyan);
+  const hair = superSaiyan ? (form.hair || '#ffdf3d') : c.hair;
+  const hairLit = superSaiyan ? (form.hairLit || '#fff3a0') : c.hairLit;
   const skinLight = shade(c.skin, 0.18);
   const skinEdge = edgeOf(c.skin);
 
@@ -623,7 +624,7 @@ function drawHead(ctx, p, ch, f, time) {
   // ---- 표정 ----
   const hurt = f.hitstun > 0 || f.state === 'hurt' || f.state === 'hurtAir';
   const angry = !!f.attack || f.charging || hurt;
-  const iris = superSaiyan ? '#2fbf6a' : c.eye;
+  const iris = superSaiyan ? ((ch.form && ch.form.eye) || '#2fbf6a') : c.eye;
   if (f.state === 'ko') {
     ctx.strokeStyle = c.eye; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
     [[3, 11], [-6, 1]].forEach(([x0, x1]) => {
@@ -678,9 +679,9 @@ function drawHead(ctx, p, ch, f, time) {
 /* ---------------- 오라 ---------------- */
 function drawAura(ctx, f, time, ch) {
   if (f.state === 'ko' || f.state === 'knockdown') return;
-  const level = f.charging ? 1 : (f.ki >= 100 ? 0.9 : f.ki >= 60 ? 0.55 : 0);
+  const level = f.charging ? 1 : (f.superSaiyan ? 0.95 : f.ki >= 100 ? 0.75 : f.ki >= 60 ? 0.45 : 0);
   if (level <= 0) return;
-  const c = ch.colors.aura;
+  const c = (f.superSaiyan && ch.form && ch.form.aura) || ch.colors.aura;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
   const layers = 3;
@@ -1253,6 +1254,81 @@ function drawSpecialCharge(ctx, f, time) {
       }
     }
   }
+  ctx.restore();
+}
+
+/**
+ * 빔 힘겨루기 : 두 빔이 맞부딪힌 접점의 구체와 균형 게이지.
+ */
+function drawBeamClash(ctx, clash, time) {
+  if (!clash) return;
+  const [a, b] = clash.pair;
+  const ca = a.attack ? (a.attack.def === MOVES.ultimate ? a.char.ultimate : a.char.special) : null;
+  const cb = b.attack ? (b.attack.def === MOVES.ultimate ? b.char.ultimate : b.char.special) : null;
+  if (!ca || !cb) return;
+  const x = clash.x, y = clash.y;
+  const push = 1 + Math.sin(time / 2.4) * 0.06;
+  const r = (58 + Math.min(clash.timer, 240) * 0.11) * push;
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  // 접점을 또렷하게 하는 흰 코어
+  ctx.globalAlpha = 0.95;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(x, y, r * 0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  // 밀리는 쪽 색이 접점에 더 많이 남는다
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.35, clash.t > 0.5 ? ca.core : cb.core);
+  g.addColorStop(0.7, clash.t > 0.5 ? ca.color : cb.color);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+
+  // 퍼져 나가는 충격 링
+  ctx.strokeStyle = '#ffffff';
+  for (let k = 0; k < 3; k++) {
+    const t = ((time / 14 + k / 3) % 1);
+    ctx.globalAlpha = 0.5 * (1 - t);
+    ctx.lineWidth = 3 * (1 - t) + 1;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r * (0.5 + t * 1.4) * 0.5, r * (0.5 + t * 1.4), 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 균형 게이지 : 누가 밀고 있는지 한눈에
+  const W = 180, H = 9, gy = y - r - 34;
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = 'rgba(6,8,20,0.75)';
+  ctx.fillRect(x - W / 2 - 2, gy - 2, W + 4, H + 4);
+  ctx.fillStyle = cb.color;
+  ctx.fillRect(x - W / 2, gy, W, H);
+  ctx.fillStyle = ca.color;
+  ctx.fillRect(x - W / 2, gy, W * clash.t, H);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x - W / 2 + W * clash.t - 1.5, gy - 3, 3, H + 6);
+  ctx.restore();
+}
+
+/** 기탄끼리 맞부딪힌 지점 */
+function drawBlastClash(ctx, cl, time) {
+  const r = 22 + Math.sin(time / 2) * 3 + cl.t * 0.4;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createRadialGradient(cl.x, cl.y, 0, cl.x, cl.y, r);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.45, cl.a.color);
+  g.addColorStop(0.75, cl.b.color);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cl.x, cl.y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 0.6;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(cl.x, cl.y, r * 0.3, r * 0.9, 0, 0, Math.PI * 2); ctx.stroke();
   ctx.restore();
 }
 

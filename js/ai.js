@@ -51,6 +51,12 @@ class AIController {
 
     if (this.reactTimer > 0) this.reactTimer--;
 
+    /* --- 빔 힘겨루기 : 무조건 연타로 밀어낸다 --- */
+    if (self.struggling) {
+      if (Math.random() < 0.35 + cfg.aggression * 0.45) this._tap('blast');
+      return;
+    }
+
     /* --- 반응 행동 (계획보다 우선) --- */
     // 1) 상대 필살기/빔 → 가드
     const oppAtk = opp.attack;
@@ -97,6 +103,12 @@ class AIController {
     // 5) 초필살기 마무리
     if (self.ki >= 100 && dist < 520 && !self.airborne && Math.random() < cfg.special * 0.5) {
       this._tap('ultimate');
+      return;
+    }
+    // 6) 변신 : 기가 어느 정도 모였고 거리가 멀 때 (초필살기를 쓸 만큼은 아닐 때)
+    if (self.canTransform() && self.ki < 100 && dist > 210 &&
+      Math.random() < 0.02 * (0.5 + cfg.aggression)) {
+      this._tap('transform');
       return;
     }
 

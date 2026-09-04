@@ -7,13 +7,15 @@ const DEFAULT_MAPS = [
   { // 1P
     left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'],
     light: ['KeyJ'], heavy: ['KeyK'], kick: ['KeyL'],
-    blast: ['KeyU'], ultimate: ['KeyI'], guard: ['KeyH'], charge: ['Space']
+    blast: ['KeyU'], ultimate: ['KeyI'], guard: ['KeyH'], charge: ['Space'],
+    transform: ['KeyO']
   },
   { // 2P
     left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
     light: ['Numpad1', 'Digit1'], heavy: ['Numpad2', 'Digit2'], kick: ['Numpad3', 'Digit3'],
     blast: ['Numpad4', 'Digit4'], ultimate: ['Numpad5', 'Digit5'],
-    guard: ['Numpad6', 'Digit6'], charge: ['Numpad0', 'Digit0']
+    guard: ['Numpad6', 'Digit6'], charge: ['Numpad0', 'Digit0'],
+    transform: ['Numpad7', 'Digit7']
   }
 ];
 
@@ -44,7 +46,7 @@ const Input = {
   },
 
   _isGameKey(code) {
-    return /^(Key[WASDJKLUIH]|Arrow(Up|Down|Left|Right)|Space|Numpad\d|Digit[0-6])$/.test(code);
+    return /^(Key[WASDJKLUIHO]|Arrow(Up|Down|Left|Right)|Space|Numpad\d|Digit[0-7])$/.test(code);
   },
 
   _bindTouch() {

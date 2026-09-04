@@ -135,6 +135,7 @@
               <tr><td>약 · 강 · 킥</td><td><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></td></tr>
               <tr><td>기탄 / 초필살기</td><td><kbd>U</kbd> / <kbd>I</kbd></td></tr>
               <tr><td>기 모으기</td><td><kbd>Space</kbd></td></tr>
+              <tr><td>변신</td><td><kbd>O</kbd></td></tr>
             </table>
           </div>
           <div>
@@ -144,6 +145,7 @@
               <tr><td>약 · 강 · 킥</td><td><kbd>약</kbd><kbd>강</kbd><kbd>킥</kbd></td></tr>
               <tr><td>기탄 / 초필살기</td><td><kbd>기</kbd> / <kbd>초</kbd></td></tr>
               <tr><td>기 모으기</td><td><kbd>충전</kbd></td></tr>
+              <tr><td>변신</td><td><kbd>변신</kbd></td></tr>
             </table>
           </div>
           <div>
@@ -153,6 +155,7 @@
               <tr><td>약 · 강 · 킥</td><td><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></td></tr>
               <tr><td>기탄 / 초필살기</td><td><kbd>4</kbd> / <kbd>5</kbd></td></tr>
               <tr><td>기 모으기</td><td><kbd>0</kbd></td></tr>
+              <tr><td>변신</td><td><kbd>7</kbd></td></tr>
             </table>
           </div>
         </div>
@@ -167,6 +170,11 @@
           <li><b>공중 내려찍기</b> — 공중에서 <b>↓ + 강</b>. 상대를 지면에 강하게 내려꽂아 콤보를 마무리합니다.</li>
           <li><b>필살기</b> — 기 게이지 15로 기탄, <b>↓ + 기탄키</b>로 기 40을 소모해 빔 필살기. 캐릭터마다 자세와 이펙트가 다릅니다.</li>
           <li><b>초필살기</b> — 기 게이지 100을 모두 사용하는 역전기. 발동 시 무적 시간이 있습니다.</li>
+          <li><b>변신</b> — 기 <b>50</b> 이상 · 지상 · 공격/경직이 아닐 때만 발동. 13초간 공격력 +18%, 이동속도 +8%이고
+              발동 순간 무적과 충격파가 나갑니다. (사이어인은 초사이어인, 그 외는 각성 형태)</li>
+          <li><b>기탄 맞부딪힘</b> — 서로 기탄을 쏘면 중간에서 부딪혀 버티다가, 위력이 확실히 센 쪽만 뚫고 나갑니다. 비슷하면 함께 터집니다.</li>
+          <li><b>빔 힘겨루기</b> — 빔 필살기끼리 마주치면 힘겨루기가 시작됩니다. <b>버튼을 연타</b>해 접점을 밀어내세요.
+              밀린 쪽은 큰 피해를 입고, 오래 버티면 상쇄되어 둘 다 튕겨납니다. 초필살기는 필살기보다 훨씬 강하게 밉니다.</li>
           <li>기 게이지는 공격·피격·기 모으기로 충전되며, 100이 되면 오라가 폭발합니다.</li>
         </ul>
         <button id="btn-help-close" class="btn btn-main">닫기</button>
@@ -198,6 +206,7 @@
       <button data-touch="blast" data-player="0" class="pad-btn ki">기</button>
       <button data-touch="ultimate" data-player="0" class="pad-btn ult">초</button>
       <button data-touch="charge" data-player="0" class="pad-btn chg">충전</button>
+      <button data-touch="transform" data-player="0" class="pad-btn form">변신</button>
     </div>
   </div>
 

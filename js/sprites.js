@@ -51,7 +51,7 @@ const SpriteBank = {
 
   /** 표정 등 포즈 키만으로는 구분되지 않는 변형을 키에 함께 넣는다 */
   variantOf(f) {
-    const ss = (f.ki >= 100 && /^(goku|vegeta|trunks)$/.test(f.char.id)) ? 's' : 'n';
+    const ss = (f.superSaiyan && f.char.form && f.char.form.saiyan) ? 's' : 'n';
     const hurt = (f.hitstun > 0 || f.state === 'hurt' || f.state === 'hurtAir') ? 'h' : '';
     const angry = (f.attack || f.charging) ? 'a' : '';
     return ss + hurt + angry;
@@ -216,7 +216,7 @@ const SpriteBank = {
   makeDummy(char, over) {
     return Object.assign({
       char, x: 0, y: 0, facing: 1, vy: 0, state: 'idle', stateTimer: 0,
-      attack: null, ki: 0, charging: false, flash: 0, hitstun: 0,
+      attack: null, ki: 0, charging: false, flash: 0, hitstun: 0, superSaiyan: false,
       guarding: false, blockstun: 0
     }, over);
   },

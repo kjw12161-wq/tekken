@@ -18,6 +18,7 @@ const CHARACTERS = [
       skin: '#f5c79b', skinDark: '#d69f70', hair: '#161616', hairLit: '#3d3d3d',
       aura: '#ffd24a', eye: '#2b2b2b'
     },
+    form: { name: '초사이어인', saiyan: true, hair: '#ffdf3d', hairLit: '#fff8b8', eye: '#2fbf6a', aura: '#ffe066' },
     special: { name: '에네르기파', color: '#7fd8ff', core: '#ffffff', motion: 'cupped' },
     ultimate: { name: '초 에네르기파', color: '#8ef0ff', core: '#ffffff', motion: 'cupped' },
     quotes: { win: '좋아! 역시 강한 녀석과 싸우는 건 즐겁다구!', pick: '자, 붙어보자!' }
@@ -38,6 +39,7 @@ const CHARACTERS = [
       skin: '#f5c79b', skinDark: '#d69f70', hair: '#1d1408', hairLit: '#4a331a',
       aura: '#ff5ec7', eye: '#2b2b2b'
     },
+    form: { name: '초사이어인', saiyan: true, hair: '#ffd93d', hairLit: '#fff3a0', eye: '#2fbf6a', aura: '#ffdf4d' },
     special: { name: '갤릭포', color: '#c47bff', core: '#ffe9ff', motion: 'onehand' },
     ultimate: { name: '파이널 플래시', color: '#ffe14d', core: '#ffffff', motion: 'flash' },
     quotes: { win: '이 몸이 바로 사이어인의 왕자다!', pick: '건방진 녀석...' }
@@ -53,6 +55,7 @@ const CHARACTERS = [
       skin: '#7bc46b', skinDark: '#4f8f45', hair: '#3f7a36', hairLit: '#63a557',
       aura: '#a97bff', eye: '#e8534a'
     },
+    form: { name: '잠재능력 해방', aura: '#8ef0ff' },
     special: { name: '마관광살포', color: '#ffe066', core: '#fff6c9', motion: 'fingers' },
     ultimate: { name: '초 폭렬마파', color: '#ff9d3d', core: '#fff0c9', motion: 'wave' },
     quotes: { win: '아직 멀었군. 수행이 부족하다.', pick: '덤벼라.' }
@@ -68,6 +71,7 @@ const CHARACTERS = [
       skin: '#f2f4fa', skinDark: '#c3c9da', hair: '#7b3fbf', hairLit: '#a468e6',
       aura: '#b06bff', eye: '#e0345c'
     },
+    form: { name: '최종 형태', aura: '#ff7bd0' },
     special: { name: '데스 빔', color: '#ff4d7a', core: '#ffd6e2', motion: 'point' },
     ultimate: { name: '데스 볼', color: '#ff7b3d', core: '#ffe0b0', motion: 'orb' },
     quotes: { win: '하찮은 원숭이 따위가.', pick: '후훗... 놀아드리죠.' }
@@ -83,6 +87,7 @@ const CHARACTERS = [
       skin: '#7fd39a', skinDark: '#4e9d69', hair: '#1f6b45', hairLit: '#39a06a',
       aura: '#7dff9e', eye: '#e8b23a'
     },
+    form: { name: '완전체 각성', aura: '#c9ff5c' },
     special: { name: '카메하메파', color: '#8affc0', core: '#eaffef', motion: 'cupped' },
     ultimate: { name: '솔라 카메하메하', color: '#c9ff5c', core: '#ffffff', motion: 'cupped' },
     quotes: { win: '완전한 힘 앞에 무릎 꿇어라.', pick: '실험은 끝났다.' }
@@ -102,6 +107,7 @@ const CHARACTERS = [
       hair: '#141414', hairLit: '#3a3a3a',
       aura: '#ffeeb0', eye: '#2b2b2b'
     },
+    form: { name: '초사이어인 2', saiyan: true, hair: '#ffe14d', hairLit: '#fff8bd', eye: '#3fd07a', aura: '#ffe98a' },
     special: { name: '마섬광', color: '#ffd45c', core: '#fff6d2', motion: 'overhead' },
     ultimate: { name: '초 마섬광', color: '#ffe98a', core: '#ffffff', motion: 'overhead' },
     quotes: { win: '봐주는 건 여기까지야.', pick: '이 힘, 시험해 볼까.' }
@@ -117,6 +123,7 @@ const CHARACTERS = [
       skin: '#f5c79b', skinDark: '#d69f70', hair: '#b48ce0', hairLit: '#d9bcff',
       aura: '#7fe6ff', eye: '#2b6bd8'
     },
+    form: { name: '초사이어인', saiyan: true, hair: '#ffe14d', hairLit: '#fff8bd', eye: '#3fd07a', aura: '#ffe98a' },
     special: { name: '버닝 어택', color: '#ffb35c', core: '#fff0d0', motion: 'weave' },
     ultimate: { name: '히트 돔 어택', color: '#ffd93d', core: '#ffffff', motion: 'orb' },
     quotes: { win: '미래는 내가 바꾼다.', pick: '봐주지 않겠어.' }

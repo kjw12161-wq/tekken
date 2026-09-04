@@ -12,7 +12,12 @@ const MAX_AIR_ATTACKS = 3;     // 한 번 뜬 동안 낼 수 있는 공중기 �
 const MAX_AIR_JUMPS = 1;       // 2단 점프 횟수
 const JUGGLE_LIMIT = 4;        // 이 횟수까지만 다시 띄워진다 (무한 콤보 방지)
 const JUMP_CANCEL_FRAMES = 16; // 상대를 띄운 뒤 후딜을 점프로 캔슬할 수 있는 시간
-const INPUT_BUFFER = 14;       // 후딜 중 눌린 입력을 이만큼 기억해 다음 동작으로 이어준다
+const INPUT_BUFFER = 14;
+const TRANSFORM_COST = 50;      // 변신에 쓰는 기
+const TRANSFORM_TIME = 780;     // 변신 지속 (13초)
+const TRANSFORM_STARTUP = 30;   // 변신 연출 동안 무적
+const FORM_POWER = 1.18;        // 변신 중 공격력 배율
+const FORM_SPEED = 1.08;        // 변신 중 이동속도 배율       // 후딜 중 눌린 입력을 이만큼 기억해 다음 동작으로 이어준다
 
 const HURT_STAND = { x: -30, y: -152, w: 60, h: 152 };
 const HURT_CROUCH = { x: -34, y: -108, w: 68, h: 108 };
@@ -62,7 +67,18 @@ class Fighter {
     this.hardKnockdown = false;
     this.buffered = null;     // 후딜 중 눌린 입력
     this.bufferTimer = 0;
+    this.superSaiyan = false; // 변신 상태
+    this.ssTimer = 0;         // 변신 남은 시간
+    this.transformTimer = 0;  // 변신 연출 시간
+    this.mash = 0;            // 힘겨루기 연타 누적
+    this.struggling = false;  // 빔 힘겨루기 중
+    this.beamClampX = null;   // 힘겨루기 접점 (빔이 여기서 멈춘다)
   }
+
+  /* 변신 보정이 들어간 실제 능력치 */
+  get power() { return this.char.power * (this.superSaiyan ? FORM_POWER : 1); }
+  get speed() { return this.char.speed * (this.superSaiyan ? FORM_SPEED : 1); }
+  get form() { return this.char.form || { name: '각성', aura: this.char.colors.aura }; }
 
   /* ---------------- 조회 ---------------- */
   get alive() { return this.hp > 0; }
@@ -93,7 +109,7 @@ class Fighter {
     return { x, y: this.y + b.y, w: b.w, h: b.h };
   }
 
-  beamRect() {
+  beamRect(raw) {
     if (!this.attack || !this.attack.def.beam) return null;
     const def = this.attack.def, f = this.attack.frame;
     if (f < def.startup || f >= def.startup + def.active) return null;
@@ -103,8 +119,13 @@ class Fighter {
     const h = bm.height * m.width * grow;
     const originX = this.x + this.facing * m.handX;
     const originY = this.y + m.oy;
-    const x = this.facing > 0 ? originX : originX - bm.reach;
-    return { x, y: originY - h / 2, w: bm.reach, h, grow };
+    let reach = bm.reach;
+    // 힘겨루기 중에는 접점에서 빔이 멈춘다 (raw = 판정 전 원본 길이)
+    if (!raw && this.beamClampX != null) {
+      reach = clamp((this.beamClampX - originX) * this.facing, 12, bm.reach);
+    }
+    const x = this.facing > 0 ? originX : originX - reach;
+    return { x, y: originY - h / 2, w: reach, h, grow, originX, originY };
   }
 
   /* ---------------- 갱신 ---------------- */
@@ -119,8 +140,26 @@ class Fighter {
     if (this.bufferTimer > 0 && --this.bufferTimer === 0) this.buffered = null;
     if (this.comboTimer > 0) { this.comboTimer--; if (this.comboTimer === 0) this.comboCount = 0; }
     for (let i = 0; i < 2; i++) if (this.tapTimer[i] > 0) this.tapTimer[i]--;
+    this.updateForm();
 
     if (this.state === 'ko') { this.physics(); return; }
+
+    // 변신 연출 : 잠깐 멈춰서 기를 폭발시킨다 (무적)
+    if (this.transformTimer > 0) {
+      this.transformTimer--;
+      this.vx *= 0.6;
+      this.charging = true;
+      this.setState('charge');
+      const t = this.transformTimer;
+      this.world.particles.spawn({
+        x: this.x + rand(-30, 30), y: this.y - rand(0, 130),
+        vx: rand(-1.2, 1.2), vy: rand(-6, -2.4), life: randInt(16, 30),
+        size: rand(4, 10), color: this.form.aura, shape: 'shard'
+      });
+      if (t === 0) this.charging = false;
+      this.physics();
+      return;
+    }
 
     // 상대 방향 바라보기
     if (!this.attack && !this.airborne && this.hitstun <= 0 && this.state !== 'knockdown') {
@@ -177,9 +216,40 @@ class Fighter {
 
   setState(s) { if (this.state !== s) { this.state = s; this.stateTimer = 0; } }
 
+  /* ---------------- 변신 ---------------- */
+  canTransform() {
+    return !this.superSaiyan && this.ki >= TRANSFORM_COST && !this.airborne &&
+      !this.attack && this.hitstun <= 0 && this.blockstun <= 0 &&
+      this.transformTimer <= 0 && this.state !== 'ko' &&
+      this.state !== 'knockdown' && this.state !== 'wakeup' && !this.locked;
+  }
+
+  doTransform() {
+    this.ki -= TRANSFORM_COST;
+    this.superSaiyan = true;
+    this.ssTimer = TRANSFORM_TIME;
+    this.transformTimer = TRANSFORM_STARTUP;
+    this.invuln = TRANSFORM_STARTUP + 6;
+    this.attack = null;
+    this.guarding = false;
+    this.vx = 0;
+    this.world.onTransform(this);
+  }
+
+  updateForm() {
+    if (!this.superSaiyan) return;
+    if (--this.ssTimer <= 0) {
+      this.superSaiyan = false;
+      this.ssTimer = 0;
+      this.world.particles.burst(this.x, this.y - 70, 14, {
+        color: this.form.aura, minSpeed: 1, maxSpeed: 4, minSize: 3, maxSize: 8, gravity: 0.05
+      });
+    }
+  }
+
   /** 후딜·경직 중 눌린 입력을 짧게 기억한다 (콤보 입력이 버려지지 않도록) */
   rememberInput() {
-    for (const a of ['light', 'heavy', 'kick', 'up', 'blast', 'ultimate']) {
+    for (const a of ['light', 'heavy', 'kick', 'up', 'blast', 'ultimate', 'transform']) {
       if (this.ctrl.pressed(a)) { this.buffered = a; this.bufferTimer = INPUT_BUFFER; return; }
     }
   }
@@ -200,7 +270,7 @@ class Fighter {
     this.vy = -this.char.jump * (mult || 1);
     this.airborne = true;
     const dir = (c.held('right') ? 1 : 0) + (c.held('left') ? -1 : 0);
-    this.vx = dir * this.char.speed * 1.35;
+    this.vx = dir * this.speed * 1.35;
     this.setState('jump');
   }
 
@@ -228,6 +298,12 @@ class Fighter {
         size: rand(3, 7), color: this.char.colors.aura, shape: 'shard'
       });
       return;
+    }
+
+    /* 변신 : 조건을 만족할 때만 수동으로 발동 */
+    if (this.inputPressed('transform')) {
+      if (this.canTransform()) { this.doTransform(); return; }
+      this.world.onTransformFail(this);
     }
 
     /* 필살기 계열 */
@@ -285,7 +361,7 @@ class Fighter {
         if (c.pressed(key)) {
           if (this.tapTimer[idx] > 0) {
             const dir = key === 'right' ? 1 : -1;
-            this.vx = dir * this.char.speed * 3.6;
+            this.vx = dir * this.speed * 3.6;
             this.dashTimer = 12;
             this.dashCooldown = 26;
             if (dir !== this.facing) this.invuln = 8;   // 백대시 무적
@@ -314,7 +390,7 @@ class Fighter {
     const wantGuard = holdBack || this.ctrl.held('guard');
     if (wantGuard) {
       this.guarding = true;
-      this.vx = approach(this.vx, holdBack ? -this.facing * this.char.speed * 0.55 : 0, 0.9);
+      this.vx = approach(this.vx, holdBack ? -this.facing * this.speed * 0.55 : 0, 0.9);
       this.setState(this.crouching ? 'crouchGuard' : 'guard');
       return;
     }
@@ -326,7 +402,7 @@ class Fighter {
       this.vx = approach(this.vx, 0, 1.2);
       this.setState('crouch');
     } else if (move !== 0) {
-      const sp = this.char.speed * (move === this.facing ? 1 : 0.72);
+      const sp = this.speed * (move === this.facing ? 1 : 0.72);
       this.vx = approach(this.vx, move * sp, 1.1);
       this.setState(move === this.facing ? 'walk' : 'walkBack');
     } else {
@@ -353,6 +429,11 @@ class Fighter {
 
   updateAttack(opp) {
     const a = this.attack, def = a.def;
+    // 힘겨루기 중에는 빔이 사라지지 않도록 마지막 지속 프레임에서 멈춘다
+    if (this.struggling && a.frame >= def.startup + def.active - 1) {
+      this.beamStruggleFx();
+      return;
+    }
     a.frame++;
 
     // 발사체 생성
@@ -411,6 +492,27 @@ class Fighter {
     if (a.frame >= def.startup + def.active + def.recovery) {
       this.attack = null;
       this.setState(this.airborne ? 'jump' : 'idle');
+    }
+  }
+
+  /** 힘겨루기 중 계속 흐르는 빔 반동/파티클 */
+  beamStruggleFx() {
+    const def = this.attack.def;
+    // 연타 집계 : 입력 엣지가 살아 있는 이 시점에서 읽어야 한다
+    const c = this.ctrl;
+    if (['blast', 'ultimate', 'light', 'heavy', 'kick'].some(k => c.pressed(k))) {
+      this.mash = Math.min(12, this.mash + 1);
+    }
+    this.mash = Math.max(0, this.mash - 0.055);
+    const m = motionFor(this.char, def);
+    const src = def === MOVES.ultimate ? this.char.ultimate : this.char.special;
+    this.vx = approach(this.vx, -this.facing * 0.5, 0.2);
+    if (this.stateTimer % 2 === 0) {
+      this.world.particles.spawn({
+        x: this.x + this.facing * m.handX, y: this.y + m.handY,
+        vx: rand(-1, 1) + this.facing * rand(1, 4), vy: rand(-2.2, 2.2),
+        life: randInt(10, 22), size: rand(4, 11), color: src.color
+      });
     }
   }
 
@@ -476,7 +578,7 @@ class Fighter {
     const blocked = this.canBlock(def);
     const scale = comboScaling(attacker ? attacker.comboCount : 0);
     const base = (opts.damage != null ? opts.damage : def.damage) *
-      (attacker ? attacker.char.power : 1) / this.char.defense;
+      (attacker ? attacker.power : 1) / this.char.defense;
     const dmg = blocked
       ? (opts.chip != null ? opts.chip : def.chip || 0)
       : base * scale;

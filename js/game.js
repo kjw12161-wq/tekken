@@ -24,6 +24,8 @@ const Game = {
   fighters: [],
   particles: new Particles(),
   projectiles: [],
+  blastClashes: [],      // 기탄끼리 맞부딪힌 지점
+  beamClash: null,       // 빔 힘겨루기 상태
   cam: { x: 0, shakeX: 0, shakeY: 0, shake: 0 },
   time: 0,
   phaseTimer: 0,
@@ -361,6 +363,8 @@ const Game = {
     this.stage = STAGES[randInt(0, STAGES.length - 1)];
     this.roundNo = 1;
     this.projectiles.length = 0;
+    this.blastClashes.length = 0;
+    this.endBeamClash();
     this.particles.clear();
 
     const ai = new AIController(this.difficulty);
@@ -392,6 +396,8 @@ const Game = {
     a.reset(640, 1); b.reset(1120, -1);
     a.locked = b.locked = true;
     this.projectiles.length = 0;
+    this.blastClashes.length = 0;
+    this.endBeamClash();
     this.particles.clear();
     this.roundTimer = ROUND_TIME * 60;
     this.phase = 'intro';
@@ -453,6 +459,34 @@ const Game = {
       color: f.char.ultimate.color, minSpeed: 2, maxSpeed: 10,
       minSize: 4, maxSize: 12, minLife: 20, maxLife: 44, shape: 'shard'
     });
+  },
+
+  onTransform(f) {
+    const form = f.form;
+    this.announce(form.name + '!', 'form');
+    this.slowmo = Math.max(this.slowmo, 18);
+    this.shake(13);
+    Sfx.play('ultimate');
+    this.particles.burst(f.x, f.y - 74, 40, {
+      color: form.aura, minSpeed: 3, maxSpeed: 13, minSize: 4, maxSize: 13,
+      minLife: 22, maxLife: 50, shape: 'shard'
+    });
+    this.particles.spawn({ x: f.x, y: f.y - 74, life: 26, size: 60, color: '#ffffff', shape: 'ring' });
+    // 기 폭발로 근처에 있는 상대를 밀어낸다
+    const opp = this.fighters[1 - f.index];
+    if (opp && Math.abs(opp.x - f.x) < 150 && opp.state !== 'ko') {
+      opp.vx = (opp.x >= f.x ? 1 : -1) * 9;
+      opp.blockstun = Math.max(opp.blockstun, 14);
+    }
+  },
+
+  onTransformFail(f) {
+    // 조건을 못 갖췄을 때의 짧은 피드백 (기 게이지가 깜빡인다)
+    const el = document.getElementById('ki-' + (f.index === 0 ? 'p1' : 'p2'));
+    if (!el) return;
+    el.classList.remove('is-deny');
+    void el.offsetWidth;
+    el.classList.add('is-deny');
   },
 
   onKO(loser) {
@@ -537,9 +571,11 @@ const Game = {
     b.ctrl.endFrame();
 
     this.resolvePush(a, b);
+    this.updateBeamClash(a, b);
     this.resolveCombat(a, b);
     this.resolveCombat(b, a);
     this.updateProjectiles();
+    this.updateBlastClashes();
     this.particles.update();
     this.updateCamera();
     this.updateHud(false);
@@ -649,9 +685,127 @@ const Game = {
     if (res === 'hit' && move.knockdown) this.shake(7);
   },
 
+  /* ==================== 빔 힘겨루기 ==================== */
+
+  /** 힘겨루기에서 미는 힘 : 기술 등급 × 공격력 × 연타 */
+  clashPower(f) {
+    const ult = f.attack.def === MOVES.ultimate;
+    return (ult ? 2.3 : 1) * f.power * (1 + Math.min(f.mash, 12) * 0.05);
+  },
+
+  endBeamClash() {
+    if (this.beamClash) {
+      for (const f of this.beamClash.pair) {
+        f.struggling = false;
+        f.beamClampX = null;
+        f.mash = 0;
+      }
+    }
+    this.beamClash = null;
+  },
+
+  updateBeamClash(a, b) {
+    const ra = a.beamRect(true), rb = b.beamRect(true);
+    const facingEach = a.facing !== b.facing && (b.x - a.x) * a.facing > 0;
+    const meet = ra && rb && facingEach && rectsOverlap(ra, rb);
+
+    if (!meet) { this.endBeamClash(); return; }
+
+    if (!this.beamClash || this.beamClash.pair[0] !== a) {
+      // 두 빔이 처음 부딪힌 순간
+      this.beamClash = { pair: [a, b], t: 0.5, timer: 0, x: 0, y: 0, boom: 0 };
+      this.announce('힘겨루기!', 'clash');
+      Sfx.play('beam');
+      this.shake(10);
+      a.mash = b.mash = 0;
+    }
+    const c = this.beamClash;
+    c.timer++;
+    a.struggling = b.struggling = true;
+
+    // t : 0 = A쪽(=A 열세), 1 = B쪽(=A 우세)
+    const pa = this.clashPower(a), pb = this.clashPower(b);
+    c.t = clamp(c.t + (pa - pb) * 0.0125 + rand(-0.0016, 0.0016), 0, 1);
+
+    // 접점 위치 = 두 총구 사이를 t 로 보간
+    const ma = motionFor(a.char, a.attack.def), mb = motionFor(b.char, b.attack.def);
+    const ax = a.x + a.facing * ma.handX, ay = a.y + ma.handY;
+    const bx = b.x + b.facing * mb.handX, by = b.y + mb.handY;
+    c.x = lerp(ax, bx, c.t);
+    c.y = lerp(ay, by, c.t);
+    a.beamClampX = b.beamClampX = c.x;
+
+    // 연출
+    this.shake(Math.min(9, 3 + c.timer * 0.02));
+    if (c.timer % 2 === 0) {
+      const col = c.t > 0.5 ? a.char.special.color : b.char.special.color;
+      this.particles.spawn({
+        x: c.x + rand(-14, 14), y: c.y + rand(-26, 26),
+        vx: rand(-7, 7), vy: rand(-8, 8), life: randInt(10, 24),
+        size: rand(3, 9), color: Math.random() < 0.5 ? '#ffffff' : col, shape: 'spark'
+      });
+    }
+    if (c.timer % 14 === 0) {
+      this.particles.spawn({ x: c.x, y: c.y, life: 18, size: 44, color: '#ffffff', shape: 'ring' });
+    }
+
+    // 승부
+    const LIMIT = 480;
+    if (c.t >= 0.93) this.resolveBeamClash(a, b);
+    else if (c.t <= 0.07) this.resolveBeamClash(b, a);
+    else if (c.timer > LIMIT) this.resolveBeamClash(null, null);
+  },
+
+  /** 힘겨루기 결착. winner 가 null 이면 상쇄(동시 폭발) */
+  resolveBeamClash(winner, loser) {
+    const c = this.beamClash;
+    if (!c) return;
+    const [a, b] = c.pair;
+    const x = c.x, y = c.y;
+    this.endBeamClash();
+
+    this.particles.burst(x, y, 46, {
+      color: '#ffffff', minSpeed: 3, maxSpeed: 15, minSize: 4, maxSize: 14,
+      minLife: 18, maxLife: 46, shape: 'spark'
+    });
+    this.particles.spawn({ x, y, life: 30, size: 130, color: '#ffffff', shape: 'ring' });
+    this.slowmo = Math.max(this.slowmo, 22);
+
+    if (!winner) {
+      // 서로 밀어내며 동시에 터진다 (양쪽 모두 적은 피해)
+      this.shake(18);
+      this.announce('상쇄!', 'clash');
+      for (const f of [a, b]) {
+        const opp = f === a ? b : a;
+        f.attack = null;
+        f.setState('idle');
+        f.takeHit(opp, MOVES.beam, { x: f.x, y: f.y - 84 },
+          { damage: 40, chip: 40, pushback: 13, lift: 0 });
+      }
+      return;
+    }
+
+    // 승자의 빔이 뚫고 나간다
+    this.shake(22);
+    this.announce(winner.char.name + ' 우세!', 'clash');
+    loser.attack = null;
+    loser.beamClampX = null;
+    winner.beamClampX = null;
+    // 이긴 쪽은 빔을 조금 더 유지한다
+    if (winner.attack) {
+      const def = winner.attack.def;
+      winner.attack.frame = Math.min(winner.attack.frame, def.startup + Math.floor(def.active * 0.4));
+    }
+    const dmg = (winner.attack && winner.attack.def === MOVES.ultimate) ? 150 : 95;
+    loser.comboCount = 0;
+    loser.takeHit(winner, MOVES.beam, { x: loser.x, y: loser.y - 84 },
+      { damage: dmg, chip: dmg, pushback: 17, lift: -9 });
+  },
+
   updateProjectiles() {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
+      if (p.clash) continue;              // 맞부딪히는 중 (updateBlastClashes 가 처리)
       p.x += p.vx;
       p.life--;
       if (this.time % 2 === 0) {
@@ -674,18 +828,13 @@ const Game = {
           dead = true;
         }
       }
-      // 기탄끼리 상쇄
+      // 기탄끼리 맞부딪히면 서로 밀며 버틴다
       if (!dead) {
         for (let j = this.projectiles.length - 1; j >= 0; j--) {
           const q = this.projectiles[j];
-          if (q === p || q.owner === p.owner) continue;
+          if (q === p || q.owner === p.owner || q.clash) continue;
           if (Math.abs(q.x - p.x) < p.radius + q.radius && Math.abs(q.y - p.y) < p.radius + q.radius) {
-            this.particles.burst(p.x, p.y, 18, {
-              color: '#ffffff', minSpeed: 2, maxSpeed: 8, minSize: 3, maxSize: 9, shape: 'spark'
-            });
-            this.shake(5);
-            this.projectiles.splice(Math.max(i, j), 1);
-            this.projectiles.splice(Math.min(i, j), 1);
+            this.startBlastClash(p, q);
             dead = true;
             break;
           }
@@ -698,6 +847,63 @@ const Game = {
         });
         this.projectiles.splice(i, 1);
       }
+    }
+  },
+
+  /* ==================== 기탄 맞부딪힘 ==================== */
+  startBlastClash(p, q) {
+    const cl = {
+      a: p, b: q, t: 0, dur: 30,
+      x: (p.x + q.x) / 2, y: (p.y + q.y) / 2
+    };
+    p.clash = q.clash = cl;
+    p.vx = q.vx = 0;
+    // 두 기탄을 접점 좌우로 살짝 붙여 놓는다
+    const dir = Math.sign(cl.x - p.x) || 1;
+    p.x = cl.x - dir * p.radius * 0.9;
+    q.x = cl.x + dir * q.radius * 0.9;
+    this.blastClashes.push(cl);
+    this.shake(6);
+    Sfx.play('blast');
+  },
+
+  updateBlastClashes() {
+    for (let i = this.blastClashes.length - 1; i >= 0; i--) {
+      const cl = this.blastClashes[i];
+      cl.t++;
+      // 밀고 밀리며 떨리는 연출
+      const wob = Math.sin(cl.t / 2.2) * 2.4;
+      cl.a.x += wob * 0.5; cl.b.x -= wob * 0.5;
+      this.particles.spawn({
+        x: cl.x + rand(-10, 10), y: cl.y + rand(-12, 12),
+        vx: rand(-5, 5), vy: rand(-5, 5), life: randInt(8, 18),
+        size: rand(2, 7), color: Math.random() < 0.5 ? '#ffffff' : cl.a.color, shape: 'spark'
+      });
+      if (cl.t < cl.dur) continue;
+
+      // 결착 : 위력이 확실히 센 쪽이 뚫고 나간다
+      const pw = pr => pr.damage * pr.owner.power * (pr.owner.superSaiyan ? 1.1 : 1);
+      const pa = pw(cl.a), pb = pw(cl.b);
+      const win = Math.abs(pa - pb) < Math.max(pa, pb) * 0.12 ? null : (pa > pb ? cl.a : cl.b);
+      this.particles.burst(cl.x, cl.y, 24, {
+        color: '#ffffff', minSpeed: 2.5, maxSpeed: 10, minSize: 3, maxSize: 11, shape: 'spark'
+      });
+      this.particles.spawn({ x: cl.x, y: cl.y, life: 20, size: 62, color: '#ffffff', shape: 'ring' });
+      this.shake(8);
+      for (const pr of [cl.a, cl.b]) {
+        if (pr === win) {
+          // 이긴 기탄은 위력이 줄어든 채 계속 날아간다
+          pr.clash = null;
+          pr.vx = Math.sign(pr.owner.facing) * pr.def.projectile.speed * 0.8;
+          pr.damage *= 0.55;
+          pr.radius *= 0.8;
+          pr.life = Math.max(pr.life, 40);
+        } else {
+          const k = this.projectiles.indexOf(pr);
+          if (k >= 0) this.projectiles.splice(k, 1);
+        }
+      }
+      this.blastClashes.splice(i, 1);
     }
   },
 
@@ -726,7 +932,14 @@ const Game = {
       document.getElementById('hp-' + side).style.width = (ratio * 100) + '%';
       document.getElementById('hplag-' + side).style.width = (Math.max(this.hudLag[i], ratio) * 100) + '%';
       document.getElementById('ki-' + side).style.width = f.ki + '%';
-      document.getElementById('ki-' + side).classList.toggle('is-max', f.ki >= 100);
+      const kiEl = document.getElementById('ki-' + side);
+      kiEl.classList.toggle('is-max', f.ki >= 100);
+      kiEl.classList.toggle('is-form', f.superSaiyan);
+      const nameEl = document.getElementById('name-' + side);
+      if (nameEl) {
+        nameEl.classList.toggle('is-form', f.superSaiyan);
+        nameEl.textContent = f.superSaiyan ? f.form.name : f.char.name;
+      }
       const pips = document.getElementById('rounds-' + side);
       Array.from(pips.children).forEach((el, k) => el.classList.toggle('is-on', k < f.roundsWon));
     });
@@ -777,6 +990,8 @@ const Game = {
       drawSpecialCharge(ctx, f, this.time);
     }
     for (const p of this.projectiles) drawProjectile(ctx, p, this.time);
+    for (const cl of this.blastClashes) drawBlastClash(ctx, cl, this.time);
+    drawBeamClash(ctx, this.beamClash, this.time);
     this.particles.draw(ctx);
     if (this.debug) drawDebugBoxes(ctx, this.fighters);
 
