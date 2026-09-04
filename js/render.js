@@ -304,7 +304,7 @@ function poseFor(f, time) {
 
 /* ---------------- 헤어 / 머리 ---------------- */
 const HEAD_R = 17;
-const HAIR_SCALE = 1.42;          // 헤어는 머리보다 크게 (레퍼런스의 볼륨감)
+const HAIR_SCALE = 1.3;           // 헤어는 머리보다 크게 (레퍼런스의 볼륨감)
 
 /** 머리 뒤쪽 실루엣(얼굴보다 아래 레이어) */
 function drawHairBack(ctx, ch, f, time, hair, hairLit) {
@@ -425,80 +425,102 @@ function drawHairFront(ctx, ch, f, time, hair, hairLit) {
   }
 }
 
+/**
+ * 머리 : 토리야마 화풍의 특징을 따른다.
+ *  - 둥근 두상에 턱이 뾰족한 역달걀 윤곽
+ *  - 크고 세로로 긴 눈, 위쪽에 두꺼운 눈꺼풀 선
+ *  - 각진 굵은 눈썹, 작고 뾰족한 코, 작은 입
+ */
 function drawHead(ctx, p, ch, f, time) {
   const c = ch.colors;
   const superSaiyan = (ch.id === 'goku' || ch.id === 'vegeta' || ch.id === 'trunks') && f.ki >= 100;
   const hair = superSaiyan ? '#ffdf3d' : c.hair;
   const hairLit = superSaiyan ? '#fff3a0' : c.hairLit;
-  const skinLight = shade(c.skin, 0.2);
+  const skinLight = shade(c.skin, 0.18);
+  const skinEdge = edgeOf(c.skin);
 
   ctx.save();
   ctx.translate(p.head[0], p.head[1]);
 
-  // 목 (짧고 굵게) + 턱밑 그림자
-  capsule(ctx, p.chest[0] - p.head[0], p.chest[1] - p.head[1], 0, 11, 13, c.skinDark);
-  capsule(ctx, -5, 10, 5, 10, 6, shade(c.skinDark, -0.3));
+  // 목 (몸통과 이어지도록 뼈로 연결)
+  bone(ctx, [p.chest[0] - p.head[0], p.chest[1] - p.head[1] + 2], [0, 9],
+    len => drawPart(ctx, muscle(len, 13, 0.5, 0.46), c.skinDark, skinEdge, null));
 
   ctx.save(); ctx.scale(HAIR_SCALE, HAIR_SCALE);
   drawHairBack(ctx, ch, f, time, hair, hairLit);
   ctx.restore();
 
-  // 얼굴 (SD 비율 : 크고 둥글게)
-  ctx.fillStyle = edgeOf(c.skin);
-  ctx.beginPath(); ctx.ellipse(1, 1, HEAD_R + 0.6, HEAD_R + 1.6, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = c.skin;
-  ctx.beginPath(); ctx.ellipse(1, 1, HEAD_R - 1, HEAD_R, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = skinLight;
-  ctx.beginPath(); ctx.ellipse(6, -4, 7.5, 6, 0, 0, Math.PI * 2); ctx.fill();      // 이마 하이라이트
-  ctx.fillStyle = c.skinDark;
-  ctx.beginPath(); ctx.ellipse(-9, 4, 6.5, 10, 0, 0, Math.PI * 2); ctx.fill();     // 뒤통수 그늘
-  if (ch.hairStyle !== 'piccolo' && ch.hairStyle !== 'frieza' && ch.hairStyle !== 'cell') {
-    ctx.beginPath(); ctx.ellipse(-14, 2, 3.6, 5, 0, 0, Math.PI * 2); ctx.fill();  // 귀
-    ctx.fillStyle = shade(c.skinDark, -0.25);
-    ctx.beginPath(); ctx.ellipse(-14, 2, 1.5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+  // 얼굴 윤곽 : 이마는 넓고 턱은 뾰족하게
+  const face = [
+    [-1, -19], [10, -16], [16, -7], [16, 2], [11, 11], [4, 17],
+    [-4, 14], [-12, 6], [-16, -4], [-11, -15]
+  ];
+  drawPart(ctx, face, c.skin, skinEdge, c2 => {
+    c2.fillStyle = c.skinDark;                       // 뒤통수/턱 그늘
+    c2.beginPath(); c2.ellipse(-13, 4, 9, 14, 0, 0, Math.PI * 2); c2.fill();
+    c2.beginPath(); c2.ellipse(2, 17, 12, 5, 0, 0, Math.PI * 2); c2.fill();
+    c2.fillStyle = skinLight;                        // 이마/광대 하이라이트
+    c2.beginPath(); c2.ellipse(6, -10, 9, 5, -0.2, 0, Math.PI * 2); c2.fill();
+  });
+  // 귀
+  if (!/^(piccolo|frieza|cell)$/.test(ch.hairStyle)) {
+    drawPart(ctx, [[-14, -3], [-11, -6], [-9, 1], [-12, 6], [-15, 4]], c.skinDark, skinEdge, null);
   }
 
   ctx.save(); ctx.scale(HAIR_SCALE, HAIR_SCALE);
   drawHairFront(ctx, ch, f, time, hair, hairLit);
   ctx.restore();
 
-  // ---- 표정 (작아진 머리에 맞춘 날카로운 애니 얼굴) ----
+  // ---- 표정 ----
   const hurt = f.hitstun > 0 || f.state === 'hurt' || f.state === 'hurtAir';
   const angry = !!f.attack || f.charging || hurt;
-  const iris = superSaiyan ? '#2fbf6a' : c.eye;   // 초사이어인은 녹색 눈
+  const iris = superSaiyan ? '#2fbf6a' : c.eye;
   if (f.state === 'ko') {
-    capsule(ctx, 2, 1, 11, 8, 2.6, c.eye);
-    capsule(ctx, 11, 1, 2, 8, 2.6, c.eye);
-    capsule(ctx, -5, 2, 1, 7, 2.6, c.eye);
-    capsule(ctx, 1, 2, -5, 7, 2.6, c.eye);
+    ctx.strokeStyle = c.eye; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    [[3, 11], [-6, 1]].forEach(([x0, x1]) => {
+      ctx.beginPath(); ctx.moveTo(x0, -1); ctx.lineTo(x1, 6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x1, -1); ctx.lineTo(x0, 6); ctx.stroke();
+    });
     ctx.fillStyle = '#7a2f2f';
-    ctx.beginPath(); ctx.ellipse(4, 12, 4, 2.8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(5, 11, 4, 2.8, 0, 0, Math.PI * 2); ctx.fill();
   } else {
-    // 흰자
-    ctx.fillStyle = '#f6f3ec';
-    ctx.beginPath(); ctx.ellipse(9, 3.5, 4.2, hurt ? 5.2 : 4.5, -0.12, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(-0.4, 3.5, 3.6, hurt ? 4.5 : 4, 0.12, 0, Math.PI * 2); ctx.fill();
-    // 눈동자 (바깥쪽으로 붙여 흰자가 안쪽에 초승달로 남는다)
-    ctx.fillStyle = iris;
-    ctx.beginPath(); ctx.ellipse(10.2, 3.8, 2.8, hurt ? 4.2 : 3.6, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0.5, 3.8, 2.4, hurt ? 3.7 : 3.2, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(10.8, 1.5, 1.5, 1.6);
-    ctx.fillRect(1.1, 1.7, 1.2, 1.3);
-    // 윗눈꺼풀 + 눈썹 (레퍼런스처럼 굵고 각지게)
-    capsule(ctx, 5.5, -1.4, 13.5, -2, 2.2, c.eye);
-    capsule(ctx, -4, -1.4, 3, -1.8, 2, c.eye);
-    capsule(ctx, -4.4, angry ? -6 : -5, 3, angry ? -8.4 : -7.4, 2.4, c.eye);
-    capsule(ctx, 6.5, angry ? -9.6 : -8.6, 14, angry ? -5.4 : -6.4, 2.4, c.eye);
-    // 코 / 입
-    capsule(ctx, 13, 6.5, 14.2, 7.8, 1.8, shade(c.skinDark, -0.3));
+    // 눈 : 세로로 긴 타원 + 위쪽 두꺼운 눈꺼풀
+    const eye = (ex, ey, rx, ry, ir) => {
+      ctx.fillStyle = '#f7f4ed';
+      ctx.beginPath(); ctx.ellipse(ex, ey, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = iris;
+      ctx.beginPath(); ctx.ellipse(ex + rx * 0.28, ey + 0.4, ir, ry * 0.82, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(ex + rx * 0.35, ey - ry * 0.55, 1.5, 1.6);
+      // 위 눈꺼풀
+      ctx.strokeStyle = c.eye; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(ex - rx - 0.6, ey - ry * 0.45);
+      ctx.quadraticCurveTo(ex, ey - ry - 1.4, ex + rx + 0.4, ey - ry * 0.35);
+      ctx.stroke();
+    };
+    eye(9.5, -1, 4.6, hurt ? 6.6 : 5.8, 2.7);
+    eye(-0.6, -1, 3.8, hurt ? 5.8 : 5.1, 2.3);
+    // 눈썹 : 굵고 각지게
+    ctx.strokeStyle = c.eye; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(4.2, angry ? -8.4 : -7.6); ctx.lineTo(14.4, angry ? -5.4 : -6.6);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-5.4, angry ? -6.6 : -6); ctx.lineTo(2.6, angry ? -8.8 : -8);
+    ctx.stroke();
+    // 코 (작고 뾰족하게) + 입
+    ctx.strokeStyle = shade(c.skinDark, -0.35); ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(15.4, 3.4); ctx.lineTo(13.6, 5.6); ctx.stroke();
     if (hurt || f.attack || f.charging) {
-      ctx.fillStyle = '#7a2f2f';
-      ctx.beginPath(); ctx.ellipse(7, 11.5, 4.4, 3.2, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#efe3dc';
-      ctx.fillRect(4.2, 9.6, 5.6, 1.5);
+      drawPart(ctx, [[4, 8.5], [9, 7.5], [12, 10], [9, 14], [4.5, 12.5]], '#7a2f2f', '#3d1414', c2 => {
+        c2.fillStyle = '#efe3dc'; c2.fillRect(3, 7.6, 9, 2);
+      });
     } else {
-      capsule(ctx, 3.5, 11.5, 9.5, 11.5, 2.2, '#8a3b3b');
+      ctx.strokeStyle = '#7c3b3b'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(4.5, 10.5); ctx.quadraticCurveTo(8, 12.2, 11, 10.2);
+      ctx.stroke();
     }
   }
   ctx.restore();
@@ -533,26 +555,153 @@ function drawAura(ctx, f, time, ch) {
   ctx.restore();
 }
 
-/* ---------------- 캐릭터 본체 ---------------- */
+/* ---------------- 캐릭터 본체 ----------------
+ *  캡슐을 이어 붙이는 대신, 부위마다 근육 실루엣을 그리고
+ *  뼈(관절 A→B) 공간에서 회전시켜 붙인다.
+ *  - 관절이 항상 맞물리고
+ *  - 레이어 순서가 고정되며(뒤팔 → 뒤다리 → 몸통 → 앞다리 → 앞팔 → 머리)
+ *  - 실루엣이 사람 몸으로 읽힌다.
+ * ------------------------------------------- */
 
-/** 부위별 외곽선 색 (기본색을 아주 어둡게) */
-const edgeOf = col => shade(col, -0.62);
+/** 조절점들을 부드러운 곡선으로 이어 닫힌 경로를 만든다 */
+function smoothPath(ctx, pts) {
+  const n = pts.length;
+  ctx.beginPath();
+  let mx = (pts[n - 1][0] + pts[0][0]) / 2, my = (pts[n - 1][1] + pts[0][1]) / 2;
+  ctx.moveTo(mx, my);
+  for (let i = 0; i < n; i++) {
+    const cur = pts[i], nxt = pts[(i + 1) % n];
+    ctx.quadraticCurveTo(cur[0], cur[1], (cur[0] + nxt[0]) / 2, (cur[1] + nxt[1]) / 2);
+  }
+  ctx.closePath();
+}
 
-/**
- * 팔다리 : 외곽선 + 아래쪽 그림자 + 기본색 + 윗면 하이라이트.
- * 부위마다 외곽선을 둘러야 겹쳐도 형태가 또렷하게 읽힌다.
- */
-function limbShaded(ctx, a, b, c, w, base, dark, light) {
-  const edge = edgeOf(base);
-  const w2 = w * 0.74;                    // 아래팔/종아리는 가늘게 (근육질 테이퍼)
-  capsule(ctx, a[0], a[1], b[0], b[1], w + 3, edge);
-  capsule(ctx, b[0], b[1], c[0], c[1], w2 + 3, edge);
-  capsule(ctx, a[0], a[1] + 2.4, b[0], b[1] + 2.4, w, dark);
-  capsule(ctx, b[0], b[1] + 2.4, c[0], c[1] + 2.4, w2, dark);
-  capsule(ctx, a[0], a[1], b[0], b[1], w, base);
-  capsule(ctx, b[0], b[1], c[0], c[1], w2, base);
-  capsule(ctx, a[0], a[1] - 2.8, b[0] - (b[0] - a[0]) * 0.15, b[1] - 2.8, w * 0.34, light);
-  capsule(ctx, b[0], b[1] - 2.4, c[0], c[1] - 2.4, w2 * 0.32, light);
+/** 실루엣 + 외곽선 + (클립 안에서) 명암 */
+function drawPart(ctx, pts, base, edge, shadeFn) {
+  smoothPath(ctx, pts);
+  ctx.strokeStyle = edge;
+  ctx.lineWidth = 3.2;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.fillStyle = base;
+  ctx.fill();
+  if (shadeFn) {
+    ctx.save();
+    smoothPath(ctx, pts);
+    ctx.clip();
+    shadeFn(ctx);
+    ctx.restore();
+  }
+}
+
+/** 뼈 공간(관절A 원점, +x 가 관절B 방향)에서 그린다 */
+function bone(ctx, a, b, draw) {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const len = Math.hypot(dx, dy) || 1;
+  ctx.save();
+  ctx.translate(a[0], a[1]);
+  ctx.rotate(Math.atan2(dy, dx));
+  draw(len);
+  ctx.restore();
+}
+
+/** 근육 : 관절 쪽이 두껍고 끝으로 갈수록 가늘어지는 방추형 */
+function muscle(len, w, bulge, taper) {
+  const b = bulge == null ? 0.6 : bulge;
+  const t = taper == null ? 0.34 : taper;
+  return [
+    [-w * 0.42, -w * 0.46], [len * 0.32, -w * b], [len * 0.78, -w * (t + 0.05)],
+    [len + w * 0.16, -w * t], [len + w * 0.26, 0], [len + w * 0.16, w * t],
+    [len * 0.78, w * (t + 0.08)], [len * 0.32, w * (b - 0.04)], [-w * 0.42, w * 0.48]
+  ];
+}
+
+/** 뼈 공간 명암 : 아래쪽 그림자 + 윗면 하이라이트 */
+function limbShade(len, w, dark, light) {
+  return ctx => {
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.ellipse(len * 0.5, w * 0.6, len * 0.75, w * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = light;
+    ctx.beginPath();
+    ctx.ellipse(len * 0.42, -w * 0.42, len * 0.4, w * 0.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  };
+}
+
+/** 주먹 : 손등 + 손가락 마디 + 엄지 (진행 방향을 향한다) */
+function drawFistPart(ctx, hand, dir, r, base, dark, light, edge) {
+  ctx.save();
+  ctx.translate(hand[0], hand[1]);
+  ctx.rotate(Math.atan2(dir[1], dir[0]));
+  const pts = [
+    [-r * 0.95, -r * 0.8], [r * 0.15, -r * 1.0], [r * 0.95, -r * 0.62],
+    [r * 1.06, 0], [r * 0.92, r * 0.66], [r * 0.05, r * 0.95], [-r * 0.95, r * 0.78]
+  ];
+  drawPart(ctx, pts, base, edge, c2 => {
+    c2.fillStyle = dark;
+    c2.beginPath(); c2.ellipse(0, r * 0.62, r * 1.2, r * 0.6, 0, 0, Math.PI * 2); c2.fill();
+    c2.fillStyle = light;
+    c2.beginPath(); c2.ellipse(-r * 0.1, -r * 0.5, r * 0.55, r * 0.3, 0, 0, Math.PI * 2); c2.fill();
+    // 손가락 마디
+    c2.strokeStyle = dark; c2.lineWidth = 1.6; c2.lineCap = 'round';
+    for (let i = -1; i <= 1; i++) {
+      c2.beginPath();
+      c2.moveTo(r * 0.45, i * r * 0.42);
+      c2.lineTo(r * 0.95, i * r * 0.34);
+      c2.stroke();
+    }
+  });
+  ctx.restore();
+}
+
+/** 부츠 : 발목 + 발등 + 밑창 (발끝은 항상 앞을 향한다) */
+function drawBootPart(ctx, ankle, dir, w, base, dark, light, edge) {
+  ctx.save();
+  ctx.translate(ankle[0], ankle[1]);
+  ctx.rotate(Math.atan2(dir[1], dir[0]));
+  const pts = [
+    [-w * 0.62, -w * 0.95], [w * 0.35, -w * 0.85], [w * 1.45, -w * 0.3],
+    [w * 1.6, w * 0.22], [w * 0.9, w * 0.5], [-w * 0.6, w * 0.5]
+  ];
+  drawPart(ctx, pts, base, edge, c2 => {
+    c2.fillStyle = dark;
+    c2.fillRect(-w, w * 0.12, w * 3, w);                    // 밑창
+    c2.fillStyle = light;
+    c2.beginPath();
+    c2.ellipse(w * 0.35, -w * 0.55, w * 0.7, w * 0.24, -0.15, 0, Math.PI * 2);
+    c2.fill();
+  });
+  ctx.restore();
+}
+
+/** 팔 한 짝 (위팔 → 아래팔 → 주먹) */
+function drawArm(ctx, sh, el, ha, w, base, dark, light, glove, gloveDark, gloveLight, fore, band) {
+  const edge = edgeOf(base), gEdge = edgeOf(glove);
+  const fb = fore ? fore.base : base, fd = fore ? fore.dark : dark, fl = fore ? fore.light : light;
+  bone(ctx, sh, el, len => drawPart(ctx, muscle(len, w, 0.62, 0.36), base, edge, limbShade(len, w, dark, light)));
+  bone(ctx, el, ha, len => {
+    drawPart(ctx, muscle(len, w * 0.82, 0.52, 0.34), fb, edgeOf(fb), limbShade(len, w * 0.82, fd, fl));
+    if (band) {                                    // 손목 밴드
+      drawPart(ctx, [
+        [len - 9, -w * 0.34], [len - 1, -w * 0.32], [len - 1, w * 0.32], [len - 9, w * 0.34]
+      ], band.base, edgeOf(band.base), c2 => {
+        c2.fillStyle = band.dark;
+        c2.fillRect(len - 10, w * 0.05, 12, w * 0.4);
+      });
+    }
+  });
+  drawFistPart(ctx, ha, tipDir(el, ha), w * 0.52, glove, gloveDark, gloveLight, gEdge);
+}
+
+/** 다리 한 짝 (허벅지 → 정강이 → 부츠) */
+function drawLeg(ctx, hip, kn, ft, w, base, dark, light, boot, bootDark, bootLight) {
+  const edge = edgeOf(base), bEdge = edgeOf(boot);
+  bone(ctx, hip, kn, len => drawPart(ctx, muscle(len, w, 0.6, 0.4), base, edge, limbShade(len, w, dark, light)));
+  bone(ctx, kn, ft, len => drawPart(ctx, muscle(len, w * 0.78, 0.56, 0.34), base, edge,
+    limbShade(len, w * 0.78, dark, light)));
+  drawBootPart(ctx, ft, tipDir(kn, ft), w * 0.42, boot, bootDark, bootLight, bEdge);
 }
 
 /** 방향 벡터 : 관절 -> 끝. 세운 상태면 앞(+x), 뻗었으면 팔다리 방향 */
@@ -563,131 +712,115 @@ function tipDir(joint, tip) {
   return Math.abs(dx) > Math.abs(dy) ? [dx, dy] : [1, 0];
 }
 
-/** 부츠 : 목 + 발등 + 밑창 (SD 비율에 맞춰 큼직하게) */
-function drawBoot(ctx, knee, foot, base, dark, light) {
-  const [tx, ty] = tipDir(knee, foot);
-  const bx = foot[0] - tx * 4, by = foot[1] - ty * 4;
-  const ex = foot[0] + tx * 9, ey = foot[1] + ty * 9;
-  const edge = edgeOf(base);
-  capsule(ctx, bx, by - 9, bx, by - 14, 18, edge);
-  capsule(ctx, bx, by - 5, ex, ey - 5, 18, edge);
-  capsule(ctx, bx, by - 9, bx, by - 14, 15, dark);            // 부츠 목
-  capsule(ctx, bx, by - 10, bx, by - 14, 12.5, base);
-  capsule(ctx, bx, by - 6, ex, ey - 6, 14.5, base);           // 발등
-  capsule(ctx, bx, by - 1, ex, ey - 1, 6, dark);              // 밑창
-  capsule(ctx, bx + tx, by - 11, ex - tx * 3.5, ey - ty * 3.5 - 11, 5, light);
-}
-
-/** 장갑/주먹 : 손등 + 손목 밴드 + 하이라이트 */
-function drawGlove(ctx, wrist, hand, r, base, dark, light) {
-  const [tx, ty] = tipDir(wrist, hand);
-  ctx.fillStyle = edgeOf(base);
-  ctx.beginPath(); ctx.arc(hand[0], hand[1], r + 1.6, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = dark;
-  ctx.beginPath(); ctx.arc(hand[0], hand[1] + 1.6, r, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = base;
-  ctx.beginPath(); ctx.arc(hand[0], hand[1], r, 0, Math.PI * 2); ctx.fill();
-  capsule(ctx, hand[0] - tx * r * 0.9, hand[1] - ty * r * 0.9,
-    hand[0] - tx * r * 1.5, hand[1] - ty * r * 1.5, r * 1.5, base);   // 손목 밴드
-  ctx.fillStyle = light;
-  ctx.beginPath(); ctx.arc(hand[0] - r * 0.15, hand[1] - r * 0.42, r * 0.34, 0, Math.PI * 2); ctx.fill();
-  capsule(ctx, hand[0] - r * 0.45, hand[1] + r * 0.4, hand[0] + r * 0.5, hand[1] + r * 0.25, 1.6, dark);
-}
+/** 부위별 외곽선 색 (기본색을 아주 어둡게) */
+const edgeOf = col => shade(col, -0.6);
 
 /**
- * 캐릭터 리그(몸통/팔다리/머리)를 원점(발끝) 기준으로 그린다.
- * 스프라이트를 구울 때도, 스프라이트 없이 직접 그릴 때도 같은 함수를 쓴다.
+ * 캐릭터 리그를 원점(발끝) 기준으로 그린다.
+ * 레이어 순서 : 뒤팔 → 뒤다리 → 몸통 → 앞다리 → 앞팔 → 머리
  */
 function drawFighterRig(ctx, f, p, time) {
   const ch = f.char, c = ch.colors;
-  const gi = c.gi, giDark = c.giDark, giLight = shade(c.gi, 0.24);
+  const gi = c.gi, giDark = c.giDark, giLight = shade(c.gi, 0.22);
   const sleeve = c.sleeve || c.gi, sleeveDark = c.sleeveDark || c.giDark;
-  const sleeveLight = shade(sleeve, 0.24);
+  const sleeveLight = shade(sleeve, 0.22);
   const belt = c.belt || c.trim, beltDark = c.beltDark || c.trimDark;
   const boot = c.boot || c.trim, bootDark = c.bootDark || c.trimDark;
-  const bootLight = shade(boot, 0.3);
+  const bootLight = shade(boot, 0.28);
   const glove = c.glove || c.skin, gloveDark = c.gloveDark || c.skinDark;
-  const gloveLight = shade(glove, 0.26);
+  const gloveLight = shade(glove, 0.24);
+  const back = col => shade(col, -0.26);      // 뒤쪽 사지는 한 단계 어둡게
+  // 반팔 도복이면 아래팔이 맨살로 드러난다
+  const foreBase = c.forearm || sleeve;
+  const fore = { base: foreBase, dark: c.forearmDark || sleeveDark, light: shade(foreBase, 0.22) };
+  const foreBack = { base: back(fore.base), dark: shade(fore.dark, -0.26), light: shade(fore.light, -0.26) };
+  const band = c.band ? { base: c.band, dark: c.bandDark || shade(c.band, -0.35) } : null;
+  const bandBack = band ? { base: back(band.base), dark: shade(band.dark, -0.26) } : null;
 
-  // ---- 뒤쪽 팔다리 (한 단계 어둡게 해서 깊이감) ----
-  limbShaded(ctx, p.hip, p.legB[0], p.legB[1], 23.5,
-    giDark, shade(giDark, -0.3), shade(giDark, 0.14));
-  drawBoot(ctx, p.legB[0], p.legB[1], bootDark, shade(bootDark, -0.35), shade(bootDark, 0.16));
-  limbShaded(ctx, p.shoulderB, p.armB[0], p.armB[1], 15,
-    sleeveDark, shade(sleeveDark, -0.3), shade(sleeveDark, 0.14));
-  drawGlove(ctx, p.armB[0], p.armB[1], 6.8, gloveDark, shade(gloveDark, -0.28), glove);
+  // 1) 뒤쪽 팔
+  drawArm(ctx, p.shoulderB, p.armB[0], p.armB[1], 16,
+    back(sleeve), shade(sleeveDark, -0.26), shade(sleeveLight, -0.26),
+    back(glove), shade(gloveDark, -0.26), shade(gloveLight, -0.26), foreBack, bandBack);
+  // 2) 뒤쪽 다리
+  drawLeg(ctx, p.hip, p.legB[0], p.legB[1], 24,
+    back(gi), shade(giDark, -0.26), shade(giLight, -0.26),
+    back(boot), shade(bootDark, -0.26), shade(bootLight, -0.26));
 
-  // ---- 몸통 : 어깨가 넓고 허리로 갈수록 좁아지는 V 실루엣 ----
-  const shW = 21, waW = 14;
-  const chY = p.chest[1], hipY = p.hip[1] + 6;
-  const shL = [p.chest[0] - shW, chY], shR = [p.chest[0] + shW, chY];
-  const waL = [p.hip[0] - waW, hipY], waR = [p.hip[0] + waW, hipY];
-  const midL = [lerp(shL[0], waL[0], 0.45) - 2, lerp(chY, hipY, 0.45)];
-  const midR = [lerp(shR[0], waR[0], 0.45) + 2, lerp(chY, hipY, 0.45)];
-  const body = [shL, midL, waL, waR, midR, shR];
-  ctx.save();
-  ctx.strokeStyle = edgeOf(gi); ctx.lineWidth = 3.4; ctx.lineJoin = 'round';
-  ctx.beginPath();
-  ctx.moveTo(body[0][0], body[0][1]);
-  for (let i = 1; i < body.length; i++) ctx.lineTo(body[i][0], body[i][1]);
-  ctx.closePath(); ctx.stroke();
-  ctx.restore();
-  poly(ctx, body, gi);
-  // 등쪽 그늘 / 앞쪽 하이라이트
-  poly(ctx, [shL, midL, waL, [waL[0] + 8, hipY], [midL[0] + 9, midL[1]], [shL[0] + 9, chY]], giDark);
-  poly(ctx, [[shR[0] - 8, chY], shR, midR, [midR[0] - 7, midR[1]]], giLight);
-  // 가슴 근육 / 복근 음영
-  ctx.save();
-  ctx.globalAlpha = 0.34;
-  capsule(ctx, p.chest[0] - 11, chY + 13, p.chest[0] + 11, chY + 13, 5, shade(gi, -0.55));
-  ctx.globalAlpha = 0.22;
-  capsule(ctx, p.chest[0] + 1, chY + 16, p.hip[0] + 1, hipY - 4, 4, shade(gi, -0.55));
-  ctx.restore();
+  // 3) 몸통 : 어깨가 넓고 허리가 좁은 상체 실루엣
+  const cx = p.chest[0], cy = p.chest[1], hx = p.hip[0], hy = p.hip[1];
+  const torso = [
+    [cx - 19, cy + 4], [cx - 6, cy - 7], [cx + 8, cy - 7], [cx + 20, cy + 4],
+    [cx + 17, cy + 22], [hx + 14, hy + 2], [hx + 15, hy + 10],
+    [hx - 15, hy + 10], [hx - 14, hy + 2], [cx - 17, cy + 22]
+  ];
+  drawPart(ctx, torso, gi, edgeOf(gi), c2 => {
+    // 등쪽 그늘
+    c2.fillStyle = giDark;
+    c2.beginPath();
+    c2.ellipse(cx - 20, cy + 20, 20, 34, 0, 0, Math.PI * 2);
+    c2.fill();
+    // 가슴 하이라이트
+    c2.fillStyle = giLight;
+    c2.beginPath();
+    c2.ellipse(cx + 12, cy + 9, 9, 8, -0.3, 0, Math.PI * 2);
+    c2.fill();
+    // 가슴 근육 경계 / 복부 중심선
+    c2.strokeStyle = shade(gi, -0.45);
+    c2.lineWidth = 2.4; c2.lineCap = 'round';
+    c2.beginPath();
+    c2.moveTo(cx - 12, cy + 17); c2.quadraticCurveTo(cx + 2, cy + 22, cx + 16, cy + 14);
+    c2.stroke();
+    c2.lineWidth = 1.8;
+    c2.beginPath();
+    c2.moveTo(cx + 2, cy + 20); c2.lineTo(hx + 1, hy + 2);
+    c2.stroke();
+  });
 
-  // 도복 깃 / 상의 디테일
+  // 도복 깃 (속옷이 보이는 캐릭터)
   if (/^(goku|vegeta|trunks|piccolo|gohan)$/.test(ch.id)) {
     poly(ctx, [
-      [p.chest[0] - 7, chY + 1], [p.chest[0] + 17, chY + 1],
-      [p.hip[0] + 8, hipY], [p.hip[0] - 4, hipY]
+      [cx - 7, cy - 2], [cx + 9, cy - 2], [cx + 7, cy + 20], [cx + 1, cy + 26], [cx - 5, cy + 20]
     ], c.trim);
-    poly(ctx, [
-      [p.chest[0] + 9, chY + 1], [p.chest[0] + 17, chY + 1],
-      [p.hip[0] + 8, hipY], [p.hip[0] + 3, hipY]
-    ], shade(c.trim, -0.24));
-  } else {
-    ctx.fillStyle = giDark;
-    ctx.fillRect(p.chest[0] - 14, chY + 10, 28, 13);
-    ctx.fillStyle = shade(gi, 0.18);
-    ctx.fillRect(p.chest[0] - 14, chY + 10, 28, 3);
+    poly(ctx, [[cx + 2, cy - 2], [cx + 9, cy - 2], [cx + 7, cy + 20], [cx + 2, cy + 24]],
+      shade(c.trim, -0.24));
   }
 
-  // 전투복 갑옷 (있는 캐릭터만)
+  // 전투복 갑옷
   if (c.armor) {
     const ar = c.armor;
-    poly(ctx, [[shL[0] + 2, chY + 1], [shR[0] - 2, chY + 1],
-    [midR[0] - 3, midR[1] + 3], [midL[0] + 3, midL[1] + 3]], ar.plate);
-    poly(ctx, [[p.chest[0] + 6, chY + 1], [shR[0] - 2, chY + 1],
-    [midR[0] - 3, midR[1] + 3], [p.chest[0] + 5, midR[1] + 3]], ar.plateDark);
-    capsule(ctx, p.shoulderF[0] - 3, p.shoulderF[1], p.shoulderF[0] + 9, p.shoulderF[1] + 2, 14, ar.pad);
-    capsule(ctx, p.shoulderB[0] + 2, p.shoulderB[1], p.shoulderB[0] - 8, p.shoulderB[1] + 2, 13, ar.padDark);
-    capsule(ctx, p.shoulderF[0] - 2, p.shoulderF[1] - 4, p.shoulderF[0] + 7, p.shoulderF[1] - 3, 4.5, shade(ar.pad, 0.3));
+    drawPart(ctx, [
+      [cx - 18, cy + 3], [cx - 4, cy - 4], [cx + 8, cy - 4], [cx + 19, cy + 3],
+      [cx + 15, cy + 24], [cx, cy + 28], [cx - 15, cy + 24]
+    ], ar.plate, edgeOf(ar.plate), c2 => {
+      c2.fillStyle = ar.plateDark;
+      c2.beginPath(); c2.ellipse(cx + 16, cy + 14, 10, 18, 0, 0, Math.PI * 2); c2.fill();
+    });
+    bone(ctx, p.shoulderF, [p.shoulderF[0] + 12, p.shoulderF[1] + 3],
+      len => drawPart(ctx, muscle(len, 15, 0.7, 0.5), ar.pad, edgeOf(ar.pad), limbShade(len, 15, ar.padDark, shade(ar.pad, 0.3))));
+    bone(ctx, p.shoulderB, [p.shoulderB[0] - 11, p.shoulderB[1] + 3],
+      len => drawPart(ctx, muscle(len, 14, 0.7, 0.5), ar.padDark, edgeOf(ar.padDark), limbShade(len, 14, shade(ar.padDark, -0.3), ar.pad)));
   }
 
-  // ---- 벨트 ----
-  capsule(ctx, p.hip[0] - 15, p.hip[1] + 3, p.hip[0] + 15, p.hip[1] + 3, 11, belt);
-  capsule(ctx, p.hip[0] - 14, p.hip[1] + 6.5, p.hip[0] + 14, p.hip[1] + 6.5, 3.6, beltDark);
-  capsule(ctx, p.hip[0] - 13, p.hip[1] - 0.5, p.hip[0] + 12, p.hip[1] - 0.5, 2.8, shade(belt, 0.3));
-  ctx.fillStyle = beltDark;
-  ctx.fillRect(p.hip[0] - 3, p.hip[1] - 2, 7, 11);
-  capsule(ctx, p.hip[0] - 2, p.hip[1] + 8, p.hip[0] - 6, p.hip[1] + 20, 4, belt);
-  capsule(ctx, p.hip[0] + 3, p.hip[1] + 8, p.hip[0] + 6, p.hip[1] + 17, 3.4, beltDark);
+  // 벨트
+  drawPart(ctx, [
+    [hx - 16, hy + 1], [hx, hy - 2], [hx + 16, hy + 1],
+    [hx + 15, hy + 9], [hx, hy + 12], [hx - 15, hy + 9]
+  ], belt, edgeOf(belt), c2 => {
+    c2.fillStyle = beltDark;
+    c2.fillRect(hx - 18, hy + 6, 36, 8);
+    c2.fillStyle = shade(belt, 0.28);
+    c2.fillRect(hx - 16, hy, 32, 2.4);
+  });
+  // 벨트 매듭 + 늘어진 끈
+  bone(ctx, [hx - 2, hy + 6], [hx - 7, hy + 22],
+    len => drawPart(ctx, muscle(len, 8, 0.5, 0.4), belt, edgeOf(belt), null));
 
-  // ---- 앞쪽 팔다리 ----
-  limbShaded(ctx, p.hip, p.legF[0], p.legF[1], 26, gi, giDark, giLight);
-  drawBoot(ctx, p.legF[0], p.legF[1], boot, bootDark, bootLight);
-  limbShaded(ctx, p.shoulderF, p.armF[0], p.armF[1], 17, sleeve, sleeveDark, sleeveLight);
-  drawGlove(ctx, p.armF[0], p.armF[1], 7.6, glove, gloveDark, gloveLight);
-
+  // 4) 앞쪽 다리
+  drawLeg(ctx, p.hip, p.legF[0], p.legF[1], 26, gi, giDark, giLight, boot, bootDark, bootLight);
+  // 5) 앞쪽 팔
+  drawArm(ctx, p.shoulderF, p.armF[0], p.armF[1], 17.5,
+    sleeve, sleeveDark, sleeveLight, glove, gloveDark, gloveLight, fore, band);
+  // 6) 머리
   drawHead(ctx, p, ch, f, time);
 }
 

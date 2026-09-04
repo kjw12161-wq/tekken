@@ -13,6 +13,8 @@ const CHARACTERS = [
     hairStyle: 'goku',
     colors: {
       gi: '#ff7a18', giDark: '#c85406', trim: '#1e4fd8', trimDark: '#12328f',
+      forearm: '#f5c79b', forearmDark: '#d69f70',   // 반팔 도복 - 아래팔은 맨살
+      band: '#2a5be0', bandDark: '#16337f',         // 파란 손목 밴드
       skin: '#f5c79b', skinDark: '#d69f70', hair: '#161616', hairLit: '#3d3d3d',
       aura: '#ffd24a', eye: '#2b2b2b'
     },
