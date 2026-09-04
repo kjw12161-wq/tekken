@@ -81,6 +81,25 @@ const CHARACTERS = [
     quotes: { win: '완전한 힘 앞에 무릎 꿇어라.', pick: '실험은 끝났다.' }
   },
   {
+    id: 'gohan',
+    name: '얼티밋 오반',
+    title: '잠재능력을 해방한 전사',
+    hp: 1020, speed: 3.65, jump: 17.2, power: 1.22, defense: 1.00, weight: 1.02,
+    hairStyle: 'gohan',
+    colors: {
+      gi: '#27356f', giDark: '#161d43', trim: '#46cfe8', trimDark: '#22829b',
+      sleeve: '#46cfe8', sleeveDark: '#22829b',      // 하늘색 속옷 소매
+      belt: '#d8433f', beltDark: '#8f2320',          // 붉은 띠
+      boot: '#dfe6f5', bootDark: '#a7b2cc',
+      skin: '#f5c79b', skinDark: '#d69f70',
+      hair: '#141414', hairLit: '#3a3a3a',
+      aura: '#ffeeb0', eye: '#2b2b2b'
+    },
+    special: { name: '마섬광', color: '#ffd45c', core: '#fff6d2' },
+    ultimate: { name: '초 마섬광', color: '#ffe98a', core: '#ffffff' },
+    quotes: { win: '봐주는 건 여기까지야.', pick: '이 힘, 시험해 볼까.' }
+  },
+  {
     id: 'trunks',
     name: '트랭크스',
     title: '미래에서 온 전사',

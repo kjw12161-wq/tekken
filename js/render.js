@@ -322,6 +322,20 @@ function drawHairBack(ctx, ch, f, time, hair, hairLit) {
       poly(ctx, [[-7, -8], [0, -28], [7, -10]], hairLit);
       break;
     }
+    case 'gohan': {
+      // 손오공보다 정돈된, 뒤로 쓸린 스파이크
+      const tips = [[-21, -25], [-12, -36], [-2, -40], [8, -35], [17, -24], [22, -12]];
+      tips.forEach((t, i) => {
+        const wob = Math.sin(time / 7 + i) * wobble;
+        const bx = t[0] * 0.55;
+        poly(ctx, [
+          [bx - 6, -6], [t[0] - 2 + wob, t[1] + wob * 0.6], [bx + 6, -8]
+        ], i % 2 ? hairLit : hair);
+      });
+      ctx.fillStyle = hair;
+      ctx.beginPath(); ctx.arc(0, -3, 15, Math.PI, Math.PI * 2); ctx.fill();
+      break;
+    }
     case 'trunks': {
       ctx.fillStyle = hair;
       ctx.beginPath(); ctx.ellipse(-1, -6, 17, 16, 0, 0, Math.PI * 2); ctx.fill();
@@ -357,6 +371,10 @@ function drawHairFront(ctx, ch, f, time, hair, hairLit) {
     case 'vegeta':
       poly(ctx, [[-14, -6], [14, -8], [12, -2], [4, -6], [-1, 1], [-6, -5], [-14, -1]], hair);
       poly(ctx, [[-2, 1], [1, 9], [4, 0]], hair);   // 이마 각(V)
+      break;
+    case 'gohan':
+      poly(ctx, [[-14, -10], [-5, -17], [2, -9], [9, -16], [15, -9], [14, -3], [6, -7], [0, -2], [-6, -6], [-14, -3]], hair);
+      poly(ctx, [[-5, -12], [3, -17], [8, -10]], hairLit);
       break;
     case 'trunks':
       poly(ctx, [[-15, -10], [15, -12], [13, -3], [6, -8], [0, -2], [-6, -7], [-15, -3]], hair);
@@ -476,11 +494,15 @@ function drawAura(ctx, f, time, ch) {
  */
 function drawFighterRig(ctx, f, p, time) {
   const ch = f.char, c = ch.colors;
+  // 캐릭터별로 소매·띠·부츠 색을 따로 줄 수 있다 (지정하지 않으면 기존 색을 쓴다)
+  const sleeve = c.sleeve || c.gi, sleeveDark = c.sleeveDark || c.giDark;
+  const belt = c.belt || c.trim, beltDark = c.beltDark || c.trimDark;
+  const boot = c.boot || c.trim, bootDark = c.bootDark || c.trimDark;
 
   // 뒤쪽 팔다리
   limb(ctx, p.hip, p.legB[0], p.legB[1], 17, c.giDark);
-  capsule(ctx, p.legB[1][0], p.legB[1][1] - 5, p.legB[1][0] + 6, p.legB[1][1], 13, c.trimDark);
-  limb(ctx, p.shoulderB, p.armB[0], p.armB[1], 13, c.giDark);
+  capsule(ctx, p.legB[1][0], p.legB[1][1] - 5, p.legB[1][0] + 6, p.legB[1][1], 13, bootDark);
+  limb(ctx, p.shoulderB, p.armB[0], p.armB[1], 13, sleeveDark);
   ctx.fillStyle = c.skinDark;
   ctx.beginPath(); ctx.arc(p.armB[1][0], p.armB[1][1], 6.5, 0, Math.PI * 2); ctx.fill();
 
@@ -494,7 +516,7 @@ function drawFighterRig(ctx, f, p, time) {
   ctx.closePath();
   ctx.fill();
   // 도복 깃 / 상의 디테일
-  if (ch.id === 'goku' || ch.id === 'vegeta' || ch.id === 'trunks' || ch.id === 'piccolo') {
+  if (/^(goku|vegeta|trunks|piccolo|gohan)$/.test(ch.id)) {
     poly(ctx, [
       [p.chest[0] - 4, p.chest[1] - 2], [p.chest[0] + 14, p.chest[1] - 2],
       [p.hip[0] + 6, p.hip[1] + 4], [p.hip[0] - 2, p.hip[1] + 4]
@@ -512,14 +534,14 @@ function drawFighterRig(ctx, f, p, time) {
   ctx.restore();
 
   // 벨트 + 매듭
-  capsule(ctx, p.hip[0] - 14, p.hip[1] + 2, p.hip[0] + 14, p.hip[1] + 2, 10, c.trim);
-  ctx.fillStyle = c.trimDark;
+  capsule(ctx, p.hip[0] - 14, p.hip[1] + 2, p.hip[0] + 14, p.hip[1] + 2, 10, belt);
+  ctx.fillStyle = beltDark;
   ctx.fillRect(p.hip[0] - 3, p.hip[1] - 2, 7, 9);
 
   // 앞쪽 팔다리
   limb(ctx, p.hip, p.legF[0], p.legF[1], 18, c.gi);
-  capsule(ctx, p.legF[1][0], p.legF[1][1] - 5, p.legF[1][0] + 7, p.legF[1][1], 14, c.trim);
-  limb(ctx, p.shoulderF, p.armF[0], p.armF[1], 14, c.gi);
+  capsule(ctx, p.legF[1][0], p.legF[1][1] - 5, p.legF[1][0] + 7, p.legF[1][1], 14, boot);
+  limb(ctx, p.shoulderF, p.armF[0], p.armF[1], 14, sleeve);
   // 손목 밴드 + 주먹
   capsule(ctx, p.armF[0][0], p.armF[0][1], p.armF[1][0], p.armF[1][1], 12, c.skin);
   ctx.fillStyle = c.skin;
