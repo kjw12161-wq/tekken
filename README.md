@@ -16,6 +16,21 @@ npx http-server -p 8080 .
 
 `index.html` 을 더블클릭해서 열어도 그대로 동작합니다. (빌드 과정 없음)
 
+## 배포
+
+**GitHub Pages** — `.github/workflows/deploy-pages.yml` 이 기본 브랜치에 푸시될 때마다 저장소를 그대로 배포합니다.
+처음 한 번은 저장소 설정에서 Pages 를 켜야 합니다:
+**Settings → Pages → Build and deployment → Source 를 `GitHub Actions` 로 선택.**
+그 뒤 Actions 탭에서 워크플로를 재실행하면 `https://<사용자>.github.io/tekken/` 에 게시됩니다.
+
+**단일 파일** — 어디에나 올릴 수 있는 파일 하나로 묶으려면:
+
+```bash
+node tools/build-single.js      # dist/index.html (약 130KB, CSS·JS 전부 포함)
+```
+
+정적 호스팅이 필요 없다면 이 파일 하나만 열어도 게임이 그대로 돌아갑니다.
+
 ## 게임 특징
 
 - **6인의 전사** — 손오공 · 베지터 · 피콜로 · 프리저 · 셀 · 트랭크스. 체력 / 공격력 / 스피드 / 방어력과 전용 필살기가 각각 다릅니다.
