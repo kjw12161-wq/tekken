@@ -16,6 +16,7 @@ const GROUND_PAD = 38;            // 지면 아래로 보이는 여백(월드 �
 const MIN_ASPECT = 0.5, MAX_ASPECT = 2.8;
 const ROUND_TIME = 99;            // 초
 const ROUNDS_TO_WIN = 2;
+const MAX_ROUNDS = 5;             // 무승부가 이어져도 이 라운드에서 판정으로 끝낸다
 
 const Game = {
   canvas: null, ctx: null,
@@ -37,7 +38,6 @@ const Game = {
   paused: false,
   slowmo: 0,
   selection: [null, null],
-  picker: 0,
   rouletteTimer: 0,
   hudLag: [1, 1],
   lastFrame: 0,
@@ -50,6 +50,10 @@ const Game = {
     this.resize();
     this.bindResize();
     this.debug = /[?&]debug=1/.test(location.search);
+    // 접근성 : 동작 줄이기 설정을 따라간다
+    const rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+    this.reduceMotion = !!(rm && rm.matches);
+    if (rm && rm.addEventListener) rm.addEventListener('change', e => { this.reduceMotion = e.matches; });
     // ?vector=1 로 스프라이트를 끄고 벡터 렌더링을 그대로 볼 수 있다
     SpriteBank.init({ disabled: /[?&]vector=1/.test(location.search) });
     // 단일 파일 빌드에서는 외부 시트 폴더가 없으므로 건너뛴다
@@ -155,7 +159,12 @@ const Game = {
         Sfx.play('ui');
       });
     });
-    q('btn-select-back').addEventListener('click', () => { Sfx.play('ui'); this.show('screen-title'); });
+    q('btn-select-back').addEventListener('click', () => {
+      Sfx.play('ui');
+      this.selectToken = (this.selectToken || 0) + 1;   // 예약된 매치 취소
+      this.state = 'title';
+      this.show('screen-title');
+    });
     q('btn-rematch').addEventListener('click', () => { Sfx.play('ui'); this.startMatch(); });
     q('btn-tochars').addEventListener('click', () => { Sfx.play('ui'); this.startSelect(this.mode); });
     q('btn-totitle').addEventListener('click', () => { Sfx.play('ui'); this.show('screen-title'); this.state = 'title'; });
@@ -184,7 +193,14 @@ const Game = {
     window.addEventListener('keydown', e => {
       if (e.code === 'Escape') {
         if (this.state === 'fight') this.togglePause();
-        else if (this.state === 'select') { Sfx.play('ui'); this.show('screen-title'); this.state = 'title'; }
+        else if (this.state === 'select') {
+          Sfx.play('ui');
+          this.selectToken = (this.selectToken || 0) + 1;
+          this.state = 'title';
+          this.show('screen-title');
+        } else if (this.state === 'matchEnd') {
+          Sfx.play('ui'); this.state = 'title'; this.show('screen-title');
+        }
         return;
       }
       if (this.state === 'select') { this.handleSelectKey(e.code); return; }
@@ -235,7 +251,8 @@ const Game = {
     ctx.save();
     ctx.translate(cv.width / 2, cv.height - 8);
     if (frame) {
-      const k = 1.05;
+      // 외부 시트를 써도 크기가 어긋나지 않도록 프레임 자체 배율을 기준으로 잡는다
+      const k = (frame.scale || SPRITE_DRAW) * 0.79;
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(
         frame.image, frame.sx, frame.sy, frame.sw, frame.sh,
@@ -267,10 +284,10 @@ const Game = {
   /* ==================== 캐릭터 선택 ==================== */
   startSelect(mode) {
     Sfx.init(); Sfx.resume(); Sfx.play('ui');
+    this.selectToken = (this.selectToken || 0) + 1;   // 예약된 매치 시작을 무효화
     this.mode = mode;
     this.state = 'select';
     this.selection = [null, null];
-    this.picker = 0;
     this.rouletteTimer = 0;
     this.cursor = 0;
     this.updateSelectUI();
@@ -333,7 +350,7 @@ const Game = {
     } else if (this.selection[1] === null && this.mode === 'versus') {
       this.selection[1] = i;
       this.updateSelectUI();
-      setTimeout(() => this.startMatch(), 420);
+      this.queueMatch(420);
     }
   },
 
@@ -352,8 +369,17 @@ const Game = {
     }
     if (this.rouletteTimer === 0) {
       Sfx.play('bell');
-      setTimeout(() => this.startMatch(), 520);
+      this.queueMatch(520);
     }
+  },
+
+  /** 잠시 뒤 매치를 시작한다. 그 사이 선택 화면을 떠나면 취소된다 */
+  queueMatch(delay) {
+    const token = this.selectToken || 0;
+    setTimeout(() => {
+      if (this.state !== 'select' || (this.selectToken || 0) !== token) return;
+      this.startMatch();
+    }, delay);
   },
 
   /* ==================== 매치 ==================== */
@@ -405,6 +431,8 @@ const Game = {
     this.phase = 'intro';
     this.phaseTimer = 0;
     this.slowmo = 0;
+    this.koWinner = null;
+    this.doubleKO = false;
     this.cam.x = SpriteBank.snap(this.clampCam((a.x + b.x) / 2 - this.viewW / 2));
     this.announce(`ROUND ${this.roundNo}`, 'big');
     this.updateHud(true);
@@ -423,7 +451,10 @@ const Game = {
   },
 
   /* ==================== 월드 콜백 ==================== */
-  shake(v) { this.cam.shake = Math.max(this.cam.shake, v); },
+  shake(v) {
+    // 시스템이 '동작 줄이기'를 켠 사용자는 화면 흔들림을 크게 낮춘다
+    this.cam.shake = Math.max(this.cam.shake, v * (this.reduceMotion ? 0.25 : 1));
+  },
 
   spawnProjectile(owner, def) {
     const pj = def.projectile;
@@ -573,7 +604,16 @@ const Game = {
   },
 
   onKO(loser) {
-    if (this.phase === 'ko') return;
+    if (this.phase === 'ko') {
+      // 같은 프레임에 양쪽이 쓰러졌다면 더블 K.O. (아무도 라운드를 못 가져간다)
+      if (this.koWinner && this.koWinner === loser) {
+        this.koWinner.roundsWon = Math.max(0, this.koWinner.roundsWon - 1);
+        this.koWinner = null;
+        this.doubleKO = true;
+        this.announce('더블 K.O.', 'ko');
+      }
+      return;
+    }
     this.phase = 'ko';
     this.phaseTimer = 0;
     this.slowmo = 90;
@@ -582,6 +622,8 @@ const Game = {
     const winner = this.fighters[1 - loser.index];
     winner.roundsWon++;
     winner.locked = true;
+    this.koWinner = winner;
+    this.doubleKO = false;
     this.announce('K.O.', 'ko');
     this.particles.burst(loser.x, loser.y - 78, 34, {
       color: '#ffd24a', minSpeed: 3, maxSpeed: 12, minSize: 4, maxSize: 14,
@@ -601,8 +643,8 @@ const Game = {
     while (this.acc >= step && guard < 5) {
       this.acc -= step;
       guard++;
-      this.tick();
-      Input.endFrame();
+      // 슬로모로 건너뛴 틱은 입력을 읽지 않았으므로 엣지를 남겨 둔다
+      if (this.tick() !== false) Input.endFrame();
     }
     this.draw();
     requestAnimationFrame(nt => this.loop(nt));
@@ -615,7 +657,11 @@ const Game = {
 
     if (this.slowmo > 0) {
       this.slowmo--;
-      if (this.time % 3 !== 0) { this.particles.update(); this.updateCamera(); return; }
+      if (this.time % 3 !== 0) {
+        this.particles.update();
+        this.updateCamera();
+        return false;          // 이 틱은 입력을 소비하지 않았다
+      }
     }
 
     this.phaseTimer++;
@@ -637,9 +683,9 @@ const Game = {
         if (this.roundTimer <= 0) this.onTimeout();
         break;
       case 'ko':
-        if (this.phaseTimer === 70) {
-          const winner = a.alive ? a : b;
-          if (winner.alive) winner.setState('win');
+        if (this.phaseTimer === 70 && !this.doubleKO) {
+          const winner = a.alive ? a : (b.alive ? b : null);
+          if (winner) winner.setState('win');
         }
         if (this.phaseTimer > 150) this.endRound();
         break;
@@ -689,21 +735,38 @@ const Game = {
       this.finishMatch(a.roundsWon > b.roundsWon ? a : b);
       return;
     }
+    // 무승부가 반복돼도 끝나도록 라운드 수를 제한하고 판정으로 승자를 정한다
+    if (this.roundNo >= MAX_ROUNDS) {
+      let w = null;
+      if (a.roundsWon !== b.roundsWon) w = a.roundsWon > b.roundsWon ? a : b;
+      else {
+        const ra = a.hp / a.maxHp, rb = b.hp / b.maxHp;
+        if (Math.abs(ra - rb) > 0.001) w = ra > rb ? a : b;
+      }
+      this.finishMatch(w);
+      return;
+    }
     this.roundNo++;
     this.startRound();
   },
 
+  /** winner 가 null 이면 무승부 결과 */
   finishMatch(winner) {
     this.state = 'matchEnd';
     this.clearAnnounce();
-    document.getElementById('result-name').textContent = winner.char.name;
-    document.getElementById('result-quote').textContent = `"${winner.char.quotes.win}"`;
+    const draw = !winner;
+    const [fa, fb] = this.fighters;
+    const shown = winner || (fa.hp >= fb.hp ? fa : fb);
+    document.getElementById('result-name').textContent = draw ? '무승부' : winner.char.name;
+    document.getElementById('result-quote').textContent =
+      draw ? '"승부를 가리지 못했다..."' : `"${winner.char.quotes.win}"`;
     document.getElementById('result-score').textContent =
       `${this.fighters[0].char.name} ${this.fighters[0].roundsWon} : ${this.fighters[1].roundsWon} ${this.fighters[1].char.name}`;
-    const tag = winner.index === 0 ? '1P' : (this.mode === 'cpu' ? 'CPU' : '2P');
-    document.getElementById('result-tag').textContent = `${tag} WIN`;
+    const tag = draw ? 'DRAW'
+      : `${winner.index === 0 ? '1P' : (this.mode === 'cpu' ? 'CPU' : '2P')} WIN`;
+    document.getElementById('result-tag').textContent = tag;
     const cv = document.getElementById('result-portrait');
-    this.drawPortrait(cv, winner.char);
+    this.drawPortrait(cv, shown.char);
     this.show('screen-result');
     Sfx.play('bell');
   },
@@ -914,6 +977,23 @@ const Game = {
           dead = true;
         }
       }
+      // 상대 빔에 닿은 기탄은 그대로 증발한다
+      if (!dead) {
+        const foe = this.fighters[1 - p.owner.index];
+        const br = foe && foe.beamRect ? foe.beamRect() : null;
+        if (br) {
+          const box = { x: p.x - p.radius, y: p.y - p.radius, w: p.radius * 2, h: p.radius * 2 };
+          if (rectsOverlap(box, br)) {
+            this.particles.burst(p.x, p.y, 14, {
+              color: '#ffffff', minSpeed: 2, maxSpeed: 7, minSize: 2, maxSize: 8, shape: 'spark'
+            });
+            this.shake(4);
+            this.projectiles.splice(i, 1);
+            continue;
+          }
+        }
+      }
+
       // 기탄끼리 맞부딪히면 서로 밀며 버틴다
       if (!dead) {
         for (let j = this.projectiles.length - 1; j >= 0; j--) {

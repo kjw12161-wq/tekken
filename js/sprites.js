@@ -18,6 +18,7 @@ const PAGE_SIZE = 1024;
 const ATLAS_COLS = Math.floor(PAGE_SIZE / CELL_W);
 const ATLAS_ROWS = Math.floor(PAGE_SIZE / CELL_H);
 const CELLS_PER_PAGE = ATLAS_COLS * ATLAS_ROWS;
+const MAX_PAGES = 8;            // 아틀라스 상한 (초과하면 벡터로 그린다 - 메모리 보호)
 
 const OUTLINE = '#140f1c';
 const ALPHA_CUT = 118;          // 이 값보다 옅은 가장자리는 잘라내 도트를 또렷하게
@@ -61,11 +62,10 @@ const SpriteBank = {
   get(f, pose, time) {
     if (!this.enabled || !pose.key) return null;
     const key = f.char.id + '|' + pose.key + '|' + this.variantOf(f);
-    let frame = this.frames.get(key);
-    if (frame) return frame;
+    if (this.frames.has(key)) return this.frames.get(key);   // null = 벡터로 그린다
 
     const ss = this.variantOf(f)[0] === 's';
-    frame = this._fromExternal(f.char.id, pose.key, ss);
+    let frame = this._fromExternal(f.char.id, pose.key, ss);
     if (!frame) {
       try {
         frame = this._bake(f, pose, time);
@@ -75,8 +75,8 @@ const SpriteBank = {
         return null;
       }
     }
-    this.frames.set(key, frame);
-    return frame;
+    this.frames.set(key, frame || null);
+    return frame || null;
   },
 
   /**
@@ -98,6 +98,7 @@ const SpriteBank = {
 
   _page() {
     const idx = Math.floor(this.count / CELLS_PER_PAGE);
+    if (idx >= MAX_PAGES) return null;      // 상한 초과 - 이 포즈는 벡터로 그린다
     while (this.pages.length <= idx) this.pages.push(this._makeCanvas(PAGE_SIZE, PAGE_SIZE));
     const local = this.count % CELLS_PER_PAGE;
     return {
@@ -140,6 +141,7 @@ const SpriteBank = {
     sil.globalCompositeOperation = 'source-over';
 
     const slot = this._page();
+    if (!slot) return null;
     const ctx = slot.canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(slot.x, slot.y, CELL_W, CELL_H);

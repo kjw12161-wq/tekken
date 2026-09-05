@@ -25,7 +25,6 @@ const Input = {
   virtual: [new Set(), new Set()],   // 터치 패드용 (액션 이름 보관)
   virtualJust: [new Set(), new Set()],
   maps: DEFAULT_MAPS,
-  anyKeyPressed: false,
 
   init() {
     window.addEventListener('keydown', e => {
@@ -34,15 +33,27 @@ const Input = {
       if (this._isGameKey(e.code)) e.preventDefault();
       this.down.add(e.code);
       this.justPressed.add(e.code);
-      this.anyKeyPressed = true;
       Sfx.resume();
     });
     window.addEventListener('keyup', e => {
       if (this._isGameKey(e.code)) e.preventDefault();
       this.down.delete(e.code);
     });
-    window.addEventListener('blur', () => { this.down.clear(); });
+    const release = () => this.releaseAll();
+    window.addEventListener('blur', release);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) release(); });
     this._bindTouch();
+  },
+
+  /** 창이 포커스를 잃으면 키/터치 입력을 모두 놓은 상태로 되돌린다 */
+  releaseAll() {
+    this.down.clear();
+    this.justPressed.clear();
+    for (let p = 0; p < this.virtual.length; p++) {
+      this.virtual[p].clear();
+      this.virtualJust[p].clear();
+    }
+    document.querySelectorAll('.pad-btn.is-pressed').forEach(b => b.classList.remove('is-pressed'));
   },
 
   _isGameKey(code) {
@@ -91,6 +102,5 @@ const Input = {
     this.justPressed.clear();
     this.virtualJust[0].clear();
     this.virtualJust[1].clear();
-    this.anyKeyPressed = false;
   }
 };

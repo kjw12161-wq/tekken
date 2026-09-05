@@ -12,12 +12,12 @@ const MAX_AIR_ATTACKS = 3;     // 한 번 뜬 동안 낼 수 있는 공중기 �
 const MAX_AIR_JUMPS = 1;       // 2단 점프 횟수
 const JUGGLE_LIMIT = 4;        // 이 횟수까지만 다시 띄워진다 (무한 콤보 방지)
 const JUMP_CANCEL_FRAMES = 16; // 상대를 띄운 뒤 후딜을 점프로 캔슬할 수 있는 시간
-const INPUT_BUFFER = 14;
+const INPUT_BUFFER = 14;        // 후딜 중 눌린 입력을 이만큼 기억해 다음 동작으로 이어준다
 const TRANSFORM_COST = 50;      // 변신에 쓰는 기
 const TRANSFORM_TIME = 780;     // 변신 지속 (13초)
 const TRANSFORM_STARTUP = 30;   // 변신 연출 동안 무적
 const FORM_POWER = 1.18;        // 변신 중 공격력 배율
-const FORM_SPEED = 1.08;        // 변신 중 이동속도 배율       // 후딜 중 눌린 입력을 이만큼 기억해 다음 동작으로 이어준다
+const FORM_SPEED = 1.08;        // 변신 중 이동속도 배율
 
 const HURT_STAND = { x: -30, y: -152, w: 60, h: 152 };
 const HURT_CROUCH = { x: -34, y: -108, w: 68, h: 108 };
@@ -423,7 +423,7 @@ class Fighter {
       if (this.ki < def.kiCost) return;
       this.ki -= def.kiCost;
     }
-    this.attack = { def, frame: 0, hitApplied: false, hitTimer: 0, spawned: false };
+    this.attack = { def, frame: 0, hitApplied: false, spawned: false };
     this.guarding = false;
     this.setState('attack');
     if (def.invuln) this.invuln = def.invuln;
