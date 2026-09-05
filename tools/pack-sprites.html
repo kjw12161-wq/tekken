@@ -4,83 +4,170 @@
 <meta charset="utf-8">
 <title>스프라이트 시트 조립 - DRAGON FIGHTER Z</title>
 <style>
-  :root { --line: rgba(255,255,255,.14); --muted: #a4acc9; }
+  :root { --line: rgba(255,255,255,.14); --muted: #a4acc9; --ok: #8affc0; --sky: #5ad2ff; }
   * { box-sizing: border-box; }
   body { margin: 0; padding: 20px; background: #0a0d18; color: #eef1ff;
          font-family: "Pretendard", "Noto Sans KR", system-ui, sans-serif; }
   h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 13px; margin: 0 0 8px; color: #ff8a1f; }
   p, li { color: var(--muted); font-size: 13px; line-height: 1.7; }
+  a { color: #7fd8ff; }
   code { background: rgba(255,255,255,.1); padding: 1px 5px; border-radius: 4px; color: #ffd76a; }
-  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0; }
+  kbd { background: rgba(255,255,255,.12); border: 1px solid var(--line); border-bottom-width: 2px;
+        border-radius: 4px; padding: 0 5px; font: 11px/1.6 monospace; color: #fff; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; }
   label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-  input[type=text], input[type=number], select {
+  input[type=text], input[type=search], input[type=number], select {
     font: inherit; font-size: 13px; padding: 6px 9px; border-radius: 7px;
     border: 1px solid var(--line); background: rgba(255,255,255,.06); color: #fff;
   }
   button { font: inherit; font-weight: 700; font-size: 13px; border: 0; border-radius: 8px;
            padding: 9px 16px; background: linear-gradient(180deg,#ff8a1f,#d5620a); color: #fff; cursor: pointer; }
   button.ghost { background: rgba(255,255,255,.08); color: #dfe4f5; border: 1px solid var(--line); }
-  #drop { border: 2px dashed rgba(255,255,255,.25); border-radius: 12px; padding: 26px;
-          text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  button.mini { padding: 5px 10px; font-size: 12px; }
+  button:disabled { opacity: .38; cursor: not-allowed; }
+  .panel { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 14px;
+           background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(0,0,0,.25)); }
+  .cols { display: grid; grid-template-columns: 1fr 300px; gap: 14px; align-items: start; }
+  #drop { border: 2px dashed rgba(255,255,255,.25); border-radius: 12px; padding: 22px;
+          text-align: center; color: var(--muted); font-size: 13px; }
   #drop.over { border-color: #ff8a1f; background: rgba(255,138,31,.08); }
   #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-  .cell { border: 1px solid var(--line); border-radius: 8px; padding: 4px; background: #131a2e; cursor: pointer; }
+  .cell { border: 1px solid var(--line); border-radius: 8px; padding: 4px; background: #131a2e;
+          cursor: pointer; position: relative; }
   .cell.sel { border-color: #ff8a1f; box-shadow: 0 0 0 2px rgba(255,138,31,.4); }
   .cell.has { background: #16233c; }
+  .cell.over { border-color: var(--sky); box-shadow: 0 0 0 2px rgba(90,210,255,.5); }
   .cell canvas { width: 100%; height: auto; display: block; image-rendering: pixelated; }
-  .cell span { display: block; font: 11px/1.6 monospace; text-align: center; color: var(--muted); }
-  .cell.has span { color: #8affc0; }
+  .cell span.k { display: block; font: 11px/1.6 monospace; text-align: center; color: var(--muted); }
+  .cell.has span.k { color: var(--ok); }
+  .cell .x { position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; line-height: 18px;
+             text-align: center; border-radius: 6px; background: rgba(0,0,0,.55); color: #ff9d9d;
+             font: 700 13px/18px monospace; display: none; }
+  .cell.has:hover .x { display: block; }
+  .cell .flip { position: absolute; left: 3px; top: 3px; font: 10px/1.6 monospace; color: var(--sky);
+                background: rgba(0,0,0,.55); border-radius: 5px; padding: 0 4px; }
   .note { border-left: 3px solid #ff8a1f; padding: 8px 12px; background: rgba(255,138,31,.07);
           border-radius: 0 8px 8px 0; margin: 12px 0; }
   #status { font-size: 12px; color: #ffd76a; min-height: 18px; }
-  #dropSheet { border: 2px dashed rgba(120,220,255,.3); border-radius: 12px; padding: 18px;
+  .prog { height: 8px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; margin: 8px 0 4px; }
+  .prog i { display: block; height: 100%; width: 0; background: linear-gradient(90deg,var(--ok),var(--sky)); }
+  #dropSheet { border: 2px dashed rgba(120,220,255,.3); border-radius: 12px; padding: 16px;
                text-align: center; color: var(--muted); font-size: 13px; cursor: pointer; }
-  #dropSheet.over { border-color: #5ad2ff; background: rgba(90,210,255,.08); }
-  #strip { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 16px; }
+  #dropSheet.over { border-color: var(--sky); background: rgba(90,210,255,.08); }
+  #strip { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
   #strip .chip { border: 1px solid var(--line); border-radius: 8px; background: #101728;
                  padding: 3px; cursor: pointer; position: relative; }
-  #strip .chip.held { border-color: #5ad2ff; box-shadow: 0 0 0 2px rgba(90,210,255,.45); }
+  #strip .chip.held { border-color: var(--sky); box-shadow: 0 0 0 2px rgba(90,210,255,.45); }
   #strip .chip.used { opacity: .35; }
   #strip .chip canvas { display: block; height: 76px; width: auto; image-rendering: pixelated; }
   #strip .chip b { position: absolute; left: 3px; top: 2px; font-size: 10px; color: #ffd76a;
                    text-shadow: 0 0 3px #000; }
+  #strip .chip i { position: absolute; right: 2px; top: 1px; font: 700 12px/1 monospace; color: #ff9d9d;
+                   text-shadow: 0 0 3px #000; font-style: normal; }
+  #previewBox { display: flex; gap: 12px; align-items: flex-start; }
+  #preview { image-rendering: pixelated; border-radius: 8px; background: #0f1526;
+             border: 1px solid var(--line); }
+  .selbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .selbar .name { font: 700 13px/1 monospace; color: #ffd76a; margin-right: 4px; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 <h1>스프라이트 시트 조립</h1>
 <p>
-  프레임 키 이름으로 저장한 이미지들(<code>idle0.png</code>, <code>straight4.png</code> …)을 아래에 끌어다 놓으면
+  프레임 키 이름으로 저장한 이미지들(<code>idle0.png</code>, <code>straight4.png</code> …)을 끌어다 놓으면
   게임 규격에 맞춰 크기·위치를 자동으로 맞추고 시트와 <code>sprites.json</code> 을 만들어 줍니다.
-  각 칸에는 내장 스프라이트가 반투명 가이드로 깔려 있어 자세와 정렬을 눈으로 비교할 수 있습니다.
-  등록하지 않은 프레임은 게임에서 내장 스프라이트가 그대로 쓰입니다.
+  각 칸에는 내장 스프라이트가 반투명 가이드로 깔려 있고, 작업 내용은 <b>브라우저에 자동 저장</b>되어
+  창을 닫았다 열어도 이어서 할 수 있습니다. 프롬프트는 <a href="prompt-maker.html">프롬프트 생성기</a>에서 만들 수 있습니다.
 </p>
 <div class="note">
-  <b>정렬 방법</b> · 칸을 클릭해 선택한 뒤 <b>방향키</b>로 1px, <b>Shift+방향키</b>로 8px 이동합니다.
-  <b>+ / −</b> 키로 크기를 조절하고, <b>0</b> 으로 자동 정렬을 되돌립니다.
+  <b>단축키</b> ·
+  <kbd>←→↑↓</kbd> 1px 이동 · <kbd>Shift</kbd>+방향키 8px ·
+  <kbd>+</kbd><kbd>−</kbd> 크기 · <kbd>0</kbd> 자동 정렬 ·
+  <kbd>F</kbd> 좌우 뒤집기 · <kbd>Del</kbd> 삭제 ·
+  <kbd>[</kbd><kbd>]</kbd> 이전/다음 칸 · <kbd>Ctrl</kbd>+<kbd>Z</kbd> 되돌리기.
+  칸 위에 이미지를 바로 떨어뜨리면 파일 이름과 상관없이 그 칸에 들어갑니다.
 </div>
 
 <div class="bar">
   <label>캐릭터 <select id="charSel"></select></label>
   <label>기준 프레임 <select id="refSel"></select></label>
   <label>가이드 <input type="checkbox" id="ghost" checked></label>
-  <button id="btnSheet">시트 PNG 내려받기</button>
-  <button id="btnJson" class="ghost">sprites.json 내려받기</button>
-  <button id="btnGuide" class="ghost">정렬 가이드 PNG</button>
-  <button id="btnClear" class="ghost">모두 비우기</button>
+  <label>보기 <select id="filterSel">
+    <option value="all">전체</option>
+    <option value="todo">미배치만</option>
+    <option value="has">배치됨만</option>
+  </select></label>
+  <input type="search" id="search" placeholder="프레임 검색" style="width:150px">
 </div>
+<div class="bar">
+  <button id="btnAll">시트 PNG + JSON 내려받기</button>
+  <button id="btnSheet" class="ghost">시트만</button>
+  <button id="btnJson" class="ghost">JSON만</button>
+  <button id="btnImport" class="ghost">기존 작업 불러오기</button>
+  <button id="btnGuide" class="ghost">정렬 가이드 PNG</button>
+  <button id="btnRealign" class="ghost">전체 자동 정렬</button>
+  <button id="btnUndo" class="ghost">되돌리기</button>
+  <button id="btnClear" class="ghost">모두 비우기</button>
+  <input type="file" id="importFiles" accept="image/png,image/webp,application/json,.json" multiple hidden>
+</div>
+<div class="prog"><i id="progBar"></i></div>
 <div id="status"></div>
 
-<div id="drop">프레임 낱장 PNG 를 끌어다 놓으세요 (여러 장 한 번에 가능) · 또는 클릭해서 선택
-  <input type="file" id="file" accept="image/png,image/webp" multiple hidden>
+<div class="panel selbar" id="selBar" hidden>
+  <span class="name" id="selName"></span>
+  <button class="ghost mini" data-nudge="-1,0">←</button>
+  <button class="ghost mini" data-nudge="1,0">→</button>
+  <button class="ghost mini" data-nudge="0,-1">↑</button>
+  <button class="ghost mini" data-nudge="0,1">↓</button>
+  <button class="ghost mini" data-scale="1.02">＋</button>
+  <button class="ghost mini" data-scale="0.98">－</button>
+  <button class="ghost mini" id="btnFlip">좌우 뒤집기</button>
+  <button class="ghost mini" id="btnAuto">자동 정렬</button>
+  <button class="ghost mini" id="btnDel">삭제</button>
 </div>
 
-<div id="sheetBox">
-  <div id="dropSheet">격자로 된 <b>스프라이트 시트 한 장</b>을 여기에 넣으면 자동으로 잘라 줍니다
-    · 체크무늬 배경과 격자선도 제거합니다
-    <input type="file" id="sheetFile" accept="image/png,image/webp" hidden>
+<div class="cols">
+  <div>
+    <div class="panel">
+      <h2>낱장 이미지</h2>
+      <div id="drop">프레임 낱장 PNG 를 끌어다 놓으세요 (여러 장 한 번에 가능) · 또는 클릭해서 선택
+        <input type="file" id="file" accept="image/png,image/webp" multiple hidden>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>시트 한 장 통째로 자르기</h2>
+      <div id="dropSheet">격자로 된 <b>스프라이트 시트 한 장</b>을 여기에 넣으면 자동으로 잘라 줍니다
+        · 체크무늬 배경과 격자선도 제거합니다
+        <input type="file" id="sheetFile" accept="image/png,image/webp" hidden>
+      </div>
+      <div class="bar" id="stripBar" hidden>
+        <button class="ghost mini" id="btnStripClear">조각 비우기</button>
+        <span style="font-size:12px;color:var(--muted)">조각을 고른 뒤 아래 칸을 클릭하면 배치됩니다 · 조각의 <b style="color:#ff9d9d">✕</b> 로 버리기</span>
+      </div>
+      <div id="strip"></div>
+    </div>
   </div>
-  <div id="strip"></div>
+
+  <div class="panel">
+    <h2>움직임 미리보기</h2>
+    <div class="bar" style="margin:0 0 8px">
+      <select id="animSel" style="flex:1"></select>
+    </div>
+    <div class="bar" style="margin:0 0 8px">
+      <button class="ghost mini" id="btnPlay">정지</button>
+      <label style="flex:1">속도 <input type="range" id="fps" min="2" max="24" value="10" style="flex:1"></label>
+      <span id="fpsText" style="font:12px monospace;color:var(--muted)"></span>
+    </div>
+    <div id="previewBox"><canvas id="preview" width="272" height="336"></canvas></div>
+    <p style="margin:8px 0 0;font-size:12px">
+      배치한 그림은 그대로, 아직 없는 프레임은 내장 스프라이트를 흐리게 보여 줍니다.
+      발이 흔들리면 그 프레임의 세로 위치를 맞추세요.
+    </p>
+  </div>
 </div>
+
 <div id="grid"></div>
 
 <script src="../js/util.js"></script>
@@ -92,11 +179,10 @@
 <script>
 'use strict';
 const COLS = 8;
-const ZOOM = 1;                       // 미리보기 배율
 let charId = 'goku';
 let refKey = 'idle0';
 let selected = null;
-const frames = new Map();             // key -> { img, sx, sy, scale, auto }
+let frames = new Map();               // key -> { img, box, scale, sx, sy, flip }
 
 /* ---------- 프레임 키 목록 (게임과 동일한 순서) ---------- */
 function frameKeys() {
@@ -179,13 +265,26 @@ function measureBuiltin(fr) {
   return h;
 }
 
-/* ---------- 한 칸 그리기 ---------- */
+/* ---------- 그리기 ---------- */
+function drawEntry(ctx, f, ox, oy) {
+  const w = f.box.w * f.scale, h = f.box.h * f.scale;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  if (f.flip) {
+    ctx.translate(ox + f.sx + w, oy + f.sy);
+    ctx.scale(-1, 1);
+    ctx.drawImage(f.img, f.box.x, f.box.y, f.box.w, f.box.h, 0, 0, w, h);
+  } else {
+    ctx.drawImage(f.img, f.box.x, f.box.y, f.box.w, f.box.h, ox + f.sx, oy + f.sy, w, h);
+  }
+  ctx.restore();
+}
+
 function paintCell(cv, item) {
   const ctx = cv.getContext('2d');
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, CELL_W, CELL_H);
   ctx.imageSmoothingEnabled = false;
-  // 격자 / 지면선 / 원점
   ctx.fillStyle = '#0f1526'; ctx.fillRect(0, 0, CELL_W, CELL_H);
   ctx.strokeStyle = 'rgba(255,255,255,.10)'; ctx.lineWidth = 1;
   ctx.strokeRect(.5, .5, CELL_W - 1, CELL_H - 1);
@@ -203,38 +302,160 @@ function paintCell(cv, item) {
     }
   }
   const f = frames.get(item.key);
-  if (f) {
-    ctx.drawImage(f.img, f.box.x, f.box.y, f.box.w, f.box.h,
-      f.sx, f.sy, f.box.w * f.scale, f.box.h * f.scale);
+  if (f) drawEntry(ctx, f, 0, 0);
+}
+
+/* ---------- 되돌리기 ---------- */
+const history = [];
+function snapshot() {
+  const m = new Map();
+  frames.forEach((f, k) => m.set(k, Object.assign({}, f, { box: Object.assign({}, f.box) })));
+  return m;
+}
+function pushHistory() {
+  history.push(snapshot());
+  if (history.length > 40) history.shift();
+  const b = document.getElementById('btnUndo');
+  if (b) b.disabled = false;
+}
+function undo() {
+  if (!history.length) return;
+  frames = history.pop();
+  document.getElementById('btnUndo').disabled = !history.length;
+  save(); build();
+}
+
+/* ---------- 저장 / 불러오기 (IndexedDB) ---------- */
+const DB_NAME = 'dfz-sprite-pack';
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('packs');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function dbGet(k) {
+  try {
+    const db = await openDB();
+    return await new Promise(res => {
+      const q = db.transaction('packs').objectStore('packs').get(k);
+      q.onsuccess = () => res(q.result || null);
+      q.onerror = () => res(null);
+    });
+  } catch (e) { return null; }
+}
+async function dbSet(k, v) {
+  try {
+    const db = await openDB();
+    await new Promise(res => {
+      const q = db.transaction('packs', 'readwrite').objectStore('packs').put(v, k);
+      q.onsuccess = q.onerror = () => res();
+    });
+  } catch (e) { /* 저장 불가 */ }
+}
+
+/** 잘라낸 영역만 PNG 로 뽑아 둔다 (원본 전체를 저장하지 않아 용량이 작다) */
+function entryToRecord(f) {
+  const cv = document.createElement('canvas');
+  cv.width = f.box.w; cv.height = f.box.h;
+  cv.getContext('2d').drawImage(f.img, f.box.x, f.box.y, f.box.w, f.box.h, 0, 0, f.box.w, f.box.h);
+  return { url: cv.toDataURL('image/png'), scale: f.scale, sx: f.sx, sy: f.sy, flip: !!f.flip };
+}
+let saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const rec = {};
+    frames.forEach((f, k) => { rec[k] = entryToRecord(f); });
+    await dbSet(charId, { refKey, frames: rec });
+  }, 500);
+}
+function loadImage(src) {
+  return new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+}
+async function restore() {
+  const rec = await dbGet(charId);
+  frames = new Map();
+  if (rec && rec.frames) {
+    if (rec.refKey) refKey = rec.refKey;
+    for (const k of Object.keys(rec.frames)) {
+      const r = rec.frames[k];
+      const img = await loadImage(r.url);
+      if (!img) continue;
+      frames.set(k, { img, box: { x: 0, y: 0, w: img.width, h: img.height },
+        scale: r.scale, sx: r.sx, sy: r.sy, flip: !!r.flip });
+    }
   }
+  build();
+  syncRefSel();
 }
 
 /* ---------- 화면 구성 ---------- */
-let items = [];
+let items = [];          // 전체 프레임 (게임 순서)
+function visibleItems() {
+  const mode = document.getElementById('filterSel').value;
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  return items.filter(i => {
+    if (q && !i.key.toLowerCase().includes(q)) return false;
+    if (mode === 'todo' && frames.has(i.key)) return false;
+    if (mode === 'has' && !frames.has(i.key)) return false;
+    return true;
+  });
+}
+
 function build() {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
-  items = frameKeys();
-  for (const item of items) {
+  if (!items.length) items = frameKeys();
+  items.forEach(i => { i.cv = null; });
+  for (const item of visibleItems()) {
     const cell = document.createElement('div');
     cell.className = 'cell' + (frames.has(item.key) ? ' has' : '') + (selected === item.key ? ' sel' : '');
     const cv = document.createElement('canvas');
     cv.width = CELL_W; cv.height = CELL_H;
     cell.appendChild(cv);
     const label = document.createElement('span');
+    label.className = 'k';
     label.textContent = item.key;
     cell.appendChild(label);
+    const f = frames.get(item.key);
+    if (f && f.flip) {
+      const fl = document.createElement('span');
+      fl.className = 'flip'; fl.textContent = '뒤집힘';
+      cell.appendChild(fl);
+    }
+    if (f) {
+      const x = document.createElement('span');
+      x.className = 'x'; x.textContent = '✕'; x.title = '이 프레임 지우기';
+      x.addEventListener('click', ev => { ev.stopPropagation(); removeFrame(item.key); });
+      cell.appendChild(x);
+    }
     cell.addEventListener('click', () => {
-      if (!placeHeld(item.key)) selected = item.key;
+      if (!placeHeld(item.key)) { selected = item.key; syncSelBar(); }
       build();
+    });
+    // 칸 위에 직접 떨어뜨리면 파일 이름과 상관없이 그 칸에 넣는다
+    ['dragenter', 'dragover'].forEach(ev =>
+      cell.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); cell.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(ev =>
+      cell.addEventListener(ev, e => { e.preventDefault(); cell.classList.remove('over'); }));
+    cell.addEventListener('drop', e => {
+      e.stopPropagation();
+      if (e.dataTransfer.files[0]) addFiles([e.dataTransfer.files[0]], item.key);
     });
     grid.appendChild(cell);
     paintCell(cv, item);
     item.cv = cv;
   }
   const have = items.filter(i => frames.has(i.key)).length;
+  const shown = visibleItems().length;
+  document.getElementById('progBar').style.width = items.length ? (have / items.length * 100).toFixed(1) + '%' : '0';
   document.getElementById('status').textContent =
-    `${have} / ${items.length} 프레임 준비됨` + (have < items.length ? ' · 나머지는 내장 스프라이트가 사용됩니다' : '');
+    `${have} / ${items.length} 프레임 준비됨` +
+    (shown !== items.length ? ` · ${shown}칸 표시 중` : '') +
+    (have < items.length ? ' · 나머지는 내장 스프라이트가 사용됩니다' : ' · 전부 준비되었습니다');
+  syncSelBar();
 }
 
 function repaint(key) {
@@ -242,33 +463,54 @@ function repaint(key) {
   if (item && item.cv) paintCell(item.cv, item);
 }
 
+function syncSelBar() {
+  const bar = document.getElementById('selBar');
+  const ok = selected && frames.has(selected);
+  bar.hidden = !ok;
+  if (ok) document.getElementById('selName').textContent = selected;
+}
+
+function removeFrame(key) {
+  if (!frames.has(key)) return;
+  pushHistory();
+  frames.delete(key);
+  save(); build();
+}
+
 /* ---------- 파일 읽기 ---------- */
 function keyFromName(name) {
   const base = name.replace(/\.[^.]+$/, '');
   const valid = items.map(i => i.key);
-  // goku_straight4 / 03_straight4 처럼 앞에 뭐가 붙어도 인식
+  // goku_straight4 / 03_straight4 / goku_ss_idle0 처럼 앞에 뭐가 붙어도 인식
   const hit = valid
     .filter(k => base === k || base.endsWith('_' + k) || base.endsWith('-' + k))
     .sort((a, b) => b.length - a.length)[0];
   return hit || null;
 }
 
-async function addFiles(fileList) {
+async function addFiles(fileList, forceKey) {
+  const skipped = [];
+  let added = 0;
+  pushHistory();
   for (const file of fileList) {
     if (!/image\/(png|webp)/.test(file.type)) continue;
-    const key = keyFromName(file.name);
-    if (!key) { console.warn('프레임 키를 알 수 없는 파일:', file.name); continue; }
-    const img = await new Promise(res => {
-      const im = new Image();
-      im.onload = () => res(im);
-      im.src = URL.createObjectURL(file);
-    });
-    const entry = { img, box: trim(img), scale: 1, sx: 0, sy: 0 };
+    const key = forceKey || keyFromName(file.name);
+    if (!key) { skipped.push(file.name); continue; }
+    const img = await loadImage(URL.createObjectURL(file));
+    if (!img) { skipped.push(file.name); continue; }
+    const entry = { img, box: trim(img), scale: 1, sx: 0, sy: 0, flip: false };
     frames.set(key, entry);
     autoAlign(entry);
+    added++;
+    if (forceKey) break;
   }
   frames.forEach(f => autoAlign(f));   // 기준 프레임 배율로 전체를 다시 맞춘다
-  build();
+  save(); build();
+  if (skipped.length) {
+    document.getElementById('status').textContent =
+      `${added}장 등록 · 프레임 이름을 알 수 없어 건너뜀: ${skipped.slice(0, 4).join(', ')}` +
+      (skipped.length > 4 ? ` 외 ${skipped.length - 4}개` : '');
+  }
 }
 
 /* ---------- 내보내기 ---------- */
@@ -283,9 +525,7 @@ function buildSheet() {
   const map = {};
   used.forEach((item, i) => {
     const x = (i % COLS) * CELL_W, y = Math.floor(i / COLS) * CELL_H;
-    const f = frames.get(item.key);
-    ctx.drawImage(f.img, f.box.x, f.box.y, f.box.w, f.box.h,
-      x + f.sx, y + f.sy, f.box.w * f.scale, f.box.h * f.scale);
+    drawEntry(ctx, frames.get(item.key), x, y);
     map[item.key] = [x, y];
   });
   return { canvas: cv, frames: map };
@@ -295,22 +535,31 @@ function download(href, name) {
   const a = document.createElement('a');
   a.href = href; a.download = name; a.click();
 }
-
-document.getElementById('btnSheet').addEventListener('click', () => {
-  const sheet = buildSheet();
-  if (sheet) download(sheet.canvas.toDataURL('image/png'), charId + '.png');
-});
-
-document.getElementById('btnJson').addEventListener('click', () => {
-  const sheet = buildSheet();
-  if (!sheet) return;
-  const manifest = {
+function manifestOf(sheet) {
+  return {
     cellWidth: CELL_W, cellHeight: CELL_H,
     originX: CELL_OX, originY: CELL_OY, scale: SPRITE_SCALE,
     characters: { [charId]: { image: charId + '.png', frames: sheet.frames } }
   };
-  const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+}
+function saveSheet() {
+  const sheet = buildSheet();
+  if (sheet) download(sheet.canvas.toDataURL('image/png'), charId + '.png');
+  return sheet;
+}
+function saveJson(sheet) {
+  const s = sheet || buildSheet();
+  if (!s) return;
+  const blob = new Blob([JSON.stringify(manifestOf(s), null, 2)], { type: 'application/json' });
   download(URL.createObjectURL(blob), 'sprites.json');
+}
+document.getElementById('btnSheet').addEventListener('click', () => saveSheet());
+document.getElementById('btnJson').addEventListener('click', () => saveJson());
+document.getElementById('btnAll').addEventListener('click', () => {
+  const sheet = buildSheet();
+  if (!sheet) return;
+  download(sheet.canvas.toDataURL('image/png'), charId + '.png');
+  setTimeout(() => saveJson(sheet), 250);
 });
 
 document.getElementById('btnGuide').addEventListener('click', () => {
@@ -330,12 +579,51 @@ document.getElementById('btnGuide').addEventListener('click', () => {
   download(cv.toDataURL('image/png'), 'align-guide.png');
 });
 
+document.getElementById('btnRealign').addEventListener('click', () => {
+  pushHistory();
+  frames.forEach(f => autoAlign(f));
+  save(); build();
+});
+document.getElementById('btnUndo').addEventListener('click', undo);
 document.getElementById('btnClear').addEventListener('click', () => {
-  frames.clear(); selected = null; build();
+  if (!frames.size || !confirm(`${CHAR_BY_ID[charId].name} 의 프레임 ${frames.size}개를 모두 지울까요?`)) return;
+  pushHistory();
+  frames.clear(); selected = null;
+  save(); build();
+});
+
+/* ---------- 기존 작업 불러오기 (sprites.json + 시트 PNG) ---------- */
+document.getElementById('btnImport').addEventListener('click', () => document.getElementById('importFiles').click());
+document.getElementById('importFiles').addEventListener('change', async e => {
+  const files = [...e.target.files];
+  const json = files.find(f => /\.json$/i.test(f.name));
+  const png = files.find(f => /image\//.test(f.type));
+  if (!json || !png) { alert('sprites.json 과 시트 PNG 를 함께 골라 주세요.'); return; }
+  let manifest;
+  try { manifest = JSON.parse(await json.text()); }
+  catch (err) { alert('sprites.json 을 읽지 못했습니다.'); return; }
+  const entryChar = manifest.characters && (manifest.characters[charId] ||
+    manifest.characters[Object.keys(manifest.characters)[0]]);
+  if (!entryChar || !entryChar.frames) { alert('시트 정보를 찾지 못했습니다.'); return; }
+  const img = await loadImage(URL.createObjectURL(png));
+  if (!img) { alert('시트 이미지를 읽지 못했습니다.'); return; }
+  const cw = manifest.cellWidth || CELL_W, ch = manifest.cellHeight || CELL_H;
+  pushHistory();
+  for (const key of Object.keys(entryChar.frames)) {
+    const [sx, sy] = entryChar.frames[key];
+    const cell = document.createElement('canvas');
+    cell.width = cw; cell.height = ch;
+    cell.getContext('2d').drawImage(img, sx, sy, cw, ch, 0, 0, cw, ch);
+    const box = trim(cell);
+    if (box.w < 2 || box.h < 2) continue;
+    frames.set(key, { img: cell, box, scale: 1, sx: box.x, sy: box.y, flip: false });
+  }
+  save(); build();
+  document.getElementById('status').textContent = `${frames.size}개 프레임을 불러왔습니다.`;
 });
 
 /* ---------- 시트 한 장 통째로 불러오기 ---------- */
-let sliced = [];          // { canvas, used }
+let sliced = [];          // { canvas, used, dropped }
 let held = -1;            // 지금 들고 있는 조각
 
 /** 체크무늬/단색 배경과 격자선을 지운다 (알파가 있으면 그대로 둔다) */
@@ -435,7 +723,7 @@ function sliceSheet(clean) {
           const c = document.createElement('canvas');
           c.width = w; c.height = h;
           c.getContext('2d').drawImage(clean.canvas, cs, ty, w, h, 0, 0, w, h);
-          out.push({ canvas: c, used: false });
+          out.push({ canvas: c, used: false, dropped: false });
         }
         cs = -1;
       }
@@ -444,32 +732,50 @@ function sliceSheet(clean) {
   return out;
 }
 
+function nextSlice(from) {
+  const ok = (s) => !s.used && !s.dropped;
+  let i = sliced.findIndex((s, j) => j > from && ok(s));
+  if (i < 0) i = sliced.findIndex(ok);
+  return i;
+}
+
 function renderStrip() {
   const strip = document.getElementById('strip');
   strip.innerHTML = '';
+  document.getElementById('stripBar').hidden = !sliced.length;
   sliced.forEach((sl, i) => {
+    if (sl.dropped) return;
     const chip = document.createElement('div');
     chip.className = 'chip' + (held === i ? ' held' : '') + (sl.used ? ' used' : '');
-    chip.appendChild(sl.canvas.cloneNode(false));
-    chip.lastChild.getContext('2d').drawImage(sl.canvas, 0, 0);
+    const cv = document.createElement('canvas');
+    cv.width = sl.canvas.width; cv.height = sl.canvas.height;
+    cv.getContext('2d').drawImage(sl.canvas, 0, 0);
+    chip.appendChild(cv);
     const n = document.createElement('b');
     n.textContent = i;
     chip.appendChild(n);
+    const x = document.createElement('i');
+    x.textContent = '✕'; x.title = '이 조각 버리기';
+    x.addEventListener('click', ev => {
+      ev.stopPropagation();
+      sl.dropped = true;
+      if (held === i) held = nextSlice(i);
+      renderStrip();
+    });
+    chip.appendChild(x);
     chip.addEventListener('click', () => { held = held === i ? -1 : i; renderStrip(); });
     strip.appendChild(chip);
   });
+  const left = sliced.filter(s => !s.used && !s.dropped).length;
   if (sliced.length) {
     document.getElementById('status').textContent =
-      `조각 ${sliced.length}개 · 조각을 고른 뒤 아래 칸을 클릭하면 배치됩니다 (배치하면 다음 조각으로 자동 이동)`;
+      `조각 ${left}개 남음 · 조각을 고른 뒤 아래 칸을 클릭하면 배치됩니다 (배치하면 다음 조각으로 자동 이동)`;
   }
 }
 
 async function loadSheet(file) {
-  const img = await new Promise(res => {
-    const im = new Image();
-    im.onload = () => res(im);
-    im.src = URL.createObjectURL(file);
-  });
+  const img = await loadImage(URL.createObjectURL(file));
+  if (!img) return;
   sliced = sliceSheet(cleanSheet(img));
   held = sliced.length ? 0 : -1;
   renderStrip();
@@ -477,18 +783,106 @@ async function loadSheet(file) {
 
 /** 들고 있는 조각을 프레임 키에 배치 */
 function placeHeld(key) {
-  if (held < 0 || !sliced[held]) return false;
+  if (held < 0 || !sliced[held] || sliced[held].dropped) return false;
+  pushHistory();
   const sl = sliced[held];
-  const entry = { img: sl.canvas, box: { x: 0, y: 0, w: sl.canvas.width, h: sl.canvas.height }, scale: 1, sx: 0, sy: 0 };
+  const entry = { img: sl.canvas, box: { x: 0, y: 0, w: sl.canvas.width, h: sl.canvas.height },
+    scale: 1, sx: 0, sy: 0, flip: false };
   frames.set(key, entry);
   sl.used = true;
   autoAlign(entry);
   if (frames.has(refKey)) frames.forEach(f => autoAlign(f));
-  held = sliced.findIndex((s, i) => i > held && !s.used);
-  if (held < 0) held = sliced.findIndex(s => !s.used);
+  held = nextSlice(held);
   renderStrip();
+  save();
   return true;
 }
+document.getElementById('btnStripClear').addEventListener('click', () => {
+  sliced = []; held = -1; renderStrip();
+});
+
+/* ---------- 움직임 미리보기 ---------- */
+let anims = [];
+let playing = true, animT = 0, animIdx = 0;
+function buildAnims() {
+  const NAMES = { idle: '대기', walk: '전진', back: '후진', charge: '기 모으기', win: '승리', ent: '등장',
+    jab: '약펀치', straight: '강펀치', roundhouse: '돌려차기', lowKick: '하단차기', sweep: '발차기(다리후리기)',
+    uppercut: '어퍼컷', grab: '잡기', airPunch: '공중펀치', airKick: '공중차기', airSlam: '공중내려찍기',
+    kiBlast: '기탄', beamC: '필살기', ultC: '초필살기' };
+  const groups = new Map();
+  for (const it of items) {
+    const m = it.key.match(/^([a-zA-Z]+?)(\d+)$/);
+    if (!m) continue;
+    const g = m[1];
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push({ key: it.key, n: +m[2] });
+  }
+  anims = [];
+  groups.forEach((arr, g) => {
+    arr.sort((a, b) => a.n - b.n);
+    const keys = arr.map(a => a.key);
+    if (g === 'beamC' && items.some(i => i.key === 'beamF')) keys.push('beamF');
+    if (g === 'ultC' && items.some(i => i.key === 'ultF')) keys.push('ultF');
+    if (keys.length < 2) return;
+    anims.push({ name: NAMES[g] || g, keys });
+  });
+  const sel = document.getElementById('animSel');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  anims.forEach((a, i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = `${a.name} (${a.keys.length}장)`;
+    sel.appendChild(o);
+  });
+  if (prev && anims[prev]) sel.value = prev;
+  animIdx = +sel.value || 0;
+}
+function drawPreview() {
+  const cv = document.getElementById('preview');
+  const ctx = cv.getContext('2d');
+  const Z = 2;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#0f1526'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = 'rgba(120,220,255,.4)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, CELL_OY * Z + .5); ctx.lineTo(cv.width, CELL_OY * Z + .5); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,138,31,.35)';
+  ctx.beginPath(); ctx.moveTo(CELL_OX * Z + .5, 0); ctx.lineTo(CELL_OX * Z + .5, cv.height); ctx.stroke();
+
+  const anim = anims[animIdx];
+  if (!anim) return;
+  const key = anim.keys[Math.floor(animT) % anim.keys.length];
+  const item = items.find(i => i.key === key);
+  ctx.save();
+  ctx.scale(Z, Z);
+  const f = frames.get(key);
+  if (f) drawEntry(ctx, f, 0, 0);
+  else if (item) {
+    const fr = builtinFrame(item.spec);
+    if (fr) {
+      ctx.globalAlpha = 0.35;
+      ctx.drawImage(fr.image, fr.sx, fr.sy, CELL_W, CELL_H, 0, 0, CELL_W, CELL_H);
+      ctx.globalAlpha = 1;
+    }
+  }
+  ctx.restore();
+  ctx.fillStyle = f ? '#8affc0' : '#8ea0d0';
+  ctx.font = '12px monospace';
+  ctx.fillText(key + (f ? '' : ' (내장)'), 8, 16);
+}
+let lastT = 0;
+function animLoop(t) {
+  const fps = +document.getElementById('fps').value;
+  document.getElementById('fpsText').textContent = fps + ' fps';
+  if (playing && t - lastT > 1000 / fps) { animT++; lastT = t; }
+  drawPreview();
+  requestAnimationFrame(animLoop);
+}
+document.getElementById('animSel').addEventListener('change', e => { animIdx = +e.target.value; animT = 0; });
+document.getElementById('btnPlay').addEventListener('click', e => {
+  playing = !playing;
+  e.target.textContent = playing ? '정지' : '재생';
+});
 
 /* ---------- 드래그 & 키보드 ---------- */
 const drop = document.getElementById('drop'), fileInput = document.getElementById('file');
@@ -508,25 +902,75 @@ fileInput.addEventListener('change', e => addFiles(e.target.files));
   drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
 drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
 
-window.addEventListener('keydown', e => {
-  if (!selected || !frames.has(selected)) return;
+function nudge(dx, dy) {
   const f = frames.get(selected);
+  if (!f) return;
+  f.sx += dx; f.sy += dy;
+  repaint(selected); save();
+}
+function scaleBy(k) {
+  const f = frames.get(selected);
+  if (!f) return;
+  f.scale *= k;
+  repaint(selected); save();
+}
+function flipSel() {
+  const f = frames.get(selected);
+  if (!f) return;
+  pushHistory();
+  f.flip = !f.flip;
+  save(); build();
+}
+document.querySelectorAll('[data-nudge]').forEach(b =>
+  b.addEventListener('click', () => { const [x, y] = b.dataset.nudge.split(',').map(Number); nudge(x, y); }));
+document.querySelectorAll('[data-scale]').forEach(b =>
+  b.addEventListener('click', () => scaleBy(+b.dataset.scale)));
+document.getElementById('btnFlip').addEventListener('click', flipSel);
+document.getElementById('btnAuto').addEventListener('click', () => {
+  const f = frames.get(selected);
+  if (!f) return;
+  pushHistory(); autoAlign(f); repaint(selected); save();
+});
+document.getElementById('btnDel').addEventListener('click', () => removeFrame(selected));
+
+function moveSelection(dir) {
+  const list = visibleItems();
+  if (!list.length) return;
+  let i = list.findIndex(it => it.key === selected);
+  i = i < 0 ? 0 : (i + dir + list.length) % list.length;
+  selected = list[i].key;
+  build();
+  const cell = document.querySelectorAll('#grid .cell')[i];
+  if (cell) cell.scrollIntoView({ block: 'nearest' });
+}
+
+window.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+  if (e.key === '[') { e.preventDefault(); moveSelection(-1); return; }
+  if (e.key === ']') { e.preventDefault(); moveSelection(1); return; }
+  if (!selected || !frames.has(selected)) return;
   const step = e.shiftKey ? 8 : 1;
   let used = true;
   switch (e.key) {
-    case 'ArrowLeft': f.sx -= step; break;
-    case 'ArrowRight': f.sx += step; break;
-    case 'ArrowUp': f.sy -= step; break;
-    case 'ArrowDown': f.sy += step; break;
-    case '+': case '=': f.scale *= 1.02; break;
-    case '-': case '_': f.scale /= 1.02; break;
-    case '0': autoAlign(f); break;
+    case 'ArrowLeft': nudge(-step, 0); break;
+    case 'ArrowRight': nudge(step, 0); break;
+    case 'ArrowUp': nudge(0, -step); break;
+    case 'ArrowDown': nudge(0, step); break;
+    case '+': case '=': scaleBy(1.02); break;
+    case '-': case '_': scaleBy(1 / 1.02); break;
+    case '0': pushHistory(); autoAlign(frames.get(selected)); repaint(selected); save(); break;
+    case 'f': case 'F': flipSel(); break;
+    case 'Delete': case 'Backspace': removeFrame(selected); break;
     default: used = false;
   }
-  if (used) { e.preventDefault(); repaint(selected); }
+  if (used) e.preventDefault();
 });
 
 document.getElementById('ghost').addEventListener('change', build);
+document.getElementById('filterSel').addEventListener('change', build);
+document.getElementById('search').addEventListener('input', build);
 
 /* ---------- 초기화 ---------- */
 const charSel = document.getElementById('charSel');
@@ -535,25 +979,42 @@ CHARACTERS.forEach(c => {
   o.value = c.id; o.textContent = `${c.name} (${c.id})`;
   charSel.appendChild(o);
 });
-charSel.addEventListener('change', () => {
-  charId = charSel.value; SpriteBank.init({}); builtinH.clear(); targetHeightCache = null;
-  frames.forEach(f => autoAlign(f)); build();
+charSel.addEventListener('change', async () => {
+  charId = charSel.value;
+  SpriteBank.init({}); builtinH.clear(); targetHeightCache = null;
+  items = frameKeys();
+  history.length = 0;
+  document.getElementById('btnUndo').disabled = true;
+  selected = null;
+  await restore();
+  buildAnims();
 });
 
-build();
 const refSel = document.getElementById('refSel');
-items.forEach(i => {
-  const o = document.createElement('option');
-  o.value = i.key; o.textContent = i.key;
-  refSel.appendChild(o);
-});
-refSel.value = refKey;
+function syncRefSel() {
+  refSel.innerHTML = '';
+  items.forEach(i => {
+    const o = document.createElement('option');
+    o.value = i.key; o.textContent = i.key;
+    refSel.appendChild(o);
+  });
+  refSel.value = refKey;
+}
 refSel.addEventListener('change', () => {
   refKey = refSel.value;
   targetHeightCache = null;
+  pushHistory();
   frames.forEach(f => autoAlign(f));
-  build();
+  save(); build();
 });
+
+items = frameKeys();
+document.getElementById('btnUndo').disabled = true;
+build();
+syncRefSel();
+buildAnims();
+restore().then(buildAnims);
+requestAnimationFrame(animLoop);
 </script>
 </body>
 </html>
