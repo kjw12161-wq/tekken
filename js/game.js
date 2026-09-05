@@ -298,7 +298,15 @@ const Game = {
 
   /** 캐릭터 선택 화면 키보드 조작 */
   handleSelectKey(code) {
-    const COLS = 3;
+    // 그리드가 화면 폭에 따라 열 수가 바뀌므로 실제 배치에서 읽어온다
+    const cards = document.querySelectorAll('.char-card');
+    let COLS = 1;
+    if (cards.length > 1) {
+      const top0 = cards[0].offsetTop;
+      COLS = 0;
+      for (const card of cards) { if (card.offsetTop === top0) COLS++; else break; }
+      COLS = Math.max(1, COLS);
+    }
     const n = CHARACTERS.length;
     let c = this.cursor || 0;
     if (/^(ArrowLeft|KeyA|Numpad4)$/.test(code)) c = (c - 1 + n) % n;
@@ -554,6 +562,40 @@ const Game = {
             x: f.x + rand(-26, 26), y: f.y - rand(0, 20),
             vx: rand(-0.4, 0.4), vy: rand(-4, -1.8), life: randInt(16, 30),
             size: rand(3, 8), color: aura, shape: 'shard'
+          });
+        }
+        break;
+      case 'roar':
+        if (t === Math.round(ENTRANCE_FRAMES * 0.55)) {
+          // 포효와 함께 기가 폭발한다
+          Sfx.play('ultimate');
+          this.shake(16);
+          this.particles.burst(f.x, f.y - 80, 34, {
+            color: aura, minSpeed: 3, maxSpeed: 13, minSize: 4, maxSize: 14,
+            minLife: 20, maxLife: 46, shape: 'shard'
+          });
+          this.particles.spawn({ x: f.x, y: f.y - 80, life: 26, size: 54, color: '#ffffff', shape: 'ring' });
+        } else if (t > ENTRANCE_FRAMES * 0.55 && t % 4 === 0) {
+          this.particles.spawn({
+            x: f.x + rand(-32, 32), y: f.y - rand(0, 20),
+            vx: rand(-0.6, 0.6), vy: rand(-5, -2.4), life: randInt(16, 30),
+            size: rand(4, 10), color: aura, shape: 'shard'
+          });
+        }
+        break;
+      case 'dive':
+        if (t === Math.round(ENTRANCE_FRAMES * 0.44)) {
+          Sfx.play('heavy');
+          this.shake(10);
+          this.particles.burst(f.x, GROUND_Y, 20, {
+            color: '#e6d3ae', minSpeed: 2, maxSpeed: 8, minSize: 3, maxSize: 10, gravity: 0.16
+          });
+          this.particles.spawn({ x: f.x, y: GROUND_Y - 4, life: 20, size: 36, color: '#e0d0ff', shape: 'ring' });
+        } else if (t < ENTRANCE_FRAMES * 0.42 && t % 3 === 0) {
+          this.particles.spawn({
+            x: f.x + rand(-14, 14), y: f.y - 40 + rand(-30, 30),
+            vx: rand(-0.6, 0.6), vy: rand(-3, -1), life: randInt(10, 20),
+            size: rand(2, 6), color: aura
           });
         }
         break;

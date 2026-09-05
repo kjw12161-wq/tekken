@@ -172,6 +172,64 @@ const CHARACTERS = [
     special: { name: '버닝 어택', color: '#ffb35c', core: '#fff0d0', motion: 'weave' },
     ultimate: { name: '히트 돔 어택', color: '#ffd93d', core: '#ffffff', motion: 'orb' },
     quotes: { win: '미래는 내가 바꾼다.', pick: '봐주지 않겠어.' }
+  },
+  {
+    id: 'broly',
+    name: '브로리',
+    title: '전설의 초사이어인',
+    hp: 1200, speed: 3.0, jump: 15.4, power: 1.35, defense: 1.16, weight: 1.30,
+    hairStyle: 'broly',
+    style: 'legendary',
+    bulk: 1.24,                                     // 압도적인 체구
+    props: { sash: true, collar: true },
+    colors: {
+      gi: '#e8b483', giDark: '#b57f4c',             // 맨몸 상체
+      trim: '#b8232c', trimDark: '#7c1219',         // 붉은 허리천
+      pants: '#dcd7c6', pantsDark: '#a49c88',       // 흰 통바지
+      sleeve: '#e8b483', sleeveDark: '#b57f4c',
+      forearm: '#e8b483', forearmDark: '#b57f4c',
+      band: '#f0c73a', bandDark: '#a8831a',         // 금색 손목 보호대
+      glove: '#e8b483', gloveDark: '#b57f4c',
+      boot: '#f0c73a', bootDark: '#a8831a',         // 금색 부츠
+      belt: '#f0c73a', beltDark: '#a8831a',
+      skin: '#e8b483', skinDark: '#b57f4c',
+      hair: '#d9e94b', hairLit: '#f4ffb0',          // 연둣빛 금발
+      gem: '#2f6bd8', gemDark: '#17408f', gemLit: '#8fc4ff',
+      aura: '#8dff62', eye: '#2f2a1c'
+    },
+    entrance: 'roar', victory: 'roarWin',
+    form: { name: '전설의 초사이어인', saiyan: true, hair: '#e4f24f', hairLit: '#faffc4', eye: '#f2ffe0', aura: '#a6ff5c' },
+    special: { name: '이레이저 캐논', color: '#7dff5c', core: '#e8ffd0', motion: 'palm' },
+    ultimate: { name: '기간틱 미티어', color: '#9dff4a', core: '#ffffff', motion: 'twinOrb' },
+    quotes: { win: '카카로트... 아직 부족해!', pick: '전부 부숴주마.' }
+  },
+  {
+    id: 'cooler',
+    name: '쿠우라',
+    title: '프리저의 형',
+    hp: 940, speed: 4.05, jump: 18.2, power: 1.02, defense: 0.95, weight: 0.92,
+    hairStyle: 'cooler',
+    style: 'cooler',
+    props: { tail: true, gems: true, spikes: true, mask: true },
+    colors: {
+      gi: '#9c4a9e', giDark: '#67276c',              // 보라 몸통
+      trim: '#e2e6ee', trimDark: '#a7afbd',          // 흰 갑주
+      pants: '#9c4a9e', pantsDark: '#67276c',
+      sleeve: '#9c4a9e', sleeveDark: '#67276c',
+      forearm: '#9c4a9e', forearmDark: '#67276c',
+      glove: '#a852aa', gloveDark: '#6f2c74',
+      boot: '#e2e6ee', bootDark: '#a7afbd',          // 흰 발 갑주
+      skin: '#a852aa', skinDark: '#6f2c74',
+      tail: '#9c4a9e', tailDark: '#67276c',
+      hair: '#e2e6ee', hairLit: '#ffffff',           // 흰 가면과 뿔
+      gem: '#2f7fd8', gemDark: '#194a8c', gemLit: '#93cbff',
+      aura: '#b06bff', eye: '#e8324f'
+    },
+    entrance: 'dive', victory: 'brush',
+    form: { name: '메탈 쿠우라', aura: '#7fe6ff' },
+    special: { name: '데스 비머', color: '#7f5cff', core: '#e0d6ff', motion: 'point' },
+    ultimate: { name: '슈퍼노바', color: '#ff7b3d', core: '#ffe6a8', motion: 'orb' },
+    quotes: { win: '프리저보다 못한 놈이었군.', pick: '내 앞에 선 걸 후회하게 될 거다.' }
   }
 ];
 

@@ -138,6 +138,16 @@ const SPECIAL_MOTION = {
     handX: 28, handY: -162, oy: -112, width: 1.22, style: 'orb', rings: true,
     chargeX: 10, chargeY: -170, chargeR: 22
   },
+  // 이레이저 캐논 : 한 손바닥을 앞으로 내밀어 굵은 광선을 쏜다 (브로리)
+  palm: {
+    handX: 58, handY: -100, oy: -100, width: 1.35, style: 'wide', rings: true, sparks: true,
+    chargeX: 44, chargeY: -100, chargeR: 20
+  },
+  // 기간틱 미티어 : 두 손을 머리 위로 모아 거대한 구체를 던진다 (브로리)
+  twinOrb: {
+    handX: 20, handY: -170, oy: -108, width: 1.5, style: 'orb', rings: true, sparks: true,
+    chargeX: 6, chargeY: -176, chargeR: 26
+  },
   // 버닝 어택 : 손을 교차해 감았다가 양손을 앞으로
   weave: {
     handX: 48, handY: -96, oy: -96, width: 0.98, style: 'spiral', rings: true, sparks: true,
