@@ -431,6 +431,65 @@ const CHARACTERS = [
     special: { name: '갤릭 도넛', color: '#c47bff', core: '#ffe9ff', motion: 'weave' },
     ultimate: { name: '초 고스트 카미카제 어택', color: '#8ef0ff', core: '#ffffff', motion: 'ghost', type: 'orb' },
     quotes: { win: '어때! 오천크스님의 실력, 봤지?', pick: '자, 놀아줄게!' }
+  },
+  {
+    id: 'android17',
+    name: '인조인간 17호',
+    title: '무한 동력의 인조인간',
+    hp: 1000, speed: 3.95, jump: 17.6, power: 1.10, defense: 1.02, weight: 0.98,
+    kiRegen: 0.055,                                // 동력이 무한이라 기가 저절로 찬다
+    hairStyle: 'a17',
+    style: 'cyborg',
+    props: { scarf: true, rrLogo: true, legWarmer: true },
+    colors: {
+      gi: '#26262e', giDark: '#121218',             // 검은 티셔츠
+      trim: '#f0f0ea', trimDark: '#c6c4bc',
+      sleeve: '#f2f0ea', sleeveDark: '#c4c1b8',     // 안에 받쳐 입은 흰 긴팔
+      forearm: '#f2f0ea', forearmDark: '#c4c1b8',
+      glove: '#f5c79b', gloveDark: '#d69f70',       // 맨손
+      pants: '#4d6fa8', pantsDark: '#2e4874',       // 청바지
+      belt: '#8a6a3c', beltDark: '#57411f',         // 갈색 벨트
+      boot: '#2b2b33', bootDark: '#121218',
+      legWarmer: '#7fc44a',                          // 초록 각반
+      scarf: '#f08c2a',                              // 주황 스카프
+      logo: '#d8323c',                               // 레드리본 마크
+      skin: '#f5c79b', skinDark: '#d69f70',
+      hair: '#141418', hairLit: '#3a3a44',
+      aura: '#7fe0ff', iris: '#4d8fd8', eye: '#2b2b2b'
+    },
+    entrance: 'stroll', victory: 'bored',
+    special: { name: '파워 블리츠', color: '#7fe0ff', core: '#eaffff', motion: 'palm', type: 'orb' },
+    ultimate: { name: '포톤 플래시', color: '#8affc0', core: '#ffffff', motion: 'wave' },
+    quotes: { win: '이 정도로 끝이야? 시시하군.', pick: '재밌게 놀아보자고.' }
+  },
+  {
+    id: 'android18',
+    name: '인조인간 18호',
+    title: '무한 동력의 인조인간',
+    hp: 980, speed: 4.05, jump: 17.8, power: 1.06, defense: 1.00, weight: 0.92,
+    kiRegen: 0.055,
+    hairStyle: 'a18',
+    style: 'blitz',
+    props: { stripes: true, skirt: true },
+    colors: {
+      gi: '#2f5fb8', giDark: '#1b3b78',             // 데님 조끼
+      trim: '#1d1d24', trimDark: '#0c0c11',         // 검은 상의
+      sleeve: '#eef2f8', sleeveDark: '#c0c8d6',     // 흰 줄무늬 소매
+      forearm: '#eef2f8', forearmDark: '#c0c8d6',
+      stripe: '#7fb3e8',                             // 소매의 파란 줄
+      glove: '#f5c79b', gloveDark: '#d69f70',
+      pants: '#1d1d24', pantsDark: '#0c0c11',       // 검은 레깅스
+      skirt: '#2f5fb8',                              // 데님 치마
+      belt: '#8a6a3c', beltDark: '#57411f',
+      boot: '#2b2b33', bootDark: '#121218',
+      skin: '#f5c79b', skinDark: '#d69f70',
+      hair: '#f0d05c', hairLit: '#fff0a8',          // 금발 단발
+      aura: '#7fd8ff', iris: '#4d8fd8', eye: '#2b2b2b'
+    },
+    entrance: 'flick', victory: 'hairFlip',
+    special: { name: '인피니티 불릿', color: '#8ecdff', core: '#ffffff', motion: 'onehand' },
+    ultimate: { name: '파워 블리츠', color: '#7fe0ff', core: '#eaffff', motion: 'orb', type: 'orb' },
+    quotes: { win: '이런 걸로 시간 낭비하게 하지 마.', pick: '빨리 끝내자.' }
   }
 ];
 

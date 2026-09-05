@@ -145,6 +145,10 @@ class Fighter {
     if (this.comboTimer > 0) { this.comboTimer--; if (this.comboTimer === 0) this.comboCount = 0; }
     for (let i = 0; i < 2; i++) if (this.tapTimer[i] > 0) this.tapTimer[i]--;
     this.updateForm();
+    // 인조인간은 동력원이 무한이라 가만히 있어도 기가 조금씩 회복된다
+    if (this.char.kiRegen && this.state !== 'ko' && !this.locked) {
+      this.ki = clamp(this.ki + this.char.kiRegen, 0, 100);
+    }
 
     if (this.state === 'ko') { this.physics(); return; }
 
