@@ -92,6 +92,16 @@ const MOVES = {
     projectile: { speed: 6.2, radius: 58, damage: 208, chip: 62, hitstun: 46, pushback: 21, life: 170, heavy: true },
     level: 'mid', invuln: 36, sfx: 'ultimate'
   },
+  /* 기를 검으로 벼려 하늘에서 지면을 가르는 초필살기 (스피릿 소드 · 환영 분쇄) */
+  swordUltimate: {
+    key: 'swordUltimate', label: '초필살기', tier: 'ultimate',
+    startup: 46, active: 30, recovery: 40,
+    kiCost: 100, kiGain: 0,
+    // hitAt : 발동 후 이 프레임에 칼이 지면에 닿는다 / window : 판정이 남아 있는 프레임
+    slash: { hitAt: 8, window: 12, reach: 620, height: 200, damage: 280, chip: 90, pushback: 20, lift: -6 },
+    level: 'mid', invuln: 60, sfx: 'ultimate'
+  },
+
   /* ---------- 잡기 ---------- */
   grab: {
     key: 'grab', label: '잡기', startup: 6, active: 3, recovery: 20,
@@ -166,10 +176,15 @@ const SPECIAL_MOTION = {
     handX: 34, handY: -128, oy: -118, width: 0.92, style: 'orb', rings: true, sparks: true,
     chargeX: 22, chargeY: -130, chargeR: 14
   },
-  // 스피릿 소드 : 한 손에 기의 검을 세워 들었다가 내리긋는다 (베지트)
-  spirit: {
-    handX: 44, handY: -128, oy: -116, width: 0.46, style: 'thin', pierce: true, sparks: true,
-    chargeX: 30, chargeY: -142, chargeR: 12
+  // 검형 초필살기 : 하늘로 떠올라 기의 검으로 지면을 가른다 (연출은 drawSwordSlash 가 맡는다)
+  swordUp: {
+    handX: 18, handY: -150, oy: -112, width: 1.00, style: 'orb', rings: true, sparks: true,
+    chargeX: 8, chargeY: -158, chargeR: 20
+  },
+  // 블러디 소스 : 칼을 옆으로 크게 젖혔다가 앞으로 그어 붉은 파동을 날린다 (쟈넨바)
+  blade: {
+    handX: 54, handY: -102, oy: -100, width: 1.18, style: 'wide', rings: true, sparks: true,
+    chargeX: -28, chargeY: -120, chargeR: 16
   },
   // 버닝 어택 : 손을 교차해 감았다가 양손을 앞으로
   weave: {
@@ -209,7 +224,10 @@ function specialMoveOf(char) {
   return char.special && char.special.type === 'orb' ? MOVES.orbSpecial : MOVES.beam;
 }
 function ultimateMoveOf(char) {
-  return char.ultimate && char.ultimate.type === 'orb' ? MOVES.orbUltimate : MOVES.ultimate;
+  const t = char.ultimate && char.ultimate.type;
+  if (t === 'orb') return MOVES.orbUltimate;
+  if (t === 'sword') return MOVES.swordUltimate;
+  return MOVES.ultimate;
 }
 
 /* 콤보 보정: 히트 수가 늘어날수록 데미지 감소 */

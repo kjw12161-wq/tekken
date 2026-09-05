@@ -163,7 +163,8 @@ const LOOK = {
   buu: 'Kid Buu: lean muscular pink Majin, completely bald with a single long tendril growing from the crown and sweeping back, NO eyebrows and no nose (just two nostril holes), narrow red eyes, a wide grinning mouth, bare pink torso and shoulders, black forearm gauntlets with gold cuffs, loose white trousers held by a black belt with a round gold buckle bearing the letter M, green boots',
   gotenks: 'Gotenks (Metamoran fusion of Goten and Trunks): a young child with a large head and short limbs, black spiky hair with a large lavender section sweeping out behind, a dark teal open vest with gold shoulder pads over a yellow shirt, a blue sash at the waist, loose white trousers, black wristbands, black shoes',
   android17: 'Android 17: straight jet-black chin-length bob hair parted in the middle, blue eyes, an orange bandana knotted around the neck, a black T-shirt with a red Red Ribbon Army badge on the chest worn over a white long-sleeved shirt, a brown belt, blue jeans torn at the knee, green ribbed leg warmers, black shoes',
-  android18: 'Android 18: blonde chin-length bob hair with a long fringe swept across the forehead, blue eyes, an open blue denim vest over a black top, a white long-sleeved shirt with blue horizontal stripes on the sleeves, a brown belt, a blue denim skirt, black leggings, black shoes'
+  android18: 'Android 18: blonde chin-length bob hair with a long fringe swept across the forehead, blue eyes, an open blue denim vest over a black top, a white long-sleeved shirt with blue horizontal stripes on the sleeves, a brown belt, a blue denim skirt, black leggings, black shoes',
+  janemba: 'Super Janemba: a tall lean red-and-purple demon, light purple skin, a smooth purple head with three long tapering horn-like fins sweeping back from the crown and a pair of pointed fins at the cheeks, glowing yellow eyes with black sclera, a purple sleeveless tunic with a blue-violet chest plate and blue-violet trim, burnt orange puffed shoulders and forearms, white bandage wraps around the shins, a long red tail sweeping behind, holding a glowing red energy sword in one hand (in the sprite sheet draw only the gripping hand, NOT the blade itself)'
 };
 const SS_LOOK = {
   goku: 'Super Saiyan Goku: golden spiky upswept hair, green eyes, orange gi with blue undershirt, blue wristbands, dark blue boots',
@@ -216,6 +217,41 @@ const MOVE_EN = {
   kiBlast: 'one arm thrust forward, palm facing the enemy to fire a small energy shot (do NOT draw the energy)'
 };
 
+/* 유파(캐릭터의 style 값)마다 통상기 묘사가 완전히 달라지는 경우의 덮어쓰기 */
+const STYLE_MOVE_EN = {
+  /* 베지트 : 필살기/초필살기를 제외한 모든 통상기가 발차기 */
+  fusion: {
+    jab: 'quick front snap kick to the midsection, lead knee flicking out, hands kept low and loose',
+    straight: 'heavy side kick driven straight forward from the hip, supporting leg turned out, arms swept back',
+    roundhouse: 'spinning heel kick at head height, body fully turned around, one leg whipping horizontally',
+    lowKick: 'low crouching shin kick to the opponent\u2019s leg, body dropped and coiled',
+    sweep: 'low spinning sweep, one hand planted on the ground, the extended leg scything along the floor',
+    uppercut: 'rising crescent kick, one leg swung straight up past the head while the body lifts off the ground',
+    grab: 'one leg hooked out and up to catch the opponent, both hands reaching down to seize the caught leg',
+    airPunch: 'mid-air flying knee, one knee driven forward and up, the other leg trailing behind',
+    airKick: 'mid-air kick, front leg extended down and forward',
+    airSlam: 'mid-air axe kick: one leg raised straight overhead and driven heel-first down onto an opponent below'
+  },
+  /* 쟈넨바 : 모든 통상기를 에너지 검으로 벤다. 칼날은 게임이 따로 그리므로 시트에는 쥔 손만 그린다 */
+  demonBlade: {
+    jab: 'a quick short sword thrust at head height, sword hand punched out in front, free hand guiding the wrist',
+    straight: 'a heavy downward diagonal sword cut from the shoulder, both hands on the hilt, hips driving through',
+    roundhouse: 'a wide horizontal sword slash at head height, sword arm fully extended, body spun most of the way around',
+    lowKick: 'a short low sword cut at knee height, body crouched, sword hand sweeping just above the ground',
+    sweep: 'a sweeping low sword slash close to the ground, one knee dropped, sword arm scything along the floor',
+    uppercut: 'a rising vertical sword cut from low to high, sword arm swung up past the head while the body lifts off the ground',
+    grab: 'the free hand thrust forward to seize the opponent while the sword hand is cocked back beside the head',
+    airPunch: 'a mid-air downward sword thrust, sword hand driven down and forward, legs tucked up',
+    airKick: 'a mid-air horizontal sword slash, one leg extended for balance',
+    airSlam: 'a mid-air overhead sword smash: both hands raised high on the hilt and driven straight down onto an opponent below'
+  }
+};
+function moveTextOf(mv) {
+  const st = (CHAR_BY_ID[charId] || {}).style;
+  const o = STYLE_MOVE_EN[st];
+  return (o && o[mv]) || MOVE_EN[mv];
+}
+
 /* 필살기 모션(js/moves.js 의 SPECIAL_MOTION)별 자세 설명 */
 const MOTION_EN = {
   cupped: {
@@ -262,9 +298,13 @@ const MOTION_EN = {
     hold: 'both hands cupped in front of the mouth with the cheeks puffed out, leaning forward slightly',
     fire: 'both arms flung wide open beside the head as something is spat out of the mouth, chin lifted'
   },
-  spirit: {
-    hold: 'one arm raised high beside the head with the hand turned as if gripping the hilt of an invisible sword, the other arm out for balance',
-    fire: 'that raised arm swung down and forward in a single decisive sword cut, body driving through the shoulder'
+  blade: {
+    hold: 'both hands gripping an invisible sword hilt low and back beside the hip in a drawing stance, shoulders coiled (draw the hands only, NOT the blade)',
+    fire: 'both arms swept through a wide horizontal slash across the front of the body, hands still gripping the hilt, arms fully extended, hips turned all the way through (draw the hands only, NOT the blade)'
+  },
+  swordUp: {
+    hold: 'floating in the air with both hands gripping an invisible sword hilt raised straight overhead, legs tucked up, head tilted back looking upward (draw the hands only, NOT the blade)',
+    fire: 'both arms swung down and forward past the waist in a single overhead cleave, hands still gripping the hilt, body driving through (draw the hands only, NOT the blade)'
   },
   weave: {
     hold: 'both hands weaving a tight circle in front of the chest, wrists crossed, elbows tucked in',
@@ -349,6 +389,10 @@ const ENTRANCE_EN = {
           'one hand raised to the temple, sweeping the hair back behind the ear',
           'lowering that hand and looking away with a bored expression',
           'settling into a light, ready fighting stance'],
+  rift: ['stepping out of a jagged tear in space, only half the body through yet, one arm reaching out first',
+         'fully through the rift, standing crooked with the head lolling to one side, tail flicking',
+         'one hand closing on a sword hilt as it forms, arm swinging out to the side (do NOT draw the blade)',
+         'settling into a loose sword stance, gripping hand held low and ready, grinning (do NOT draw the blade)'],
   dive: ['diving down head-first from high up, arms swept back, body straight like an arrow',
          'pulling out of the dive, body rotating upright, tail whipping around',
          'landing on one knee with one hand planted on the ground, tail curled',
@@ -374,7 +418,8 @@ const VICTORY_EN = {
   twitch: 'victory pose: standing loosely with the arms hanging down, head cocked far over to one side, giggling',
   vSign: 'victory pose: one arm raised making a V sign with two fingers beside the head, the other hand on the hip, grinning triumphantly',
   bored: 'victory pose: one hand resting on the hip, the other arm hanging at the side, head turned away with a bored, unimpressed expression',
-  hairFlip: 'victory pose: one hand sweeping the hair back from the temple, the other arm at the side, eyes turned away with cool indifference'
+  hairFlip: 'victory pose: one hand sweeping the hair back from the temple, the other arm at the side, eyes turned away with cool indifference',
+  bladeRest: 'victory pose: the sword hand held out to one side with the wrist turned so the blade would point down at the ground (do NOT draw the blade), the other hand hanging loose, head cocked to one side with a wide grin, tail curled behind'
 };
 const BREATH = [
   'settled at rest',
@@ -490,7 +535,8 @@ const SKILL_EN = {
   '스타더스트 브레이커': 'Stardust Breaker', '빅뱅 카메하메하': 'Big Bang Kamehameha',
   '증발탄': 'Vanishing Ball', '인간 절멸 공격': 'Human Extinction Attack',
   '갤릭 도넛': 'Galactic Donut', '초 고스트 카미카제 어택': 'Super Ghost Kamikaze Attack',
-  '파워 블리츠': 'Power Blitz', '포톤 플래시': 'Photon Flash', '인피니티 불릿': 'Infinity Bullet'
+  '파워 블리츠': 'Power Blitz', '포톤 플래시': 'Photon Flash', '인피니티 불릿': 'Infinity Bullet',
+  '블러디 소스': 'Bloody Sauce', '환영 분쇄': 'Illusion Smasher'
 };
 function motionOf(tier) {
   const c = CHAR_BY_ID[charId];
@@ -524,7 +570,7 @@ function poseText(key) {
     return `releasing ${mo.name ? mo.name + ': ' : ''}${mo.def.fire} (do NOT draw the energy or the beam)`;
   }
   m = key.match(/^([a-zA-Z]+)(\d)$/);
-  if (m && MOVE_EN[m[1]]) return `${MOVE_EN[m[1]]} — ${STAGE[+m[2]] || STAGE[0]}`;
+  if (m && MOVE_EN[m[1]]) return `${moveTextOf(m[1])} — ${STAGE[+m[2]] || STAGE[0]}`;
   return POSE_EN[key] || key;
 }
 

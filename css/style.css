@@ -174,7 +174,7 @@ html, body {
 .char-grid {
   display: grid; grid-template-columns: repeat(6, 1fr); gap: 9px;
   align-content: safe center;
-  grid-auto-rows: clamp(90px, 25cqh, 205px);
+  grid-auto-rows: minmax(84px, 1fr);
   min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   touch-action: pan-y; -webkit-overflow-scrolling: touch;
   padding-right: 2px;

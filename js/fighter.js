@@ -113,6 +113,17 @@ class Fighter {
     return { x, y: this.y + b.y, w: b.w, h: b.h };
   }
 
+  /** 검형 초필살기가 지면을 가르는 판정 범위 (발끝 기준 앞쪽 지면) */
+  swordSlashRect() {
+    const a = this.attack;
+    if (!a || !a.def.slash) return null;
+    const s = a.def.slash;
+    const k = a.frame - a.def.startup;
+    if (k < s.hitAt || k > s.hitAt + s.window) return null;
+    const x = this.facing > 0 ? this.x + 8 : this.x - 8 - s.reach;
+    return { x, y: this.y - s.height, w: s.reach, h: s.height };
+  }
+
   beamRect(raw) {
     if (!this.attack || !this.attack.def.beam) return null;
     const def = this.attack.def, f = this.attack.frame;
@@ -459,6 +470,12 @@ class Fighter {
       a.spawned = true;
       Sfx.play(def.sfx);
       this.world.spawnProjectile(this, def);
+    }
+    // 기의 검이 지면에 닿는 순간
+    if (def.slash && !a.spawned && a.frame >= def.startup + def.slash.hitAt) {
+      a.spawned = true;
+      Sfx.play(def.sfx);
+      this.world.onSwordSlash(this);
     }
     // 빔 시작
     if (def.beam && !a.spawned && a.frame >= def.startup) {

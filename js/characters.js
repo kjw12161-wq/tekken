@@ -325,6 +325,7 @@ const CHARACTERS = [
       skin: '#f5c79b', skinDark: '#d69f70',
       hair: '#181818', hairLit: '#42384f',          // 검은 융합 머리
       earring: '#f2c53d',                            // 포타라
+      kiBlade: '#ffe14d', kiBladeCore: '#fffbe0',   // 스피릿 소드의 칼날
       aura: '#7fd8ff', eye: '#2b2b2b'
     },
     entrance: 'glove', victory: 'potaraTouch',
@@ -333,7 +334,7 @@ const CHARACTERS = [
       hair: '#ffdf3d', hairLit: '#fff8b8', eye: '#3fd07a', aura: '#ffe066'
     },
     special: { name: '파이널 카메하메하', color: '#8ecdff', core: '#ffffff', motion: 'cupped' },
-    ultimate: { name: '스피릿 소드', color: '#ffe14d', core: '#fffbe0', motion: 'spirit' },
+    ultimate: { name: '스피릿 소드', color: '#ffe14d', core: '#fffbe0', motion: 'swordUp', type: 'sword' },
     quotes: { win: '둘이 하나가 된 힘, 실감했나?', pick: '금방 끝내주지.' }
   },
   {
@@ -490,6 +491,36 @@ const CHARACTERS = [
     special: { name: '인피니티 불릿', color: '#8ecdff', core: '#ffffff', motion: 'onehand' },
     ultimate: { name: '파워 블리츠', color: '#7fe0ff', core: '#eaffff', motion: 'orb', type: 'orb' },
     quotes: { win: '이런 걸로 시간 낭비하게 하지 마.', pick: '빨리 끝내자.' }
+  },
+  {
+    id: 'janemba',
+    name: '쟈넨바',
+    title: '악의가 뭉쳐 태어난 마인',
+    hp: 1140, speed: 3.50, jump: 16.8, power: 1.30, defense: 1.08, weight: 1.18,
+    hairStyle: 'janemba',
+    style: 'demonBlade',
+    bulk: 1.08,
+    props: { tail: true, kiSword: true, wraps: true },
+    colors: {
+      gi: '#a05fd0', giDark: '#6a3496',             // 보라 상체
+      trim: '#5b45c8', trimDark: '#33218a',         // 청보라 가슴 갑주
+      sleeve: '#d8562c', sleeveDark: '#9c3315',     // 붉은 어깨 갑주
+      forearm: '#d8562c', forearmDark: '#9c3315',
+      glove: '#e0603a', gloveDark: '#a03818',       // 붉은 손
+      pants: '#c88ce8', pantsDark: '#9558c0',       // 연보라 다리
+      belt: '#5b45c8', beltDark: '#33218a',
+      boot: '#a05fd0', bootDark: '#6a3496',         // 보라 뾰족 부츠
+      wrap: '#f2ecdc',                               // 팔다리를 감은 흰 붕대
+      skin: '#c88ce8', skinDark: '#9558c0',
+      tail: '#e2482a', tailDark: '#a02d16',          // 붉은 꼬리
+      hair: '#c88ce8', hairLit: '#eec6ff',           // 머리의 뿔 지느러미
+      kiBlade: '#ff3b3b', kiBladeCore: '#ffd8d0',   // 붉은 기의 검
+      aura: '#ff4d5e', iris: '#ffd83d', eye: '#2b1a2e'
+    },
+    entrance: 'rift', victory: 'bladeRest',
+    special: { name: '블러디 소스', color: '#ff3b3b', core: '#ffe0d8', motion: 'blade' },
+    ultimate: { name: '환영 분쇄', color: '#ff4d3b', core: '#ffe8c0', motion: 'swordUp', type: 'sword' },
+    quotes: { win: '쟈넨...바.', pick: '쟈넨... 쟈넨바!' }
   }
 ];
 

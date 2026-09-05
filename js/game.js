@@ -495,6 +495,31 @@ const Game = {
     }
   },
 
+  /** 기의 검이 지면에 꽂히는 순간 : 화면이 크게 흔들리고 지면이 갈라진다 */
+  onSwordSlash(f) {
+    const s = f.attack.def.slash;
+    const src = skillOf(f.char, f.attack.def) || f.char.ultimate;
+    this.shake(26);
+    this.slowmo = Math.max(this.slowmo, 20);
+    // 균열을 따라 솟구치는 파편과 빛
+    for (let i = 0; i < 34; i++) {
+      const t = i / 33;
+      const x = f.x + f.facing * (10 + s.reach * t);
+      this.particles.spawn({
+        x, y: GROUND_Y - rand(0, 8),
+        vx: f.facing * rand(0.5, 4) + rand(-2, 2), vy: rand(-13, -4),
+        life: randInt(20, 46), size: rand(3, 11), gravity: 0.32,
+        color: i % 3 ? '#d9c9a8' : src.core
+      });
+    }
+    for (let i = 0; i < 5; i++) {
+      this.particles.spawn({
+        x: f.x + f.facing * (60 + i * (s.reach / 5)), y: GROUND_Y - 6,
+        life: 26, size: 30 + i * 8, color: src.color, shape: 'ring'
+      });
+    }
+  },
+
   onCombo(attacker, inAir) {
     if (attacker.comboCount >= 2) {
       const side = attacker.index === 0 ? 'p1' : 'p2';
@@ -852,6 +877,21 @@ const Game = {
   resolveCombat(att, def) {
     if (!att.attack || att.hitPause > 0) return;
     const move = att.attack.def;
+
+    // 검형 초필살기 : 지면을 가르는 단 한 번의 광역 판정
+    if (move.slash) {
+      const a = att.attack;
+      if (a.hitApplied) return;
+      const rect = att.swordSlashRect();
+      if (!rect || !rectsOverlap(rect, def.hurtbox())) return;
+      a.hitApplied = true;
+      const hx = clamp(def.x, rect.x, rect.x + rect.w);
+      def.takeHit(att, move, { x: hx, y: def.y - 60 }, {
+        damage: move.slash.damage, chip: move.slash.chip,
+        pushback: move.slash.pushback, lift: move.slash.lift
+      });
+      return;
+    }
 
     // 빔 (다단히트)
     if (move.beam) {
@@ -1216,6 +1256,7 @@ const Game = {
       drawBeam(ctx, f, this.time);
       drawFighter(ctx, f, this.time);
       drawSpecialCharge(ctx, f, this.time);
+      drawSwordSlash(ctx, f, this.time);
     }
     for (const p of this.projectiles) drawProjectile(ctx, p, this.time);
     for (const cl of this.blastClashes) drawBlastClash(ctx, cl, this.time);

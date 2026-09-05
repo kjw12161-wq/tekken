@@ -293,9 +293,53 @@ const MOTION_POSE = {
  * ------------------------------------------------- */
 
 /** 손에 든 검의 방향을 정한다 (트랭크스) */
-function setSword(p, ang, len) {
+function setSword(p, ang, len, ki) {
   const h = p.armF[1];
-  p.sword = { from: [h[0], h[1]], to: [h[0] + Math.cos(ang) * len, h[1] + Math.sin(ang) * len] };
+  p.sword = {
+    from: [h[0], h[1]],
+    to: [h[0] + Math.cos(ang) * len, h[1] + Math.sin(ang) * len],
+    ki: !!ki
+  };
+}
+
+/**
+ * 검형 초필살기의 상승/하강 높이.
+ * 스프라이트에 굽지 않고 그릴 때만 더하는 값이라 판정에는 영향을 주지 않는다.
+ */
+const SWORD_RISE = 172;
+function swordRise(frame, def) {
+  if (frame < def.startup) {
+    const t = clamp(frame / def.startup, 0, 1);
+    return -SWORD_RISE * (1 - Math.pow(1 - t, 3));       // 부드럽게 떠오른다
+  }
+  const k = (frame - def.startup) / Math.max(1, def.active);
+  if (k < 0.3) return -SWORD_RISE * (1 - k / 0.3);        // 내리꽂으며 급강하
+  return 0;
+}
+
+/** 검형 초필살기 자세 : 하늘로 떠올라 검을 세웠다가 지면을 향해 내리긋는다 */
+function swordUltPose(p, charging, g) {
+  if (charging) {
+    // 두 손으로 기의 검을 머리 위에 세운다 (다리는 공중에 떠 있다)
+    p.armF = [mix(P(25, -86), P(21, -118), g), mix(P(31, -103), P(15, -150), g)];
+    p.armB = [mix(P(-23, -86), P(-5, -118), g), mix(P(-27, -102), P(3, -150), g)];
+    p.chest = mix(p.chest, P(-2, -104), g);
+    p.head = mix(p.head, P(0, -127), g);
+    p.hip = mix(p.hip, P(0, -64), g);
+    p.headTilt = -0.2 * g;
+    p.legF = [mix(P(18, -33), P(17, -42), g), mix(P(24, 0), P(22, -14), g)];
+    p.legB = [mix(P(-17, -33), P(-16, -42), g), mix(P(-23, 0), P(-21, -14), g)];
+    setSword(p, -1.52, 60 + g * 58, true);
+  } else {
+    // 지면까지 그어 내린 직후
+    p.armF = [P(27, -78), P(41, -44)];
+    p.armB = [P(3, -88), P(25, -56)];
+    p.chest = P(12, -98); p.head = P(13, -120); p.hip = P(5, -60);
+    p.headTilt = 0.18;
+    p.legF = [P(27, -32), P(42, 0)];
+    p.legB = [P(-22, -34), P(-35, 0)];
+    setSword(p, 0.92, 110, true);
+  }
 }
 
 const STYLE_MOVES = {
@@ -833,40 +877,92 @@ const STYLE_MOVES = {
     }
   },
 
-  /* 베지트 : 손오공과 베지터의 기술이 뒤섞인 여유로운 정타 */
+  /* 베지트 : 필살기를 제외한 모든 공격이 발차기다. 손은 균형만 잡는다 */
   fusion: {
     jab(p, e) {
-      // 손등으로 툭 치듯 뻗는다 (여유)
-      p.armF = [mix(P(24, -90), P(40, -99), e), mix(P(30, -104), P(62, -100), e)];
-      p.armB = [P(-21, -87), P(-24, -100)];
-      p.chest = mix(p.chest, P(6, -100), e * 0.5);
+      // 앞발을 튕기듯 차 올리는 빠른 앞차기
+      p.legF = [mix(P(20, -44), P(28, -74), e), mix(P(26, -14), P(60, -80), e)];
+      p.legB = [P(-16, -34), P(-23, 0)];
+      p.armF = [P(16, -88), P(6, -74)];
+      p.armB = [P(-24, -88), P(-34, -78)];
+      p.chest = mix(p.chest, P(-4, -101), e * 0.5);
       p.headTilt = -0.04 * e;
     },
     straight(p, e) {
-      // 어깨를 크게 돌려 내리꽂는 정권
-      p.armF = [mix(P(12, -96), P(44, -96), e), mix(P(20, -110), P(76, -94), e)];
-      p.armB = [mix(P(-22, -86), P(-16, -78), e), mix(P(-26, -102), P(-8, -70), e)];
-      p.chest = mix(p.chest, P(14, -100), e);
-      p.head = mix(p.head, P(13, -122), e * 0.6);
-      p.hip = mix(p.hip, P(7, -62), e);
-      p.legF = [mix(P(18, -33), P(29, -33), e), mix(P(24, 0), P(44, 0), e)];
-      p.legB = [mix(P(-18, -33), P(-25, -34), e), mix(P(-26, 0), P(-38, 0), e)];
+      // 온 체중을 실어 밀어 차는 옆차기
+      p.legF = [mix(P(18, -42), P(32, -80), e), mix(P(24, -12), P(78, -88), e)];
+      p.legB = [mix(P(-16, -34), P(-24, -34), e), mix(P(-22, 0), P(-36, 0), e)];
+      p.armF = [mix(P(18, -90), P(4, -96), e), mix(P(24, -104), P(-14, -108), e)];
+      p.armB = [mix(P(-22, -88), P(-16, -92), e), mix(P(-28, -102), P(-30, -112), e)];
+      p.chest = mix(p.chest, P(-12, -102), e);
+      p.head = mix(p.head, P(-10, -124), e * 0.8);
+      p.hip = mix(p.hip, P(-4, -63), e);
+      p.headTilt = -0.14 * e;
     },
     roundhouse(p, e) {
-      // 몸을 회전시켜 뒤꿈치로 후려친다
-      p.legF = [mix(P(20, -40), P(30, -76), e), mix(P(26, -6), P(74, -88), e)];
+      // 몸을 완전히 돌려 뒤꿈치로 후려친다
+      p.legF = [mix(P(20, -40), P(32, -78), e), mix(P(26, -6), P(78, -90), e)];
       p.legB = [P(-16, -34), P(-24, 0)];
-      p.armF = [mix(P(18, -90), P(-6, -96), e), mix(P(24, -104), P(-26, -88), e)];
-      p.armB = [mix(P(-22, -88), P(10, -92), e), mix(P(-28, -102), P(30, -96), e)];
-      p.chest = mix(p.chest, P(-8, -102), e * 0.9);
+      p.armF = [mix(P(18, -90), P(-8, -96), e), mix(P(24, -104), P(-30, -90), e)];
+      p.armB = [mix(P(-22, -88), P(10, -92), e), mix(P(-28, -102), P(32, -96), e)];
+      p.chest = mix(p.chest, P(-10, -102), e * 0.9);
+      p.head = mix(p.head, P(-11, -124), e * 0.7);
+      p.headTilt = -0.12 * e;
+    },
+    lowKick(p, e) {
+      // 낮게 스치는 앞차기
+      crouchPose(p, 0.95);
+      p.legF = [mix(P(18, -28), P(28, -34), e), mix(P(24, -8), P(60, -28), e)];
+      p.armF = [P(16, -62), P(6, -50)];
+      p.armB = [P(-20, -60), P(-30, -50)];
+    },
+    sweep(p, e) {
+      // 몸을 낮춰 크게 도는 다리 후리기
+      crouchPose(p, 1.25);
+      p.legF = [mix(P(18, -18), P(38, -18), e), mix(P(26, -4), P(92, -8), e)];
+      p.armF = [P(10, -54), P(24, -42)];
+      p.armB = [P(-22, -48), P(-32, -32)];
+    },
+    uppercut(p, e) {
+      // 발끝으로 턱을 걷어 올리는 초승달 차기
+      p.legF = [mix(P(18, -46), P(24, -116), e), mix(P(24, -16), P(34, -164), e)];
+      p.legB = [mix(P(-17, -33), P(-22, -44), e), mix(P(-24, 0), P(-32, -16), e)];
+      p.armF = [mix(P(20, -88), P(14, -76), e), mix(P(26, -102), P(4, -66), e)];
+      p.armB = [mix(P(-22, -88), P(-20, -78), e), mix(P(-28, -102), P(-34, -88), e)];
+      p.chest = mix(p.chest, P(0, -104), e);
+      p.head = mix(p.head, P(2, -126), e);
       p.headTilt = -0.1 * e;
     },
     grab(p, e) {
-      // 한 손으로 목을 낚아챈다
-      p.armF = [mix(P(24, -90), P(38, -104), e), mix(P(30, -104), P(62, -110), e)];
-      p.armB = [P(-20, -86), P(-14, -74)];
-      p.chest = mix(p.chest, P(9, -101), e);
-      p.headTilt = -0.06 * e;
+      // 다리로 상대의 목을 낚아채 끌어당긴다
+      p.legF = [mix(P(20, -46), P(30, -96), e), mix(P(26, -16), P(58, -104), e)];
+      p.legB = [P(-16, -34), P(-24, 0)];
+      p.armF = [P(14, -86), P(2, -72)];
+      p.armB = [P(-24, -86), P(-36, -74)];
+      p.chest = mix(p.chest, P(-6, -102), e);
+      p.headTilt = -0.08 * e;
+    },
+    airPunch(p, e) {
+      // 공중 니킥
+      p.legF = [mix(P(20, -50), P(26, -78), e), mix(P(26, -24), P(48, -66), e)];
+      p.legB = [P(-16, -42), P(-22, -16)];
+      p.armF = [P(16, -92), P(6, -78)];
+      p.armB = [P(-22, -92), P(-32, -80)];
+    },
+    airKick(p, e) {
+      // 공중 돌려차기
+      p.legF = [mix(P(20, -46), P(36, -62), e), mix(P(26, -20), P(76, -58), e)];
+      p.legB = [P(-15, -40), P(-21, -14)];
+      p.armF = [mix(P(18, -92), P(0, -98), e), mix(P(24, -106), P(-22, -94), e)];
+      p.armB = [P(-24, -92), P(-34, -104)];
+    },
+    airSlam(p, e) {
+      // 내려찍는 발뒤꿈치
+      p.legF = [mix(P(20, -104), P(30, -46), e), mix(P(26, -132), P(42, -8), e)];
+      p.legB = [P(-16, -46), P(-22, -20)];
+      p.armF = [mix(P(18, -96), P(12, -84), e), mix(P(24, -112), P(0, -74), e)];
+      p.armB = [mix(P(-22, -96), P(-18, -84), e), mix(P(-30, -112), P(-34, -78), e)];
+      p.headTilt = 0.12 * e;
     }
   },
 
@@ -1013,6 +1109,92 @@ const STYLE_MOVES = {
       p.armF = [P(16, -96), P(6, -112)];
       p.armB = [P(-22, -94), P(-34, -108)];
       p.headTilt = 0.1 * e;
+    }
+  },
+
+  /* 쟈넨바 : 모든 공격을 기의 검으로 낸다. 크고 무거운 검술 */
+  demonBlade: {
+    jab(p, e) {
+      // 짧게 내지르는 찌르기
+      p.armF = [mix(P(22, -94), P(38, -98), e), mix(P(28, -106), P(58, -100), e)];
+      p.armB = [P(-22, -88), P(-28, -100)];
+      p.chest = mix(p.chest, P(6, -101), e * 0.6);
+      setSword(p, lerp(-0.9, 0.02, e), 80, true);
+    },
+    straight(p, e) {
+      // 머리 위에서 크게 내려베기
+      p.armF = [mix(P(8, -124), P(38, -94), e), mix(P(18, -152), P(62, -74), e)];
+      p.armB = [mix(P(-20, -92), P(-10, -84), e), mix(P(-26, -104), P(0, -76), e)];
+      p.chest = mix(p.chest, P(11, -100), e);
+      p.head = mix(p.head, P(12, -122), e * 0.7);
+      p.hip = mix(p.hip, P(6, -61), e);
+      p.legF = [mix(P(18, -33), P(30, -33), e), mix(P(24, 0), P(46, 0), e)];
+      p.legB = [P(-22, -33), P(-33, 0)];
+      setSword(p, lerp(-2.3, 0.75, e), 96, true);
+    },
+    roundhouse(p, e) {
+      // 몸을 통째로 돌리는 회전 베기
+      p.armF = [mix(P(-6, -106), P(42, -96), e), mix(P(-28, -96), P(68, -106), e)];
+      p.armB = [mix(P(-18, -88), P(10, -90), e), mix(P(-24, -100), P(30, -96), e)];
+      p.chest = mix(p.chest, P(10, -100), e);
+      p.head = mix(p.head, P(11, -122), e * 0.6);
+      p.legF = [mix(P(18, -33), P(32, -34), e), mix(P(24, 0), P(48, -4), e)];
+      p.legB = [P(-22, -33), P(-33, 0)];
+      setSword(p, lerp(2.7, -0.45, e), 100, true);
+    },
+    uppercut(p, e) {
+      // 아래에서 위로 베어 올린다
+      p.armF = [mix(P(20, -72), P(28, -114), e), mix(P(32, -54), P(34, -156), e)];
+      p.armB = [P(-22, -88), P(-30, -74)];
+      p.chest = mix(p.chest, P(2, -105), e);
+      p.head = mix(p.head, P(4, -127), e);
+      p.legB = [mix(P(-19, -33), P(-24, -44), e), mix(P(-27, 0), P(-34, -16), e)];
+      setSword(p, lerp(1.6, -1.5, e), 94, true);
+    },
+    lowKick(p, e) {
+      // 낮게 찔러 넣는다
+      crouchPose(p, 1);
+      p.armF = [mix(P(18, -62), P(34, -54), e), mix(P(26, -72), P(58, -50), e)];
+      p.armB = [P(-22, -58), P(-30, -44)];
+      setSword(p, lerp(-0.5, 0.12, e), 78, true);
+    },
+    sweep(p, e) {
+      // 지면을 쓸어 베기
+      crouchPose(p, 1.25);
+      p.armF = [mix(P(8, -70), P(34, -44), e), mix(P(22, -80), P(58, -28), e)];
+      p.armB = [P(-24, -50), P(-34, -34)];
+      setSword(p, lerp(-1.1, 0.42, e), 88, true);
+    },
+    grab(p, e) {
+      // 칼은 세워 든 채 반대 손으로 낚아챈다
+      p.armF = [P(20, -104), P(24, -124)];
+      p.armB = [mix(P(-22, -88), P(22, -98), e), mix(P(-28, -102), P(50, -100), e)];
+      p.chest = mix(p.chest, P(8, -101), e);
+      setSword(p, -1.45, 86, true);
+    },
+    airPunch(p, e) {
+      p.armF = [mix(P(16, -110), P(36, -88), e), mix(P(24, -134), P(58, -70), e)];
+      p.armB = [P(-22, -94), P(-32, -106)];
+      p.legF = [P(20, -44), P(26, -20)];
+      p.legB = [P(-16, -42), P(-22, -16)];
+      setSword(p, lerp(-2.0, 0.6, e), 92, true);
+    },
+    airKick(p, e) {
+      // 낙하하며 내려긋는다
+      p.armF = [mix(P(14, -122), P(34, -82), e), mix(P(22, -150), P(54, -56), e)];
+      p.armB = [P(-20, -96), P(-30, -108)];
+      p.legF = [P(20, -44), P(26, -20)];
+      p.legB = [P(-16, -42), P(-22, -16)];
+      setSword(p, lerp(-2.1, 1.0, e), 98, true);
+    },
+    airSlam(p, e) {
+      // 두 손으로 칼을 잡고 수직으로 내리꽂는다
+      p.armF = [mix(P(18, -126), P(30, -60), e), mix(P(24, -156), P(40, -26), e)];
+      p.armB = [mix(P(-14, -126), P(14, -62), e), mix(P(-4, -156), P(26, -30), e)];
+      p.legF = [P(22, -46), P(28, -18)];
+      p.legB = [P(-20, -44), P(-28, -16)];
+      p.chest = mix(p.chest, P(4, -98), e);
+      setSword(p, lerp(-1.6, 1.5, e), 104, true);
     }
   },
 
@@ -1194,6 +1376,16 @@ function attackPose(f, p) {
       p.armF = [mix(P(25, -86), P(32, -94), g), mix(P(31, -103), P(52, -94), g)];
       p.armB = [mix(P(-23, -86), P(20, -96), g), mix(P(-27, -102), P(46, -96), g)];
       p.chest = mix(p.chest, P(6, -100), g * 0.6);
+      break;
+    }
+    case 'swordUltimate': {
+      const charging = a.frame < def.startup;
+      const gs = Math.round(clamp(a.frame / Math.max(1, def.startup), 0, 1) * ATTACK_STEPS);
+      const g = charging ? gs / ATTACK_STEPS : 1;
+      p.key = charging ? 'ultC' + gs : 'ultF';
+      swordUltPose(p, charging, g);
+      // 떠오르고 내려꽂는 이동은 스프라이트에 굽지 않는다
+      p.offY = swordRise(a.frame, def);
       break;
     }
     case 'beam':
@@ -1788,6 +1980,39 @@ const ENTRANCE_POSE = {
     }
   },
 
+  // 쟈넨바 : 공간이 갈라지듯 웅크린 채 나타나 칼을 그어 올리며 선다
+  rift(p, t) {
+    if (t < 0.28) {
+      crouchPose(p, 1.35);                       // 낮게 웅크린 채 나타난다
+      p.armF = [P(16, -44), P(24, -30)];
+      p.armB = [P(-18, -46), P(-28, -34)];
+      p.headTilt = 0.3;
+      setSword(p, -0.4, 60, true);
+    } else if (t < 0.53) {
+      // 칼을 크게 그어 올리며 일어선다
+      p.armF = [P(22, -84), P(34, -114)];
+      p.armB = [P(-20, -84), P(-28, -70)];
+      p.chest = P(2, -100); p.head = P(4, -122);
+      p.headTilt = -0.1;
+      p.legF = [P(20, -34), P(28, 0)];
+      p.legB = [P(-20, -34), P(-29, 0)];
+      setSword(p, -1.9, 96, true);
+    } else if (t < 0.79) {
+      // 칼끝을 상대에게 겨눈다
+      p.armF = [P(28, -96), P(48, -100)];
+      p.armB = [P(-20, -86), P(-26, -68)];
+      p.chest = P(6, -100); p.head = P(8, -122);
+      p.headTilt = -0.04;
+      p.legF = [P(24, -34), P(34, 0)];
+      p.legB = [P(-22, -34), P(-32, 0)];
+      setSword(p, 0.06, 100, true);
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+      setSword(p, -1.2, 84, true);
+    }
+  },
+
   // 기본 : 그냥 자세를 잡는다
   stance(p) {}
 };
@@ -1940,6 +2165,16 @@ const VICTORY_POSE = {
     p.legF = [P(18, -33), P(24, 0)];
     p.legB = [P(-17, -33), P(-23, 0)];
   },
+  // 쟈넨바 : 기의 검을 어깨에 걸치고 히죽 웃는다
+  bladeRest(p, i, bob) {
+    p.armF = [P(30, -96 + bob * 0.3), P(-6, -112 + bob * 0.5)];
+    p.armB = [P(-20, -86), P(-16, -64)];
+    setSword(p, -1.1, 96, true);
+    p.chest = P(3, -100 + bob * 0.5); p.head = P(5, -122 + bob * 0.6);
+    p.headTilt = -0.12 - (i % 2) * 0.03;
+    p.legF = [P(23, -33), P(33, 0)];
+    p.legB = [P(-20, -33), P(-28, 0)];
+  },
   // 인조인간 17호 : 한 손을 허리에 얹고 고개를 돌린 채 시큰둥하다
   bored(p, i, bob) {
     p.armF = [P(19, -86), P(15, -62)];
@@ -1996,6 +2231,8 @@ function propSway(f, p) {
     p.tail = [P(-34, -48 + sw * 2), P(-76, -40 + sw * 5), P(-106, -20 + sw * 10)];
   }
   if (props.wings && p.wingSpread == null) p.wingSpread = 0.12 + sw * 0.08;
+  // 기의 검은 칼집이 없어 늘 손에 들려 있다 (쟈넨바)
+  if (props.kiSword && !p.sword) setSword(p, -1.18 + sw * 0.05, 82, true);
 }
 
 function poseFor(f, time) {
@@ -2419,6 +2656,29 @@ function drawHairBack(ctx, ch, f, time, hair, hairLit, style) {
       poly(ctx, [[16, -10], [17, 3], [11, 7], [8, -6]], shade(hair, 0.14));
       break;
     }
+    case 'janemba': {
+      // 뒤로 크게 휘어 뻗은 두 쌍의 뿔 지느러미
+      const fin = hair, finDark = shade(hair, -0.3), finLit = shade(hair, 0.34);
+      ctx.fillStyle = c.skinDark;
+      ctx.beginPath(); ctx.ellipse(-1, -6, 16, 15, 0, 0, Math.PI * 2); ctx.fill();
+      // 밑동이 넓고 끝이 뾰족한 뿔 지느러미 세 갈래
+      const finShape = (bx, by, tx, ty, w2, col) => {
+        const mx = (bx + tx) / 2, my = (by + ty) / 2;
+        poly(ctx, [
+          [bx - w2, by], [bx + w2, by - 3],
+          [mx + w2 * 0.45, my + 1], [tx, ty], [mx - w2 * 0.85, my + 3]
+        ], col);
+      };
+      finShape(-5, -12, -33, -33 - wobble, 7.5, finDark);
+      finShape(2, -16, -11, -53 - wobble, 8.5, fin);
+      finShape(12, -12, 27, -37 - wobble, 6, finLit);
+      // 정수리 돔
+      ctx.fillStyle = fin;
+      ctx.beginPath(); ctx.ellipse(-1, -11, 17, 13, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = finDark;
+      ctx.beginPath(); ctx.ellipse(-9, -7, 8, 6, 0.3, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
     case 'trunks': {
       ctx.fillStyle = hair;
       ctx.beginPath(); ctx.ellipse(-1, -6, 17, 16, 0, 0, Math.PI * 2); ctx.fill();
@@ -2567,6 +2827,19 @@ function drawHairFront(ctx, ch, f, time, hair, hairLit, style) {
       // 귀 앞으로 내려오는 갈래
       poly(ctx, [[-10, -7], [-16, 5], [-14, 15], [-7, 9]], hair);
       break;
+    case 'janemba': {
+      // 이마를 덮는 보라 돔 + 양옆으로 뾰족한 볼 지느러미
+      ctx.fillStyle = hair;
+      ctx.beginPath(); ctx.ellipse(0, -10, 16, 11, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = shade(hair, -0.3);
+      ctx.beginPath(); ctx.ellipse(-8, -6, 8, 5, 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = shade(hair, 0.36);
+      ctx.beginPath(); ctx.ellipse(4, -14, 6, 3.4, -0.4, 0, Math.PI * 2); ctx.fill();
+      poly(ctx, [[-11, -2], [-25, -9], [-21, 2], [-10, 5]], c.skinDark);
+      poly(ctx, [[12, -3], [25, -10], [22, -1], [11, 3]], c.skin);
+      poly(ctx, [[12, -3], [25, -10], [19, -4]], shade(c.skin, 0.22));
+      break;
+    }
     case 'trunks':
       poly(ctx, [[-15, -10], [15, -12], [13, -3], [6, -8], [0, -2], [-6, -7], [-15, -3]], hair);
       poly(ctx, [[-8, -11], [2, -16], [9, -8]], hairLit);
@@ -3123,6 +3396,7 @@ function drawScabbard(ctx, p, c) {
  * from 은 손 위치, to 는 칼끝.
  */
 function drawSword(ctx, sw, c) {
+  if (sw.ki) { drawKiSword(ctx, sw, c); return; }
   const a = sw.from, b = sw.to;
   const dx = b[0] - a[0], dy = b[1] - a[1];
   const len = Math.hypot(dx, dy) || 1;
@@ -3162,6 +3436,56 @@ function drawSword(ctx, sw, c) {
   ctx.moveTo(s[0] - nx * 2, s[1] - ny * 2);
   ctx.lineTo(b[0] - nx * 0.6, b[1] - ny * 0.6);
   ctx.stroke();
+}
+
+/** 기로 벼려낸 검 : 손에서 뻗어 나온 빛의 칼날 (쟈넨바 · 베지트) */
+function drawKiSword(ctx, sw, c) {
+  const a = sw.from, b = sw.to;
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len;
+  const nx = -uy, ny = ux;
+  const col = c.kiBlade || '#ff3b3b';
+  const core = c.kiBladeCore || shade(col, 0.72);
+  const w = 8.5;
+  const s0 = [a[0] + ux * 6, a[1] + uy * 6];          // 칼날 시작
+  const tip = [a[0] + ux * len, a[1] + uy * len];
+  const mid = [a[0] + ux * len * 0.62, a[1] + uy * len * 0.62];
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  // 바깥 광휘
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = col; ctx.lineWidth = w * 2.4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(tip[0], tip[1]); ctx.stroke();
+  ctx.restore();
+
+  // 칼날 : 밑동이 넓고 끝이 뾰족한 폴리곤
+  poly(ctx, [
+    [s0[0] + nx * w, s0[1] + ny * w],
+    [mid[0] + nx * w * 0.62, mid[1] + ny * w * 0.62],
+    [tip[0], tip[1]],
+    [mid[0] - nx * w * 0.62, mid[1] - ny * w * 0.62],
+    [s0[0] - nx * w, s0[1] - ny * w]
+  ], col);
+  poly(ctx, [
+    [s0[0] + nx * w * 0.42, s0[1] + ny * w * 0.42],
+    [mid[0] + nx * w * 0.26, mid[1] + ny * w * 0.26],
+    [tip[0], tip[1]],
+    [mid[0] - nx * w * 0.26, mid[1] - ny * w * 0.26],
+    [s0[0] - nx * w * 0.42, s0[1] - ny * w * 0.42]
+  ], core);
+  // 밑동에서 튀는 기
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 0.85;
+  const g = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], w * 2.6);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.45, core);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(a[0], a[1], w * 2.6, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 }
 
 /** 브로리 : 목에 두른 금색 고리 (가운데 파란 보석) */
@@ -3429,6 +3753,22 @@ function limbDecoFor(ch) {
     });
   }
 
+  if (pr.wraps) {
+    // 쟈넨바 : 위팔과 정강이를 감은 두꺼운 흰 붕대
+    const wr = c.wrap || '#f0ebdc';
+    fns.push((c2, len, w, part) => {
+      if (part !== 'upper' && part !== 'shin') return;
+      const from = part === 'upper' ? 0.34 : 0.26;
+      c2.fillStyle = wr;
+      c2.fillRect(len * from, -w * 0.66, len * (1.08 - from), w * 1.32);
+      c2.strokeStyle = shade(wr, -0.3); c2.lineWidth = 1.5;
+      for (let i = 0; i < 5; i++) {
+        const x = len * (from + 0.04 + (1 - from) * i / 5);
+        c2.beginPath(); c2.moveTo(x, -w * 0.62); c2.lineTo(x, w * 0.62); c2.stroke();
+      }
+    });
+  }
+
   if (!fns.length) return null;
   if (fns.length === 1) return fns[0];
   return (c2, len, w, part) => { for (const fn of fns) fn(c2, len, w, part); };
@@ -3603,6 +3943,21 @@ function drawRigBody(ctx, f, p, time) {
     ctx.restore();
   }
 
+  // 쟈넨바 : 청보라 가슴 갑주
+  if (ch.id === 'janemba') {
+    drawPart(ctx, [
+      [cx - 15, cy - 2], [cx - 3, cy - 9], [cx + 10, cy - 9], [cx + 17, cy - 2],
+      [cx + 13, cy + 19], [cx, cy + 25], [cx - 12, cy + 19]
+    ], c.trim, edgeOf(c.trim), c2 => {
+      c2.fillStyle = c.trimDark;
+      c2.beginPath(); c2.ellipse(cx - 13, cy + 12, 8, 14, 0, 0, Math.PI * 2); c2.fill();
+      c2.fillStyle = shade(c.trim, 0.3);
+      c2.beginPath(); c2.ellipse(cx + 8, cy + 3, 5, 7, -0.3, 0, Math.PI * 2); c2.fill();
+      c2.strokeStyle = shade(c.trim, -0.45); c2.lineWidth = 1.8;
+      c2.beginPath(); c2.moveTo(cx + 1, cy - 6); c2.lineTo(cx + 1, cy + 22); c2.stroke();
+    });
+  }
+
   // 쿠우라 : 흰 가슴 갑주 + 파란 보석
   if (ch.id === 'cooler') {
     drawPart(ctx, [
@@ -3717,8 +4072,8 @@ function drawRigBody(ctx, f, p, time) {
     sleeve, sleeveDark, sleeveLight, glove, gloveDark, gloveLight, fore, band, deco);
   // 6) 쿠우라 : 팔꿈치의 흰 가시
   if (props.spikes) drawElbowSpikes(ctx, p, c);
-  // 손에 든 검
-  if (props.sword && p.sword) drawSword(ctx, p.sword, c);
+  // 손에 든 강철검 (기의 검은 셀 밖으로 뻗으므로 drawFighter 에서 따로 그린다)
+  if (p.sword && !p.sword.ki) drawSword(ctx, p.sword, c);
   // 7) 머리
   drawHead(ctx, p, ch, f, time);
 }
@@ -3776,6 +4131,15 @@ function drawFighter(ctx, f, time) {
     ctx.imageSmoothingEnabled = sm;
   } else {
     drawFighterRig(ctx, f, p, time);
+  }
+
+  // 기의 검 : 스프라이트 셀에 굽지 않고 그때그때 빛나게 그린다
+  if (p.sword && p.sword.ki) {
+    const k = ch.scale || 1;
+    ctx.save();
+    ctx.scale(k, k);
+    drawKiSword(ctx, p.sword, ch.colors);
+    ctx.restore();
   }
   ctx.restore();
 
@@ -3993,7 +4357,7 @@ function drawBeam(ctx, f, time) {
 function drawSpecialCharge(ctx, f, time) {
   if (!f.attack) return;
   const def = f.attack.def;
-  if (!tierOf(def) || f.attack.frame >= def.startup) return;
+  if (!tierOf(def) || def.slash || f.attack.frame >= def.startup) return;
   const t = clamp(f.attack.frame / Math.max(1, def.startup), 0, 1);
   const m = motionFor(f.char, def);
   const src = skillOf(f.char, def);
@@ -4038,6 +4402,105 @@ function drawSpecialCharge(ctx, f, time) {
         ctx.lineTo(x + Math.cos(a + 0.5) * rr * 1.5, y + Math.sin(a + 0.5) * rr * 1.5);
         ctx.stroke();
       }
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * 검형 초필살기 연출.
+ *  ① 하늘로 떠오르며 기를 모아 검을 벼린다
+ *  ② 지면을 향해 크게 그어 내린다 (잔상이 남는 큰 호)
+ *  ③ 갈라진 지면에서 빛이 솟구친다
+ */
+function drawSwordSlash(ctx, f, time) {
+  const a = f.attack;
+  if (!a || !a.def.slash) return;
+  const def = a.def, sl = def.slash;
+  const src = skillOf(f.char, def) || f.char.ultimate;
+  const col = src.color, core = src.core || '#ffffff';
+  const dir = f.facing;
+  const hx = f.x, hy = f.y + swordRise(a.frame, def);
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+
+  if (a.frame < def.startup) {
+    // ① 검을 벼린다 : 머리 위로 모여드는 기
+    const t = clamp(a.frame / def.startup, 0, 1);
+    const cx = hx + dir * 8, cy = hy - 150 - t * 26;
+    const r = 16 + t * 34;
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 2);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(0.32, core);
+    g.addColorStop(0.62, col);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalAlpha = 0.55 + t * 0.45;
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, r * 2, 0, Math.PI * 2); ctx.fill();
+    // 사방에서 빨려 들어오는 기의 선
+    ctx.globalAlpha = 0.5 * t;
+    ctx.strokeStyle = core; ctx.lineWidth = 2;
+    for (let k = 0; k < 6; k++) {
+      const ang = time / 9 + k * 1.05;
+      const rr = r * (3.4 - t * 1.6);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr * 0.7);
+      ctx.lineTo(cx + Math.cos(ang) * r * 1.2, cy + Math.sin(ang) * r * 0.8);
+      ctx.stroke();
+    }
+  } else {
+    const k = a.frame - def.startup;
+    const swing = clamp(k / 9, 0, 1);
+
+    // ② 내리긋는 큰 호 (잔상)
+    if (swing < 1.0 || k < 14) {
+      const R = 210;
+      for (let i = 0; i < 7; i++) {
+        const t2 = clamp(swing - i * 0.06, 0, 1);
+        const ang = lerp(-2.25, 0.62, t2);
+        const ox = hx + dir * Math.cos(ang) * 24, oy = hy - 100 + Math.sin(ang) * 24;
+        const tx = hx + dir * Math.cos(ang) * R, ty = hy - 100 + Math.sin(ang) * R;
+        ctx.globalAlpha = (0.62 - i * 0.08) * clamp(1.3 - k / 16, 0, 1);
+        ctx.strokeStyle = i === 0 ? core : col;
+        ctx.lineWidth = 22 - i * 2.6;
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(tx, ty); ctx.stroke();
+      }
+    }
+
+    // ③ 갈라진 지면
+    if (k >= sl.hitAt) {
+      const age = k - sl.hitAt;
+      const life = clamp(1 - age / (def.active - sl.hitAt + 16), 0, 1);
+      const x0 = hx + dir * 8;
+      const x1 = x0 + dir * sl.reach * clamp(age / 4, 0, 1);
+      // 균열에서 솟는 빛기둥
+      for (let i = 0; i < 10; i++) {
+        const t2 = (i + 0.5) / 10;
+        const x = lerp(x0, x1, t2);
+        const h = (170 - t2 * 70) * life * (0.72 + Math.sin(time / 3 + i * 1.4) * 0.28);
+        const gg = ctx.createLinearGradient(x, GROUND_Y, x, GROUND_Y - h);
+        gg.addColorStop(0, '#ffffff');
+        gg.addColorStop(0.28, core);
+        gg.addColorStop(0.7, col);
+        gg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalAlpha = life * 0.85;
+        ctx.fillStyle = gg;
+        ctx.fillRect(x - 10, GROUND_Y - h, 20, h);
+      }
+      // 톱니 모양의 균열선
+      ctx.globalAlpha = life;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3 + 5 * life;
+      ctx.beginPath();
+      ctx.moveTo(x0, GROUND_Y);
+      const N = 16;
+      for (let i = 1; i <= N; i++) {
+        const t2 = i / N;
+        ctx.lineTo(lerp(x0, x1, t2), GROUND_Y + ((i % 2) ? -8 : 6) * (1 - t2 * 0.55));
+      }
+      ctx.stroke();
     }
   }
   ctx.restore();
