@@ -161,6 +161,11 @@ const SPECIAL_MOTION = {
     handX: 28, handY: -162, oy: -112, width: 1.22, style: 'orb', rings: true,
     chargeX: 10, chargeY: -170, chargeR: 22
   },
+  // 히트 돔 어택 : 한 손을 높이 들어 만든 열의 돔을 앞으로 밀어낸다 (트랭크스)
+  dome: {
+    handX: 68, handY: -126, oy: -104, width: 1.18, style: 'orb', rings: true,
+    chargeX: 44, chargeY: -142, chargeR: 17
+  },
   // 이레이저 캐논 : 한 손바닥을 앞으로 내밀어 굵은 광선을 쏜다 (브로리)
   palm: {
     handX: 58, handY: -100, oy: -100, width: 1.35, style: 'wide', rings: true, sparks: true,

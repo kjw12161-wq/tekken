@@ -22,7 +22,7 @@ const CHARACTERS = [
     entrance: 'descend', victory: 'scratch',
     form: { name: '초사이어인', saiyan: true, hair: '#ffdf3d', hairLit: '#fff8b8', eye: '#2fbf6a', aura: '#ffe066' },
     special: { name: '에네르기파', color: '#7fd8ff', core: '#ffffff', motion: 'cupped' },
-    ultimate: { name: '초 에네르기파', color: '#8ef0ff', core: '#ffffff', motion: 'cupped' },
+    ultimate: { name: '초 에네르기파', color: '#8ef0ff', core: '#ffffff', motion: 'cupped', fx: 'kamehameha' },
     quotes: { win: '좋아! 역시 강한 녀석과 싸우는 건 즐겁다구!', pick: '자, 붙어보자!' }
   },
   {
@@ -45,7 +45,7 @@ const CHARACTERS = [
     entrance: 'crossArms', victory: 'foldProud',
     form: { name: '초사이어인', saiyan: true, hair: '#ffd93d', hairLit: '#fff3a0', eye: '#2fbf6a', aura: '#ffdf4d' },
     special: { name: '갤릭포', color: '#c47bff', core: '#ffe9ff', motion: 'onehand' },
-    ultimate: { name: '파이널 플래시', color: '#ffe14d', core: '#ffffff', motion: 'flash' },
+    ultimate: { name: '파이널 플래시', color: '#ffe14d', core: '#ffffff', motion: 'flash', fx: 'finalFlash' },
     quotes: { win: '이 몸이 바로 사이어인의 왕자다!', pick: '건방진 녀석...' }
   },
   {
@@ -63,7 +63,7 @@ const CHARACTERS = [
     entrance: 'meditate', victory: 'foldQuiet',
     form: { name: '잠재능력 해방', aura: '#8ef0ff' },
     special: { name: '마관광살포', color: '#ffe066', core: '#fff6c9', motion: 'fingers' },
-    ultimate: { name: '초 폭렬마파', color: '#ff9d3d', core: '#fff0c9', motion: 'wave' },
+    ultimate: { name: '초 폭렬마파', color: '#ff9d3d', core: '#fff0c9', motion: 'wave', fx: 'explosiveWave' },
     quotes: { win: '아직 멀었군. 수행이 부족하다.', pick: '덤벼라.' }
   },
   {
@@ -88,7 +88,7 @@ const CHARACTERS = [
     },
     entrance: 'hover', victory: 'finger',
     special: { name: '데스 빔', color: '#ff4d7a', core: '#ffd6e2', motion: 'point' },
-    ultimate: { name: '데스 볼', color: '#ff7b3d', core: '#ffe0b0', motion: 'orb', type: 'orb' },
+    ultimate: { name: '데스 볼', color: '#ff7b3d', core: '#ffe0b0', motion: 'orb', type: 'orb', fx: 'deathBall' },
     quotes: { win: '하찮은 원숭이 따위가.', pick: '후훗... 놀아드리죠.' }
   },
   {
@@ -116,7 +116,7 @@ const CHARACTERS = [
     },
     entrance: 'shrug', victory: 'spread',
     special: { name: '카메하메파', color: '#8affc0', core: '#eaffef', motion: 'cupped' },
-    ultimate: { name: '솔라 카메하메하', color: '#c9ff5c', core: '#ffffff', motion: 'cupped' },
+    ultimate: { name: '솔라 카메하메하', color: '#c9ff5c', core: '#ffffff', motion: 'cupped', fx: 'solarKame' },
     quotes: { win: '완전한 힘 앞에 무릎 꿇어라.', pick: '실험은 끝났다.' }
   },
   {
@@ -137,7 +137,7 @@ const CHARACTERS = [
     },
     entrance: 'calm', victory: 'fistUp',
     special: { name: '마섬광', color: '#ffd45c', core: '#fff6d2', motion: 'overhead' },
-    ultimate: { name: '초 마섬광', color: '#ffe98a', core: '#ffffff', motion: 'overhead' },
+    ultimate: { name: '초 마섬광', color: '#ffe98a', core: '#ffffff', motion: 'overhead', fx: 'masenko' },
     quotes: { win: '봐주는 건 여기까지야.', pick: '이 힘, 시험해 볼까.' }
   },
   {
@@ -167,7 +167,7 @@ const CHARACTERS = [
     entrance: 'sword', victory: 'shoulder',
     form: { name: '초사이어인', saiyan: true, hair: '#ffe14d', hairLit: '#fff8bd', eye: '#3fd07a', aura: '#ffe98a' },
     special: { name: '버닝 어택', color: '#ffb35c', core: '#fff0d0', motion: 'weave' },
-    ultimate: { name: '히트 돔 어택', color: '#ffd93d', core: '#ffffff', motion: 'orb' },
+    ultimate: { name: '히트 돔 어택', color: '#ffd93d', core: '#ffffff', motion: 'dome', fx: 'heatDome' },
     quotes: { win: '미래는 내가 바꾼다.', pick: '봐주지 않겠어.' }
   },
   {
@@ -196,7 +196,7 @@ const CHARACTERS = [
     },
     entrance: 'roar', victory: 'roarWin',
     special: { name: '이레이저 캐논', color: '#7dff5c', core: '#e8ffd0', motion: 'palm', type: 'orb' },
-    ultimate: { name: '기간틱 미티어', color: '#9dff4a', core: '#ffffff', motion: 'twinOrb', type: 'orb' },
+    ultimate: { name: '기간틱 미티어', color: '#9dff4a', core: '#ffffff', motion: 'twinOrb', type: 'orb', fx: 'giganticMeteor' },
     quotes: { win: '카카로트... 아직 부족해!', pick: '전부 부숴주마.' }
   },
   {
@@ -223,7 +223,7 @@ const CHARACTERS = [
     },
     entrance: 'dive', victory: 'brush',
     special: { name: '데스 비머', color: '#7f5cff', core: '#e0d6ff', motion: 'point' },
-    ultimate: { name: '슈퍼노바', color: '#ff7b3d', core: '#ffe6a8', motion: 'orb', type: 'orb' },
+    ultimate: { name: '슈퍼노바', color: '#ff7b3d', core: '#ffe6a8', motion: 'orb', type: 'orb', fx: 'supernova' },
     quotes: { win: '프리저보다 못한 놈이었군.', pick: '내 앞에 선 걸 후회하게 될 거다.' }
   },
   {
@@ -247,7 +247,7 @@ const CHARACTERS = [
     },
     entrance: 'furyRise', victory: 'sideGlance',
     special: { name: '마섬광', color: '#ffd45c', core: '#fff6d2', motion: 'overhead' },
-    ultimate: { name: '부자 카메하메하', color: '#8ef0ff', core: '#ffffff', motion: 'onehand' },
+    ultimate: { name: '부자 카메하메하', color: '#8ef0ff', core: '#ffffff', motion: 'onehand', fx: 'fatherSon' },
     quotes: { win: '더는... 아무도 다치게 두지 않아.', pick: '봐주지 않을 거야.' }
   },
   {
@@ -273,7 +273,7 @@ const CHARACTERS = [
       hair: '#ffe24a', hairLit: '#fffbcf', eye: '#3fd07a', aura: '#ffe98a'
     },
     special: { name: '에네르기파', color: '#7fd8ff', core: '#ffffff', motion: 'cupped' },
-    ultimate: { name: '순간이동 에네르기파', color: '#8ef0ff', core: '#ffffff', motion: 'cupped' },
+    ultimate: { name: '순간이동 에네르기파', color: '#8ef0ff', core: '#ffffff', motion: 'cupped', fx: 'instantKame' },
     quotes: { win: '아직 더 위가 있어. 나도, 너도.', pick: '전력으로 간다!' }
   },
   {
@@ -302,7 +302,7 @@ const CHARACTERS = [
       hair: '#ffd93d', hairLit: '#fff3a0', eye: '#e8434f', aura: '#ff4d5e'
     },
     special: { name: '갤릭포', color: '#c47bff', core: '#ffe9ff', motion: 'onehand' },
-    ultimate: { name: '파이널 플래시', color: '#ffe14d', core: '#ffffff', motion: 'flash' },
+    ultimate: { name: '파이널 플래시', color: '#ffe14d', core: '#ffffff', motion: 'flash', fx: 'majinFlash' },
     quotes: { win: '이 몸을 넘어설 자는 없다.', pick: '내 자존심을 시험하겠다고?' }
   },
   {
@@ -334,7 +334,7 @@ const CHARACTERS = [
       hair: '#ffdf3d', hairLit: '#fff8b8', eye: '#3fd07a', aura: '#ffe066'
     },
     special: { name: '파이널 카메하메하', color: '#8ecdff', core: '#ffffff', motion: 'cupped' },
-    ultimate: { name: '스피릿 소드', color: '#ffe14d', core: '#fffbe0', motion: 'swordUp', type: 'sword' },
+    ultimate: { name: '스피릿 소드', color: '#ffe14d', core: '#fffbe0', motion: 'swordUp', type: 'sword', fx: 'spiritSword' },
     quotes: { win: '둘이 하나가 된 힘, 실감했나?', pick: '금방 끝내주지.' }
   },
   {
@@ -362,7 +362,7 @@ const CHARACTERS = [
     },
     entrance: 'fusionPose', victory: 'crossOut',
     special: { name: '스타더스트 브레이커', color: '#ffd45c', core: '#ffffff', motion: 'palm', type: 'orb' },
-    ultimate: { name: '빅뱅 카메하메하', color: '#8ef0ff', core: '#ffffff', motion: 'flash' },
+    ultimate: { name: '빅뱅 카메하메하', color: '#8ef0ff', core: '#ffffff', motion: 'flash', fx: 'bigBangKame' },
     quotes: { win: '둘의 힘이 겹치면 이 정도다.', pick: '오래 걸리지 않을 거다.' }
   },
   {
@@ -394,7 +394,7 @@ const CHARACTERS = [
     },
     entrance: 'cackle', victory: 'twitch',
     special: { name: '증발탄', color: '#ff7bd0', core: '#ffd9f0', motion: 'orb', type: 'orb' },
-    ultimate: { name: '인간 절멸 공격', color: '#ff5cc0', core: '#ffe6f6', motion: 'wave' },
+    ultimate: { name: '인간 절멸 공격', color: '#ff5cc0', core: '#ffe6f6', motion: 'wave', fx: 'humanExtinction' },
     quotes: { win: '키히히히히! 부우, 전부 부쉈다!', pick: '부우우... 부순다!' }
   },
   {
@@ -430,7 +430,7 @@ const CHARACTERS = [
       hair: '#ffd93d', hairLit: '#fff3a0', eye: '#3fd07a', aura: '#ffe98a'
     },
     special: { name: '갤릭 도넛', color: '#c47bff', core: '#ffe9ff', motion: 'weave' },
-    ultimate: { name: '초 고스트 카미카제 어택', color: '#8ef0ff', core: '#ffffff', motion: 'ghost', type: 'orb' },
+    ultimate: { name: '초 고스트 카미카제 어택', color: '#8ef0ff', core: '#ffffff', motion: 'ghost', type: 'orb', fx: 'ghostAttack' },
     quotes: { win: '어때! 오천크스님의 실력, 봤지?', pick: '자, 놀아줄게!' }
   },
   {
@@ -460,7 +460,7 @@ const CHARACTERS = [
     },
     entrance: 'stroll', victory: 'bored',
     special: { name: '파워 블리츠', color: '#7fe0ff', core: '#eaffff', motion: 'palm', type: 'orb' },
-    ultimate: { name: '포톤 플래시', color: '#8affc0', core: '#ffffff', motion: 'wave' },
+    ultimate: { name: '포톤 플래시', color: '#8affc0', core: '#ffffff', motion: 'wave', fx: 'photonFlash' },
     quotes: { win: '이 정도로 끝이야? 시시하군.', pick: '재밌게 놀아보자고.' }
   },
   {
@@ -489,7 +489,7 @@ const CHARACTERS = [
     },
     entrance: 'flick', victory: 'hairFlip',
     special: { name: '인피니티 불릿', color: '#8ecdff', core: '#ffffff', motion: 'onehand' },
-    ultimate: { name: '파워 블리츠', color: '#7fe0ff', core: '#eaffff', motion: 'orb', type: 'orb' },
+    ultimate: { name: '파워 블리츠', color: '#7fe0ff', core: '#eaffff', motion: 'orb', type: 'orb', fx: 'powerBlitz' },
     quotes: { win: '이런 걸로 시간 낭비하게 하지 마.', pick: '빨리 끝내자.' }
   },
   {
@@ -519,7 +519,7 @@ const CHARACTERS = [
     },
     entrance: 'rift', victory: 'bladeRest',
     special: { name: '블러디 소스', color: '#ff3b3b', core: '#ffe0d8', motion: 'blade' },
-    ultimate: { name: '환영 분쇄', color: '#ff4d3b', core: '#ffe8c0', motion: 'swordUp', type: 'sword' },
+    ultimate: { name: '환영 분쇄', color: '#ff4d3b', core: '#ffe8c0', motion: 'swordUp', type: 'sword', fx: 'illusionSmash' },
     quotes: { win: '쟈넨...바.', pick: '쟈넨... 쟈넨바!' }
   }
 ];

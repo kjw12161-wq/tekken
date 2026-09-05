@@ -482,6 +482,7 @@ const Game = {
       vx: owner.facing * pj.speed,
       radius: pj.radius,
       color: src.color, core: src.core || '#ffffff',
+      fx: src.fx || null,
       heavy: !!pj.heavy,
       damage: pj.damage, chip: pj.chip, hitstun: pj.hitstun, pushback: pj.pushback,
       life: pj.life
@@ -533,14 +534,43 @@ const Game = {
     }
   },
 
+  /* 초필살기 발동 순간의 파티클 : 기술의 성격에 맞춰 모양과 세기를 바꾼다 */
+  ULT_BURST: {
+    kamehameha:     { shape: 'ring',   n: 10, speed: 7,  size: 14, shake: 11 },
+    finalFlash:     { shape: 'spark',  n: 42, speed: 15, size: 12, shake: 15 },
+    majinFlash:     { shape: 'spark',  n: 42, speed: 15, size: 12, shake: 15, tint: '#ff5a6e' },
+    explosiveWave:  { shape: 'shard',  n: 30, speed: 9,  size: 13, shake: 14 },
+    deathBall:      { shape: 'circle', n: 22, speed: 6,  size: 11, shake: 13 },
+    solarKame:      { shape: 'spark',  n: 34, speed: 12, size: 11, shake: 12 },
+    masenko:        { shape: 'shard',  n: 26, speed: 11, size: 12, shake: 11 },
+    heatDome:       { shape: 'ring',   n: 8,  speed: 5,  size: 17, shake: 12 },
+    giganticMeteor: { shape: 'shard',  n: 40, speed: 8,  size: 16, shake: 18, tint: '#6f5f45' },
+    supernova:      { shape: 'spark',  n: 36, speed: 14, size: 12, shake: 14 },
+    fatherSon:      { shape: 'circle', n: 26, speed: 8,  size: 12, shake: 12, tint: '#ffe066' },
+    instantKame:    { shape: 'spark',  n: 30, speed: 16, size: 9,  shake: 9 },
+    spiritSword:    { shape: 'shard',  n: 24, speed: 9,  size: 13, shake: 12 },
+    bigBangKame:    { shape: 'ring',   n: 12, speed: 9,  size: 18, shake: 16 },
+    humanExtinction:{ shape: 'circle', n: 34, speed: 10, size: 13, shake: 10 },
+    ghostAttack:    { shape: 'circle', n: 18, speed: 6,  size: 15, shake: 8 },
+    photonFlash:    { shape: 'shard',  n: 24, speed: 12, size: 9,  shake: 11 },
+    powerBlitz:     { shape: 'shard',  n: 20, speed: 11, size: 10, shake: 11 },
+    illusionSmash:  { shape: 'shard',  n: 28, speed: 10, size: 14, shake: 13 }
+  },
+
   onUltimate(f) {
-    this.announce(f.char.ultimate.name, 'ult');
-    this.slowmo = Math.max(this.slowmo, 26);
-    this.shake(10);
-    this.particles.burst(f.x, f.y - 78, 30, {
-      color: f.char.ultimate.color, minSpeed: 2, maxSpeed: 10,
-      minSize: 4, maxSize: 12, minLife: 20, maxLife: 44, shape: 'shard'
+    const u = f.char.ultimate;
+    this.announce(u.name, 'ult');
+    const b = this.ULT_BURST[u.fx] ||
+      { shape: 'shard', n: 30, speed: 10, size: 12, shake: 10 };
+    this.slowmo = Math.max(this.slowmo, u.type === 'sword' ? 32 : 26);
+    this.shake(b.shake);
+    this.particles.burst(f.x, f.y - 78, b.n, {
+      color: b.tint || u.color, minSpeed: 2, maxSpeed: b.speed,
+      minSize: 4, maxSize: b.size, minLife: 20, maxLife: 44, shape: b.shape
     });
+    // 발밑에서 바깥으로 퍼지는 기압 링
+    this.particles.spawn({ x: f.x, y: GROUND_Y - 6, life: 26, size: 26,
+      color: u.core || '#ffffff', shape: 'ring' });
   },
 
   /** 등장 모션의 스타일별 이펙트 (착지 흙먼지, 검광, 오라 등) */
@@ -1253,18 +1283,24 @@ const Game = {
     // 공격 중인 캐릭터를 앞쪽에 그린다
     const order = a.attack && !b.attack ? [b, a] : [a, b];
     for (const f of order) {
-      drawBeam(ctx, f, this.time);
+      drawUltBack(ctx, f, this.time);
+      if (!ultHidesBeam(f)) drawBeam(ctx, f, this.time);
       drawFighter(ctx, f, this.time);
       drawSpecialCharge(ctx, f, this.time);
       drawSwordSlash(ctx, f, this.time);
+      drawUltFront(ctx, f, this.time);
     }
-    for (const p of this.projectiles) drawProjectile(ctx, p, this.time);
+    for (const p of this.projectiles) {
+      if (!projectileFxReplaces(p)) drawProjectile(ctx, p, this.time);
+      drawProjectileFx(ctx, p, this.time);
+    }
     for (const cl of this.blastClashes) drawBlastClash(ctx, cl, this.time);
     drawBeamClash(ctx, this.beamClash, this.time);
     this.particles.draw(ctx);
     if (this.debug) drawDebugBoxes(ctx, this.fighters);
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const f of order) drawUltScreen(ctx, f, this.time, CW, CH);
     this.drawOffscreenMarkers(ctx);
     if (this.phase === 'ko') {
       ctx.fillStyle = 'rgba(255,60,60,0.08)';
