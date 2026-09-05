@@ -203,6 +203,8 @@ const SpriteBank = {
     add({ state: 'hurt', hitstun: 6 });
     // 공격기 : 각 단계별로 한 장씩
     Object.values(MOVES).forEach(def => {
+      // 구체형 필살기는 빔형과 같은 포즈 키를 쓰므로 목록에 중복해서 넣지 않는다
+      if (/^orb/.test(def.key)) return;
       const steps = ATTACK_STEPS;
       for (let i = 0; i <= steps; i++) {
         const frame = i < steps

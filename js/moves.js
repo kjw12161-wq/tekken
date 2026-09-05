@@ -70,14 +70,27 @@ const MOVES = {
     level: 'mid', sfx: 'blast'
   },
   beam: {
-    key: 'beam', label: '필살기', startup: 20, active: 20, recovery: 30,
+    key: 'beam', label: '필살기', tier: 'special', startup: 20, active: 20, recovery: 30,
     kiCost: 40, kiGain: 0, beam: { height: 46, damage: 30, hitEvery: 4, chip: 5, pushback: 2.4, reach: 620 },
     level: 'mid', sfx: 'beam'
   },
   ultimate: {
-    key: 'ultimate', label: '초필살기', startup: 34, active: 34, recovery: 40,
+    key: 'ultimate', label: '초필살기', tier: 'ultimate', startup: 34, active: 34, recovery: 40,
     kiCost: 100, kiGain: 0, beam: { height: 108, damage: 36, hitEvery: 4, chip: 6, pushback: 3.2, reach: 900 },
     level: 'mid', invuln: 34, sfx: 'ultimate'
+  },
+  /* 원작에서 빔이 아니라 '구체'를 던지는 기술 (이레이저 캐논 · 데스 볼 · 슈퍼노바 …) */
+  orbSpecial: {
+    key: 'orbSpecial', label: '필살기', tier: 'special', startup: 22, active: 4, recovery: 32,
+    kiCost: 40, kiGain: 0,
+    projectile: { speed: 8.4, radius: 34, damage: 128, chip: 34, hitstun: 34, pushback: 14, life: 140, heavy: true },
+    level: 'mid', sfx: 'beam'
+  },
+  orbUltimate: {
+    key: 'orbUltimate', label: '초필살기', tier: 'ultimate', startup: 36, active: 6, recovery: 44,
+    kiCost: 100, kiGain: 0,
+    projectile: { speed: 6.2, radius: 58, damage: 208, chip: 62, hitstun: 46, pushback: 21, life: 170, heavy: true },
+    level: 'mid', invuln: 36, sfx: 'ultimate'
   },
   /* ---------- 잡기 ---------- */
   grab: {
@@ -155,10 +168,24 @@ const SPECIAL_MOTION = {
   }
 };
 
+/** 기술이 필살기/초필살기 중 무엇인지 (빔이든 구체든 동일하게 판별) */
+function tierOf(def) { return def && def.tier; }
+function isUltimate(def) { return tierOf(def) === 'ultimate'; }
+/** 그 기술에 해당하는 캐릭터의 필살기 정보 */
+function skillOf(char, def) { return isUltimate(def) ? char.ultimate : char.special; }
+
 /** 캐릭터 + 기술로 필살기 모션을 찾는다 */
 function motionFor(char, def) {
-  const src = def === MOVES.ultimate ? char.ultimate : char.special;
+  const src = skillOf(char, def);
   return SPECIAL_MOTION[src && src.motion] || SPECIAL_MOTION.cupped;
+}
+
+/** 캐릭터가 실제로 쓰는 필살기 / 초필살기 기술 정의 (빔형 or 구체형) */
+function specialMoveOf(char) {
+  return char.special && char.special.type === 'orb' ? MOVES.orbSpecial : MOVES.beam;
+}
+function ultimateMoveOf(char) {
+  return char.ultimate && char.ultimate.type === 'orb' ? MOVES.orbUltimate : MOVES.ultimate;
 }
 
 /* 콤보 보정: 히트 수가 늘어날수록 데미지 감소 */

@@ -87,9 +87,8 @@ const CHARACTERS = [
       aura: '#c46bff', eye: '#ef2f4e'
     },
     entrance: 'hover', victory: 'finger',
-    form: { name: '최종 형태', aura: '#ff7bd0' },
     special: { name: '데스 빔', color: '#ff4d7a', core: '#ffd6e2', motion: 'point' },
-    ultimate: { name: '데스 볼', color: '#ff7b3d', core: '#ffe0b0', motion: 'orb' },
+    ultimate: { name: '데스 볼', color: '#ff7b3d', core: '#ffe0b0', motion: 'orb', type: 'orb' },
     quotes: { win: '하찮은 원숭이 따위가.', pick: '후훗... 놀아드리죠.' }
   },
   {
@@ -116,7 +115,6 @@ const CHARACTERS = [
       aura: '#c9ff5c', eye: '#e0518f'
     },
     entrance: 'shrug', victory: 'spread',
-    form: { name: '완전체 각성', aura: '#c9ff5c' },
     special: { name: '카메하메파', color: '#8affc0', core: '#eaffef', motion: 'cupped' },
     ultimate: { name: '솔라 카메하메하', color: '#c9ff5c', core: '#ffffff', motion: 'cupped' },
     quotes: { win: '완전한 힘 앞에 무릎 꿇어라.', pick: '실험은 끝났다.' }
@@ -138,7 +136,6 @@ const CHARACTERS = [
       aura: '#ffeeb0', eye: '#2b2b2b'
     },
     entrance: 'calm', victory: 'fistUp',
-    form: { name: '초사이어인 2', saiyan: true, hair: '#ffe14d', hairLit: '#fff8bd', eye: '#3fd07a', aura: '#ffe98a' },
     special: { name: '마섬광', color: '#ffd45c', core: '#fff6d2', motion: 'overhead' },
     ultimate: { name: '초 마섬광', color: '#ffe98a', core: '#ffffff', motion: 'overhead' },
     quotes: { win: '봐주는 건 여기까지야.', pick: '이 힘, 시험해 볼까.' }
@@ -198,9 +195,8 @@ const CHARACTERS = [
       aura: '#8dff62', eye: '#2f2a1c'
     },
     entrance: 'roar', victory: 'roarWin',
-    form: { name: '전설의 초사이어인', saiyan: true, hair: '#e4f24f', hairLit: '#faffc4', eye: '#f2ffe0', aura: '#a6ff5c' },
-    special: { name: '이레이저 캐논', color: '#7dff5c', core: '#e8ffd0', motion: 'palm' },
-    ultimate: { name: '기간틱 미티어', color: '#9dff4a', core: '#ffffff', motion: 'twinOrb' },
+    special: { name: '이레이저 캐논', color: '#7dff5c', core: '#e8ffd0', motion: 'palm', type: 'orb' },
+    ultimate: { name: '기간틱 미티어', color: '#9dff4a', core: '#ffffff', motion: 'twinOrb', type: 'orb' },
     quotes: { win: '카카로트... 아직 부족해!', pick: '전부 부숴주마.' }
   },
   {
@@ -226,9 +222,8 @@ const CHARACTERS = [
       aura: '#b06bff', eye: '#e8324f'
     },
     entrance: 'dive', victory: 'brush',
-    form: { name: '메탈 쿠우라', aura: '#7fe6ff' },
     special: { name: '데스 비머', color: '#7f5cff', core: '#e0d6ff', motion: 'point' },
-    ultimate: { name: '슈퍼노바', color: '#ff7b3d', core: '#ffe6a8', motion: 'orb' },
+    ultimate: { name: '슈퍼노바', color: '#ff7b3d', core: '#ffe6a8', motion: 'orb', type: 'orb' },
     quotes: { win: '프리저보다 못한 놈이었군.', pick: '내 앞에 선 걸 후회하게 될 거다.' }
   }
 ];

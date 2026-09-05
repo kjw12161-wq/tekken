@@ -78,7 +78,8 @@ class Fighter {
   /* 변신 보정이 들어간 실제 능력치 */
   get power() { return this.char.power * (this.superSaiyan ? FORM_POWER : 1); }
   get speed() { return this.char.speed * (this.superSaiyan ? FORM_SPEED : 1); }
-  get form() { return this.char.form || { name: '각성', aura: this.char.colors.aura }; }
+  get form() { return this.char.form || null; }
+  get canEverTransform() { return !!this.char.form; }
 
   /* ---------------- 조회 ---------------- */
   get alive() { return this.hp > 0; }
@@ -225,6 +226,7 @@ class Fighter {
 
   /* ---------------- 변신 ---------------- */
   canTransform() {
+    if (!this.char.form) return false;          // 변신 형태가 없는 캐릭터
     return !this.superSaiyan && this.ki >= TRANSFORM_COST && !this.airborne &&
       !this.attack && this.hitstun <= 0 && this.blockstun <= 0 &&
       this.transformTimer <= 0 && this.state !== 'ko' &&
@@ -249,7 +251,8 @@ class Fighter {
       this.superSaiyan = false;
       this.ssTimer = 0;
       this.world.particles.burst(this.x, this.y - 70, 14, {
-        color: this.form.aura, minSpeed: 1, maxSpeed: 4, minSize: 3, maxSize: 8, gravity: 0.05
+        color: (this.form && this.form.aura) || this.char.colors.aura,
+        minSpeed: 1, maxSpeed: 4, minSize: 3, maxSize: 8, gravity: 0.05
       });
     }
   }
@@ -314,11 +317,12 @@ class Fighter {
     }
 
     /* 필살기 계열 */
-    if (this.inputPressed('ultimate') && this.ki >= MOVES.ultimate.kiCost && !this.airborne) {
-      this.startAttack(MOVES.ultimate); return;
+    const ultMove = ultimateMoveOf(this.char), spMove = specialMoveOf(this.char);
+    if (this.inputPressed('ultimate') && this.ki >= ultMove.kiCost && !this.airborne) {
+      this.startAttack(ultMove); return;
     }
     if (this.inputPressed('blast') && !this.airborne) {
-      if (holdDown && this.ki >= MOVES.beam.kiCost) { this.startAttack(MOVES.beam); return; }
+      if (holdDown && this.ki >= spMove.kiCost) { this.startAttack(spMove); return; }
       if (!holdDown && this.ki >= MOVES.kiBlast.kiCost) { this.startAttack(MOVES.kiBlast); return; }
     }
 
@@ -429,7 +433,7 @@ class Fighter {
     if (def.invuln) this.invuln = def.invuln;
     if (!def.air) this.vx *= 0.35;
     if (def.launcher) this.vx = this.facing * 1.2;
-    if (def === MOVES.ultimate) {
+    if (isUltimate(def)) {
       this.world.onUltimate(this);
     }
   }
@@ -455,9 +459,9 @@ class Fighter {
       const m = motionFor(this.char, def);
       Sfx.play(def.sfx);
       // 굵은 기술일수록 화면이 크게 흔들린다
-      this.world.shake((def === MOVES.ultimate ? 14 : 7) * clamp(0.55 + m.width * 0.5, 0.6, 1.6));
+      this.world.shake((isUltimate(def) ? 14 : 7) * clamp(0.55 + m.width * 0.5, 0.6, 1.6));
       // 총구에서 앞으로 터지는 발사 섬광
-      const src = def === MOVES.ultimate ? this.char.ultimate : this.char.special;
+      const src = skillOf(this.char, def);
       for (let i = 0; i < 16; i++) {
         this.world.particles.spawn({
           x: this.x + this.facing * m.handX, y: this.y + m.handY,
@@ -477,13 +481,13 @@ class Fighter {
           x: this.x + this.facing * mo.handX, y: this.y + mo.handY,
           vx: rand(-1, 1) + this.facing * rand(1, 4), vy: rand(-2.2, 2.2),
           life: randInt(10, 22), size: rand(4, 11),
-          color: def === MOVES.ultimate ? this.char.ultimate.color : this.char.special.color
+          color: skillOf(this.char, def).color
         });
       }
     }
     // 기 모으는 연출 (필살기 발동 전)
     if ((def.beam || def.projectile) && a.frame < def.startup && a.frame % 3 === 0) {
-      const cm = def.beam ? motionFor(this.char, def) : null;
+      const cm = tierOf(def) ? motionFor(this.char, def) : null;
       const cx = this.x + this.facing * (cm ? cm.chargeX : 42);
       const cy = this.y + (cm ? cm.chargeY : -88);
       const ang = rand(0, Math.PI * 2), r = rand(40, 90);
@@ -492,7 +496,7 @@ class Fighter {
         y: cy + Math.sin(ang) * r,
         vx: -Math.cos(ang) * 3.2, vy: -Math.sin(ang) * 3.2,
         life: 14, size: rand(3, 7),
-        color: def === MOVES.ultimate ? this.char.ultimate.color : this.char.special.color
+        color: (skillOf(this.char, def) || this.char.special).color
       });
     }
 
@@ -512,7 +516,7 @@ class Fighter {
     }
     this.mash = Math.max(0, this.mash - 0.055);
     const m = motionFor(this.char, def);
-    const src = def === MOVES.ultimate ? this.char.ultimate : this.char.special;
+    const src = skillOf(this.char, def);
     this.vx = approach(this.vx, -this.facing * 0.5, 0.2);
     if (this.stateTimer % 2 === 0) {
       this.world.particles.spawn({

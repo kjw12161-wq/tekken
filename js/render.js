@@ -766,14 +766,16 @@ function attackPose(f, p) {
       break;
     }
     case 'beam':
-    case 'ultimate': {
+    case 'ultimate':
+    case 'orbSpecial':
+    case 'orbUltimate': {
       const charging = a.frame < def.startup;
       const gs = Math.round(clamp(a.frame / Math.max(1, def.startup), 0, 1) * ATTACK_STEPS);
       const g = charging ? gs / ATTACK_STEPS : 1;
-      const src = def === MOVES.ultimate ? f.char.ultimate : f.char.special;
+      const src = skillOf(f.char, def);
       const name = (src && src.motion) || 'cupped';
       // 필살기와 초필살기가 서로 다른 모션일 수 있으므로 키를 분리한다
-      const pre = def === MOVES.ultimate ? 'ult' : 'beam';
+      const pre = isUltimate(def) ? 'ult' : 'beam';
       p.key = charging ? pre + 'C' + gs : pre + 'F';
       (MOTION_POSE[name] || MOTION_POSE.cupped)(p, charging, g, gs);
       break;
@@ -2439,18 +2441,49 @@ function drawProjectile(ctx, pr, time) {
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
   const r = pr.radius;
-  const g = ctx.createRadialGradient(pr.x, pr.y, 0, pr.x, pr.y, r * 2.4);
+  const core = pr.core || '#ffffff';
+  const puls = 1 + Math.sin(time / 4) * 0.05;
+  const dir = Math.sign(pr.vx) || 1;
+
+  // 바깥 광휘
+  const g = ctx.createRadialGradient(pr.x, pr.y, 0, pr.x, pr.y, r * 2.4 * puls);
   g.addColorStop(0, '#ffffff');
-  g.addColorStop(0.35, pr.color);
+  g.addColorStop(pr.heavy ? 0.28 : 0.35, core);
+  g.addColorStop(pr.heavy ? 0.52 : 0.6, pr.color);
   g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.arc(pr.x, pr.y, r * 2.4, 0, Math.PI * 2);
+  ctx.arc(pr.x, pr.y, r * 2.4 * puls, 0, Math.PI * 2);
   ctx.fill();
-  ctx.globalAlpha = 0.8;
+
+  if (pr.heavy) {
+    // 거대 구체 : 표면을 도는 불꽃 고리와 흔들리는 가장자리
+    ctx.globalAlpha = 0.75;
+    ctx.strokeStyle = core;
+    for (let k = 0; k < 3; k++) {
+      const a = time / (11 + k * 4) + k * 1.1;
+      ctx.lineWidth = 2.6 - k * 0.5;
+      ctx.beginPath();
+      ctx.ellipse(pr.x, pr.y, r * (0.94 - k * 0.12), r * (0.36 + k * 0.16), a, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // 뒤로 끌리는 화염 꼬리
+    ctx.globalAlpha = 0.5;
+    const tg = ctx.createRadialGradient(pr.x - dir * r * 1.5, pr.y, 0, pr.x - dir * r * 1.5, pr.y, r * 1.4);
+    tg.addColorStop(0, pr.color);
+    tg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = tg;
+    ctx.beginPath();
+    ctx.ellipse(pr.x - dir * r * 1.5, pr.y, r * 1.5, r * 0.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 핵
+  ctx.globalAlpha = pr.heavy ? 0.95 : 0.8;
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.arc(pr.x - Math.sign(pr.vx) * r * 0.3, pr.y, r * (0.55 + Math.sin(time / 4) * 0.06), 0, Math.PI * 2);
+  ctx.arc(pr.x - dir * r * (pr.heavy ? 0.1 : 0.3), pr.y,
+    r * ((pr.heavy ? 0.62 : 0.55) + Math.sin(time / 4) * 0.06), 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
@@ -2459,8 +2492,8 @@ function drawBeam(ctx, f, time) {
   const rect = f.beamRect();
   if (!rect) return;
   const def = f.attack.def;
-  const ult = def === MOVES.ultimate;
-  const src = ult ? f.char.ultimate : f.char.special;
+  const ult = isUltimate(def);
+  const src = skillOf(f.char, def);
   const m = motionFor(f.char, def);
   const color = src.color, core = src.core;
   const dir = f.facing;
@@ -2604,14 +2637,14 @@ function drawBeam(ctx, f, time) {
 function drawSpecialCharge(ctx, f, time) {
   if (!f.attack) return;
   const def = f.attack.def;
-  if (!def.beam || f.attack.frame >= def.startup) return;
+  if (!tierOf(def) || f.attack.frame >= def.startup) return;
   const t = clamp(f.attack.frame / Math.max(1, def.startup), 0, 1);
   const m = motionFor(f.char, def);
-  const src = def === MOVES.ultimate ? f.char.ultimate : f.char.special;
+  const src = skillOf(f.char, def);
   const spots = m.twin
     ? [[m.chargeX, m.chargeY], [-m.chargeX, m.chargeY]]
     : [[m.chargeX, m.chargeY]];
-  const r0 = m.chargeR * (def === MOVES.ultimate ? 1.35 : 1);
+  const r0 = m.chargeR * (isUltimate(def) ? 1.35 : 1);
 
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
@@ -2660,8 +2693,8 @@ function drawSpecialCharge(ctx, f, time) {
 function drawBeamClash(ctx, clash, time) {
   if (!clash) return;
   const [a, b] = clash.pair;
-  const ca = a.attack ? (a.attack.def === MOVES.ultimate ? a.char.ultimate : a.char.special) : null;
-  const cb = b.attack ? (b.attack.def === MOVES.ultimate ? b.char.ultimate : b.char.special) : null;
+  const ca = a.attack ? skillOf(a.char, a.attack.def) : null;
+  const cb = b.attack ? skillOf(b.char, b.attack.def) : null;
   if (!ca || !cb) return;
   const x = clash.x, y = clash.y;
   const push = 1 + Math.sin(time / 2.4) * 0.06;

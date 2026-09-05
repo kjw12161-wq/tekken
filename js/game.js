@@ -271,6 +271,11 @@ const Game = {
     document.getElementById('sel-title').textContent = c.title;
     document.getElementById('sel-quote').textContent = `"${c.quotes.pick}"`;
     document.getElementById('sel-special').textContent = `${c.special.name} / ${c.ultimate.name}`;
+    const formEl = document.getElementById('sel-form');
+    if (formEl) {
+      formEl.textContent = c.form ? c.form.name : '변신 없음';
+      formEl.classList.toggle('is-none', !c.form);
+    }
     // 캐릭터 간 편차가 잘 보이도록 최소/최대 기준으로 정규화한다
     const stat = (id, v, lo, hi) => {
       document.getElementById(id).style.width = clamp((v - lo) / (hi - lo) * 100, 12, 100) + '%';
@@ -466,17 +471,27 @@ const Game = {
 
   spawnProjectile(owner, def) {
     const pj = def.projectile;
+    // 필살기 구체는 캐릭터의 필살기 모션(손 위치)에서 나간다
+    const m = tierOf(def) ? motionFor(owner.char, def) : null;
+    const src = tierOf(def) ? skillOf(owner.char, def) : owner.char.special;
     this.projectiles.push({
       owner, def,
-      x: owner.x + owner.facing * 50,
-      y: owner.y - 88,
+      x: owner.x + owner.facing * (m ? m.handX : 50),
+      y: owner.y + (m ? m.handY : -88),
       vx: owner.facing * pj.speed,
       radius: pj.radius,
-      color: owner.char.special.color,
+      color: src.color, core: src.core || '#ffffff',
+      heavy: !!pj.heavy,
       damage: pj.damage, chip: pj.chip, hitstun: pj.hitstun, pushback: pj.pushback,
       life: pj.life
     });
-    this.shake(3);
+    this.shake(pj.heavy ? (isUltimate(def) ? 14 : 8) : 3);
+    if (pj.heavy) {
+      // 던지는 순간의 섬광
+      this.particles.burst(owner.x + owner.facing * (m ? m.handX : 50), owner.y + (m ? m.handY : -88), 18, {
+        color: src.core || '#ffffff', minSpeed: 2, maxSpeed: 9, minSize: 3, maxSize: 10, shape: 'spark'
+      });
+    }
   },
 
   onCombo(attacker, inAir) {
@@ -854,7 +869,7 @@ const Game = {
           hitPause: 0                     // 빔은 멈추지 않고 계속 흐른다
         });
         this.particles.burst(hx, hy, 5, {
-          color: move === MOVES.ultimate ? att.char.ultimate.color : att.char.special.color,
+          color: skillOf(att.char, move).color,
           minSpeed: 2, maxSpeed: 7, minSize: 3, maxSize: 8, shape: 'spark'
         });
       }
@@ -881,7 +896,7 @@ const Game = {
 
   /** 힘겨루기에서 미는 힘 : 기술 등급 × 공격력 × 연타 */
   clashPower(f) {
-    const ult = f.attack.def === MOVES.ultimate;
+    const ult = isUltimate(f.attack.def);
     return (ult ? 2.3 : 1) * f.power * (1 + Math.min(f.mash, 12) * 0.05);
   },
 
@@ -991,7 +1006,7 @@ const Game = {
       const def = winner.attack.def;
       winner.attack.frame = Math.min(winner.attack.frame, def.startup + Math.floor(def.active * 0.4));
     }
-    const dmg = (winner.attack && winner.attack.def === MOVES.ultimate) ? 150 : 95;
+    const dmg = (winner.attack && isUltimate(winner.attack.def)) ? 150 : 95;
     loser.comboCount = 0;
     loser.takeHit(winner, MOVES.beam, { x: loser.x, y: loser.y - 84 },
       { damage: dmg, chip: dmg, pushback: 17, lift: -9 });
@@ -1026,7 +1041,7 @@ const Game = {
       // 상대 빔에 닿은 기탄은 그대로 증발한다
       if (!dead) {
         const foe = this.fighters[1 - p.owner.index];
-        const br = foe && foe.beamRect ? foe.beamRect() : null;
+        const br = (!p.heavy && foe && foe.beamRect) ? foe.beamRect() : null;
         if (br) {
           const box = { x: p.x - p.radius, y: p.y - p.radius, w: p.radius * 2, h: p.radius * 2 };
           if (rectsOverlap(box, br)) {

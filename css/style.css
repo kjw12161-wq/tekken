@@ -281,6 +281,7 @@ html, body {
   60% { filter: brightness(0.5); }
 }
 .fighter-name.is-form { color: #ffe066; text-shadow: 0 0 8px rgba(255,214,74,.7); }
+#sel-form.is-none { color: var(--muted); font-weight: 600; }
 @keyframes kiPulse { from { filter: brightness(1); } to { filter: brightness(1.6); } }
 
 .rounds { display: flex; gap: clamp(4px, 0.8cqw, 6px); }
