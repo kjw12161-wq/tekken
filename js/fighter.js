@@ -596,6 +596,9 @@ class Fighter {
     const dir = attacker ? (this.x >= attacker.x ? 1 : -1) : this.facing * -1;
     const push = (opts.pushback != null ? opts.pushback : def.pushback || 4) * (blocked ? 0.55 : 1);
 
+    // 히트스톱 : 빔처럼 여러 번 때리는 기술은 0을 넘겨 멈추지 않게 한다
+    const pauseOf = big => (opts.hitPause != null ? opts.hitPause : (big ? 7 : 4));
+
     if (blocked) {
       this.blockstun = def.blockstun || 10;
       this.vx = dir * push;
@@ -604,8 +607,9 @@ class Fighter {
         color: '#9fe8ff', minSpeed: 1.5, maxSpeed: 5, minSize: 2, maxSize: 6, shape: 'spark'
       });
       this.world.particles.spawn({ x: hitPos.x, y: hitPos.y, life: 14, size: 16, color: '#bff0ff', shape: 'ring' });
-      this.hitPause = 3;
-      if (attacker) attacker.hitPause = 3;
+      const bp = opts.hitPause != null ? opts.hitPause : 3;
+      this.hitPause = bp;
+      if (attacker) attacker.hitPause = bp;
     } else {
       this.hitstun = def.hitstun || 14;
       this.blockstun = 0;
@@ -646,8 +650,9 @@ class Fighter {
       Sfx.play(def.sfx === 'light' ? 'light' : 'heavy');
       const big = dmg > 40;
       this.world.shake(big ? 9 : 4);
-      this.hitPause = big ? 7 : 4;
-      if (attacker) attacker.hitPause = big ? 7 : 4;
+      const hp2 = pauseOf(big);
+      this.hitPause = hp2;
+      if (attacker) attacker.hitPause = hp2;
       this.world.particles.burst(hitPos.x, hitPos.y, big ? 16 : 9, {
         color: '#fff3a8', minSpeed: 2, maxSpeed: big ? 9 : 5.5,
         minSize: 3, maxSize: big ? 11 : 7, shape: 'spark'

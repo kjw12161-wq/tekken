@@ -801,11 +801,15 @@ const Game = {
       if (!rect) return;
       const f = att.attack.frame - move.startup;
       if (f % move.beam.hitEvery !== 0) return;
+      // 같은 프레임에서 두 번 때리지 않는다 (히트스톱으로 프레임이 멈춰도 안전)
+      if (att.attack.lastBeamHit === att.attack.frame) return;
       if (rectsOverlap(rect, def.hurtbox())) {
+        att.attack.lastBeamHit = att.attack.frame;
         const hx = def.x - att.facing * 20, hy = def.y - 84;
         def.takeHit(att, move, { x: hx, y: hy }, {
           damage: move.beam.damage, chip: move.beam.chip,
-          pushback: move.beam.pushback, lift: 0
+          pushback: move.beam.pushback, lift: 0,
+          hitPause: 0                     // 빔은 멈추지 않고 계속 흐른다
         });
         this.particles.burst(hx, hy, 5, {
           color: move === MOVES.ultimate ? att.char.ultimate.color : att.char.special.color,

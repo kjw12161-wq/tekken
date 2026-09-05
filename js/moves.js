@@ -71,12 +71,12 @@ const MOVES = {
   },
   beam: {
     key: 'beam', label: '필살기', startup: 20, active: 20, recovery: 30,
-    kiCost: 40, kiGain: 0, beam: { height: 46, damage: 8, hitEvery: 6, chip: 2, pushback: 2.4, reach: 620 },
+    kiCost: 40, kiGain: 0, beam: { height: 46, damage: 30, hitEvery: 4, chip: 5, pushback: 2.4, reach: 620 },
     level: 'mid', sfx: 'beam'
   },
   ultimate: {
     key: 'ultimate', label: '초필살기', startup: 34, active: 34, recovery: 40,
-    kiCost: 100, kiGain: 0, beam: { height: 108, damage: 13, hitEvery: 5, chip: 4, pushback: 3.2, reach: 900 },
+    kiCost: 100, kiGain: 0, beam: { height: 108, damage: 36, hitEvery: 4, chip: 6, pushback: 3.2, reach: 900 },
     level: 'mid', invuln: 34, sfx: 'ultimate'
   },
   /* ---------- 잡기 ---------- */
