@@ -11,6 +11,7 @@ const CHARACTERS = [
     title: '지구에서 자란 사이어인',
     hp: 1000, speed: 3.5, jump: 17.0, power: 1.00, defense: 1.00, weight: 1.00,
     hairStyle: 'goku',
+    style: 'karate',
     colors: {
       gi: '#ff7a18', giDark: '#c85406', trim: '#1e4fd8', trimDark: '#12328f',
       forearm: '#f5c79b', forearmDark: '#d69f70',   // 반팔 도복 - 아래팔은 맨살
@@ -30,6 +31,7 @@ const CHARACTERS = [
     title: '사이어인의 왕자',
     hp: 960, speed: 3.6, jump: 17.5, power: 1.12, defense: 0.96, weight: 0.98,
     hairStyle: 'vegeta',
+    style: 'royal',
     colors: {
       gi: '#1b2a5e', giDark: '#101a3d', trim: '#f2f2f2', trimDark: '#c2c6d6',
       sleeve: '#22346f', sleeveDark: '#141f4a',
@@ -52,6 +54,7 @@ const CHARACTERS = [
     title: '마족의 후계자',
     hp: 1060, speed: 3.1, jump: 16.0, power: 1.05, defense: 1.10, weight: 1.08,
     hairStyle: 'piccolo',
+    style: 'demon',
     colors: {
       gi: '#5f2a86', giDark: '#3d1a58', trim: '#f0e6c8', trimDark: '#c9bb96',
       skin: '#7bc46b', skinDark: '#4f8f45', hair: '#3f7a36', hairLit: '#63a557',
@@ -69,10 +72,19 @@ const CHARACTERS = [
     title: '우주의 제왕',
     hp: 900, speed: 4.0, jump: 18.0, power: 0.94, defense: 0.92, weight: 0.90,
     hairStyle: 'frieza',
+    style: 'emperor',
+    props: { tail: true, gems: true },
     colors: {
-      gi: '#e9edf5', giDark: '#b9c1d2', trim: '#7b3fbf', trimDark: '#4d2378',
-      skin: '#f2f4fa', skinDark: '#c3c9da', hair: '#7b3fbf', hairLit: '#a468e6',
-      aura: '#b06bff', eye: '#e0345c'
+      gi: '#f2f5fb', giDark: '#c3cadc',              // 흰 생체 장갑
+      trim: '#8b3fc9', trimDark: '#57217f',
+      pants: '#f2f5fb', pantsDark: '#c3cadc',
+      glove: '#eef1f8', gloveDark: '#bfc6d8',
+      boot: '#eef1f8', bootDark: '#bfc6d8',
+      skin: '#f4f6fb', skinDark: '#c6cddd',
+      tail: '#e3e8f4', tailDark: '#adb6ca',          // 꼬리 (몸통보다 한 톤 어둡게)
+      hair: '#7b32bc', hairLit: '#c48ef0',           // 머리 위 보라 돔
+      gem: '#8b3fc9', gemDark: '#4e1d76', gemLit: '#cf9bf5',
+      aura: '#c46bff', eye: '#ef2f4e'
     },
     entrance: 'hover', victory: 'finger',
     form: { name: '최종 형태', aura: '#ff7bd0' },
@@ -86,10 +98,22 @@ const CHARACTERS = [
     title: '완전체 인조인간',
     hp: 1120, speed: 3.0, jump: 16.2, power: 1.18, defense: 1.06, weight: 1.15,
     hairStyle: 'cell',
+    style: 'perfect',
+    props: { wings: true, spots: true },
     colors: {
-      gi: '#2f8f5b', giDark: '#1c5c39', trim: '#1c1c1c', trimDark: '#0d0d0d',
-      skin: '#7fd39a', skinDark: '#4e9d69', hair: '#1f6b45', hairLit: '#39a06a',
-      aura: '#7dff9e', eye: '#e8b23a'
+      gi: '#2b3340', giDark: '#151a24',              // 검은 상체 장갑
+      trim: '#efe6c6', trimDark: '#c0b58e',          // 가슴 크림색 판
+      pants: '#3f9d63', pantsDark: '#256b41',        // 초록 다리
+      sleeve: '#2b3340', sleeveDark: '#151a24',      // 검은 어깨
+      forearm: '#3f9d63', forearmDark: '#256b41',    // 초록 아래팔
+      glove: '#efe6c6', gloveDark: '#bdb289',        // 크림색 손
+      boot: '#e8b53a', bootDark: '#9d7615',          // 금색 부츠
+      belt: '#efe6c6', beltDark: '#bdb289',
+      skin: '#4fb877', skinDark: '#2e8250',          // 초록 피부
+      hair: '#2a2436', hairLit: '#4d4463',           // 검은 머리 볏
+      spot: '#141a20',                               // 점박이 무늬
+      wing: '#1b2230', wingDark: '#0c1018',
+      aura: '#c9ff5c', eye: '#e0518f'
     },
     entrance: 'shrug', victory: 'spread',
     form: { name: '완전체 각성', aura: '#c9ff5c' },
@@ -103,6 +127,7 @@ const CHARACTERS = [
     title: '잠재능력을 해방한 전사',
     hp: 1020, speed: 3.65, jump: 17.2, power: 1.22, defense: 1.00, weight: 1.02,
     hairStyle: 'gohan',
+    style: 'mystic',
     colors: {
       gi: '#27356f', giDark: '#161d43', trim: '#46cfe8', trimDark: '#22829b',
       sleeve: '#46cfe8', sleeveDark: '#22829b',      // 하늘색 속옷 소매
@@ -124,9 +149,22 @@ const CHARACTERS = [
     title: '미래에서 온 전사',
     hp: 980, speed: 3.7, jump: 17.2, power: 1.06, defense: 0.98, weight: 1.00,
     hairStyle: 'trunks',
+    style: 'blade',
+    props: { sword: true, strap: true },
     colors: {
-      gi: '#3a4a8f', giDark: '#232e5c', trim: '#f0c95a', trimDark: '#c19b2c',
-      skin: '#f5c79b', skinDark: '#d69f70', hair: '#b48ce0', hairLit: '#d9bcff',
+      gi: '#7b52c9', giDark: '#4a2e8f',              // 보라 재킷
+      trim: '#1d1f28', trimDark: '#0e0f16',          // 검은 속옷 깃
+      pants: '#23252f', pantsDark: '#13141c',        // 검은 통바지
+      sleeve: '#7b52c9', sleeveDark: '#4a2e8f',
+      forearm: '#7b52c9', forearmDark: '#4a2e8f',
+      glove: '#f5c79b', gloveDark: '#d69f70',
+      belt: '#e8bb3a', beltDark: '#a37f16',          // 금색 벨트
+      boot: '#e8bb3a', bootDark: '#a37f16',          // 금색 부츠
+      skin: '#f5c79b', skinDark: '#d69f70',
+      hair: '#c9a8f0', hairLit: '#eadcff',           // 연보라 머리
+      strap: '#7fdce8', strapDark: '#3f9fb0',        // 하늘색 검대
+      blade: '#dfe8f2', bladeDark: '#94a3b8',        // 검신
+      hilt: '#5b3a24', hiltDark: '#33200f',
       aura: '#7fe6ff', eye: '#2b6bd8'
     },
     entrance: 'sword', victory: 'shoulder',
