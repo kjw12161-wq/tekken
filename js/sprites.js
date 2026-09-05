@@ -18,7 +18,7 @@ const PAGE_SIZE = 1024;
 const ATLAS_COLS = Math.floor(PAGE_SIZE / CELL_W);
 const ATLAS_ROWS = Math.floor(PAGE_SIZE / CELL_H);
 const CELLS_PER_PAGE = ATLAS_COLS * ATLAS_ROWS;
-const MAX_PAGES = 8;            // 아틀라스 상한 (초과하면 벡터로 그린다 - 메모리 보호)
+const MAX_PAGES = 10;           // 아틀라스 상한 (초과하면 벡터로 그린다 - 메모리 보호)
 
 const OUTLINE = '#140f1c';
 const ALPHA_CUT = 118;          // 이 값보다 옅은 가장자리는 잘라내 도트를 또렷하게

@@ -96,7 +96,10 @@ class Fighter {
     if (this.state === 'knockdown' || this.state === 'ko') b = HURT_DOWN;
     else if (this.airborne) b = HURT_AIR;
     else if (this.crouching) b = HURT_CROUCH;
-    return { x: this.x + b.x, y: this.y + b.y, w: b.w, h: b.h };
+    // 체구가 작은 캐릭터(오천크스 등)는 판정 상자도 같은 비율로 줄인다
+    const k = this.char.scale || 1;
+    if (k === 1) return { x: this.x + b.x, y: this.y + b.y, w: b.w, h: b.h };
+    return { x: this.x + b.x * k, y: this.y + b.y * k, w: b.w * k, h: b.h * k };
   }
 
   hitbox() {

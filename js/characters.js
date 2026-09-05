@@ -363,6 +363,74 @@ const CHARACTERS = [
     special: { name: '스타더스트 브레이커', color: '#ffd45c', core: '#ffffff', motion: 'palm', type: 'orb' },
     ultimate: { name: '빅뱅 카메하메하', color: '#8ef0ff', core: '#ffffff', motion: 'flash' },
     quotes: { win: '둘의 힘이 겹치면 이 정도다.', pick: '오래 걸리지 않을 거다.' }
+  },
+  {
+    id: 'buu',
+    name: '키드 부우',
+    title: '가장 순수한 마인',
+    hp: 900, speed: 4.15, jump: 18.4, power: 1.30, defense: 0.86, weight: 0.86,
+    hairStyle: 'buu',
+    style: 'majin',
+    scale: 0.94,                                   // 오공보다 한 뼘 작다
+    headScale: 1.06,
+    noBrow: true, nose: 'holes', mouth: 'wide', eyeShape: 'slit',   // 눈썹도 콧대도 없는 사나운 얼굴
+    props: { majinBelt: true },
+    colors: {
+      gi: '#e87fb0', giDark: '#b7548a',             // 드러난 분홍 상체
+      trim: '#1e1c26', trimDark: '#0e0d14',
+      sleeve: '#e87fb0', sleeveDark: '#b7548a',     // 어깨는 맨살
+      forearm: '#20202b', forearmDark: '#0e0e16',   // 검은 아래팔 보호대
+      band: '#e8c33a', bandDark: '#a8831a',         // 금색 손목 고리
+      glove: '#e87fb0', gloveDark: '#b7548a',       // 맨손
+      pants: '#eceadd', pantsDark: '#b0ad9e',       // 흰 통바지
+      belt: '#20202b', beltDark: '#0e0e16',
+      buckle: '#e8c33a',                             // 금색 M 버클
+      boot: '#4fa05a', bootDark: '#2c6634',         // 초록 부츠
+      skin: '#e87fb0', skinDark: '#b7548a',
+      tentacle: '#e87fb0',                           // 정수리 촉수
+      hair: '#e87fb0', hairLit: '#f6b0d0',
+      aura: '#ff7bd0', iris: '#e8324f', eye: '#2b2b2b'
+    },
+    entrance: 'cackle', victory: 'twitch',
+    special: { name: '증발탄', color: '#ff7bd0', core: '#ffd9f0', motion: 'orb', type: 'orb' },
+    ultimate: { name: '인간 절멸 공격', color: '#ff5cc0', core: '#ffe6f6', motion: 'wave' },
+    quotes: { win: '키히히히히! 부우, 전부 부쉈다!', pick: '부우우... 부순다!' }
+  },
+  {
+    id: 'gotenks',
+    name: '오천크스',
+    title: '융합한 두 개구쟁이',
+    hp: 940, speed: 4.00, jump: 18.6, power: 1.08, defense: 0.90, weight: 0.80,
+    hairStyle: 'gotenks',
+    style: 'trickster',
+    scale: 0.82,                                   // 어린아이 체형
+    headScale: 1.18,                               // 몸에 비해 머리가 크다
+    props: { fusionVest: true },
+    colors: {
+      gi: '#f5c79b', giDark: '#d09a6a',
+      trim: '#f0c93a', trimDark: '#a8871a',
+      vest: '#20544c', vestPad: '#e8c33a',          // 짙은 청록 조끼 + 금색 어깨판
+      vestTrim: '#e8e2c8', vestInner: '#f0c93a',    // 안에 받쳐 입은 노란 셔츠
+      sleeve: '#f5c79b', sleeveDark: '#d09a6a',
+      forearm: '#f5c79b', forearmDark: '#d09a6a',
+      band: '#1d1f28', bandDark: '#0b0c12',         // 검은 손목 보호대
+      glove: '#f5c79b', gloveDark: '#d09a6a',
+      pants: '#eceadd', pantsDark: '#b0ad9e',       // 흰 통바지
+      belt: '#2f6bd8', beltDark: '#1a4090',         // 파란 허리띠
+      boot: '#1d1f28', bootDark: '#0b0c12',         // 검은 신발
+      skin: '#f5c79b', skinDark: '#d09a6a',
+      hair: '#171717', hairLit: '#3d3d3d',          // 오천의 검은 머리
+      hairAlt: '#b79ae0', hairAltLit: '#ddcaf6',    // 트랭크스의 연보라 갈래
+      aura: '#8ef0ff', eye: '#2b2b2b'
+    },
+    entrance: 'boast', victory: 'vSign',
+    form: {
+      name: '초사이어인 3', saiyan: true, hairStyle: 'gotenks3', noBrow: true,
+      hair: '#ffd93d', hairLit: '#fff3a0', eye: '#3fd07a', aura: '#ffe98a'
+    },
+    special: { name: '갤릭 도넛', color: '#c47bff', core: '#ffe9ff', motion: 'weave' },
+    ultimate: { name: '초 고스트 카미카제 어택', color: '#8ef0ff', core: '#ffffff', motion: 'ghost', type: 'orb' },
+    quotes: { win: '어때! 오천크스님의 실력, 봤지?', pick: '자, 놀아줄게!' }
   }
 ];
 

@@ -280,10 +280,10 @@ const Game = {
     const stat = (id, v, lo, hi) => {
       document.getElementById(id).style.width = clamp((v - lo) / (hi - lo) * 100, 12, 100) + '%';
     };
-    stat('stat-hp', c.hp, 860, 1160);
-    stat('stat-power', c.power, 0.88, 1.24);
-    stat('stat-speed', c.speed, 2.85, 4.15);
-    stat('stat-defense', c.defense, 0.88, 1.16);
+    stat('stat-hp', c.hp, 860, 1220);
+    stat('stat-power', c.power, 0.88, 1.38);
+    stat('stat-speed', c.speed, 2.85, 4.22);
+    stat('stat-defense', c.defense, 0.84, 1.18);
   },
 
   /* ==================== 캐릭터 선택 ==================== */

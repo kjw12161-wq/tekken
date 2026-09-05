@@ -161,6 +161,11 @@ const SPECIAL_MOTION = {
     handX: 20, handY: -170, oy: -108, width: 1.5, style: 'orb', rings: true, sparks: true,
     chargeX: 6, chargeY: -176, chargeR: 26
   },
+  // 초 고스트 카미카제 어택 : 입가에 두 손을 모아 유령을 뱉어낸다 (오천크스)
+  ghost: {
+    handX: 34, handY: -128, oy: -118, width: 0.92, style: 'orb', rings: true, sparks: true,
+    chargeX: 22, chargeY: -130, chargeR: 14
+  },
   // 스피릿 소드 : 한 손에 기의 검을 세워 들었다가 내리긋는다 (베지트)
   spirit: {
     handX: 44, handY: -128, oy: -116, width: 0.46, style: 'thin', pierce: true, sparks: true,
@@ -180,9 +185,23 @@ function isUltimate(def) { return tierOf(def) === 'ultimate'; }
 function skillOf(char, def) { return isUltimate(def) ? char.ultimate : char.special; }
 
 /** 캐릭터 + 기술로 필살기 모션을 찾는다 */
+const _motionScaled = new Map();
 function motionFor(char, def) {
   const src = skillOf(char, def);
-  return SPECIAL_MOTION[src && src.motion] || SPECIAL_MOTION.cupped;
+  const base = SPECIAL_MOTION[src && src.motion] || SPECIAL_MOTION.cupped;
+  // 오천크스처럼 체구가 작은 캐릭터는 총구·기 모으는 위치도 몸 크기에 맞춰 줄인다
+  const k = char.scale || 1;
+  if (k === 1) return base;
+  const key = (src && src.motion) + '|' + k;
+  let m = _motionScaled.get(key);
+  if (!m) {
+    m = Object.assign({}, base, {
+      handX: base.handX * k, handY: base.handY * k, oy: base.oy * k,
+      chargeX: base.chargeX * k, chargeY: base.chargeY * k, chargeR: base.chargeR * k
+    });
+    _motionScaled.set(key, m);
+  }
+  return m;
 }
 
 /** 캐릭터가 실제로 쓰는 필살기 / 초필살기 기술 정의 (빔형 or 구체형) */

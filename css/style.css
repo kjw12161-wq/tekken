@@ -172,9 +172,9 @@ html, body {
 
 .select-body { flex: 1; display: grid; grid-template-columns: 1fr 236px; gap: 14px; min-height: 0; }
 .char-grid {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 9px;
   align-content: safe center;
-  grid-auto-rows: clamp(92px, 24cqh, 200px);
+  grid-auto-rows: clamp(90px, 25cqh, 205px);
   min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   touch-action: pan-y; -webkit-overflow-scrolling: touch;
   padding-right: 2px;
@@ -493,7 +493,7 @@ kbd {
 /* ---------------- 반응형 (스테이지 상자 기준) ---------------- */
 @container stage (max-width: 700px) {
   .select-body { grid-template-columns: 1fr; }
-  .char-grid { grid-template-columns: repeat(4, 1fr); }
+  .char-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .char-info { flex-direction: row; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
   .char-info h3 { font-size: 17px; }
   .stats { flex: 1 1 180px; }
