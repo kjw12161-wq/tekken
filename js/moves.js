@@ -161,6 +161,11 @@ const SPECIAL_MOTION = {
     handX: 20, handY: -170, oy: -108, width: 1.5, style: 'orb', rings: true, sparks: true,
     chargeX: 6, chargeY: -176, chargeR: 26
   },
+  // 스피릿 소드 : 한 손에 기의 검을 세워 들었다가 내리긋는다 (베지트)
+  spirit: {
+    handX: 44, handY: -128, oy: -116, width: 0.46, style: 'thin', pierce: true, sparks: true,
+    chargeX: 30, chargeY: -142, chargeR: 12
+  },
   // 버닝 어택 : 손을 교차해 감았다가 양손을 앞으로
   weave: {
     handX: 48, handY: -96, oy: -96, width: 0.98, style: 'spiral', rings: true, sparks: true,

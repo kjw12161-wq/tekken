@@ -399,6 +399,7 @@ const Game = {
   startMatch() {
     const c1 = CHARACTERS[this.selection[0] != null ? this.selection[0] : 0];
     const c2 = CHARACTERS[this.selection[1] != null ? this.selection[1] : 1];
+    SpriteBank.keepOnly([c1.id, c2.id]);       // 이번 매치에 쓰는 캐릭터만 아틀라스에 굽는다
     this.stage = STAGES[randInt(0, STAGES.length - 1)];
     this.roundNo = 1;
     this.projectiles.length = 0;

@@ -76,7 +76,7 @@
     <h2>캐릭터</h2>
     <select id="charSel"></select>
     <label class="chk" style="margin-top:8px" id="ssWrap">
-      <input type="checkbox" id="ssaiyan"> 초사이어인 변형(<code>_ss</code>)으로 생성
+      <input type="checkbox" id="ssaiyan"> <span id="ssLabel">변신 형태</span>(<code>_ss</code>)으로 생성
     </label>
 
     <h2>화풍</h2>
@@ -154,12 +154,21 @@ const LOOK = {
   gohan: 'Ultimate Gohan: spiky black hair swept back, navy blue Supreme Kai gi, light blue long-sleeved undershirt, red sash, pale grey boots',
   trunks: 'Future Trunks: lavender bob-cut hair, purple jacket with a black collar, black baggy trousers, gold belt and gold boots, a sky-blue strap across the chest holding a sword scabbard on the back',
   broly: 'Legendary Super Saiyan Broly: enormous heavily muscled bare-chested build, greenish blond upswept hair, a red cloth sash hanging from the waist, white baggy trousers, gold boots, gold wristbands and a gold belt, a blue-gemmed golden collar around the neck',
-  cooler: 'Cooler final form: purple skinned body with white bone-like armor plates, a white face mask covering the mouth and cheeks, two long white horns sweeping up and out from the head, blue gems on the chest and shoulders, white spikes on the elbows, a long purple tail, red eyes'
+  cooler: 'Cooler final form: purple skinned body with white bone-like armor plates, a white face mask covering the mouth and cheeks, two long white horns sweeping up and out from the head, blue gems on the chest and shoulders, white spikes on the elbows, a long purple tail, red eyes',
+  gohan2: 'Super Saiyan 2 Teen Gohan: golden hair standing straight up in sharp spikes with one long strand hanging down over the forehead, teal green eyes, purple gi with a white sash and white wrist wraps, purple trousers, tan brown boots',
+  goku2: 'Super Saiyan 2 Goku: golden upswept spiky hair, teal green eyes, orange gi with a blue undershirt and blue sash, bare forearms with blue wristbands, dark blue boots',
+  vegeta2: 'Super Saiyan 2 Vegeta: golden flame-shaped hair with a widow’s peak, teal green eyes, plain navy blue battle suit with no armor, white gloves, white boots with gold toe caps',
+  vegito: 'Vegito (Potara fusion of Goku and Vegeta): black hair with Vegeta’s widow’s peak and Goku’s spikes plus two strands hanging beside the forehead, a single green-gold Potara earring on the ear, blue gi with an orange undershirt and orange sash, white gloves, white boots with gold toe caps',
+  gogeta: 'Super Saiyan Gogeta (Metamoran fusion): golden upswept hair with one thick strand over the middle of the forehead, teal green eyes, heavily muscled build, black open vest with large orange-red shoulder pads over a bare chest, blue sash at the waist, loose off-white trousers, black wristbands, dark boots'
 };
 const SS_LOOK = {
   goku: 'Super Saiyan Goku: golden spiky upswept hair, green eyes, orange gi with blue undershirt, blue wristbands, dark blue boots',
   vegeta: 'Super Saiyan Vegeta: golden flame-shaped hair, green eyes, navy blue battle suit with white armor and gold shoulder pads, white gloves and boots',
-  trunks: 'Super Saiyan Trunks: golden spiky hair, green eyes, purple jacket, gold belt and boots, sword on the back'
+  trunks: 'Super Saiyan Trunks: golden spiky hair, green eyes, purple jacket, gold belt and boots, sword on the back',
+  // 초2 오공의 변신은 초사이어인 3 : 머리 모양이 완전히 달라지고 눈썹이 없다
+  goku2: 'Super Saiyan 3 Goku: enormous golden hair falling all the way down the back past the waist, NO eyebrows with a pronounced heavy brow ridge, teal green eyes, orange gi with a blue undershirt, bare forearms with blue wristbands, dark blue boots',
+  vegeta2: 'Majin Vegeta: Super Saiyan golden flame-shaped hair, hard red-tinged eyes, a dark letter M branded on the forehead, plain navy blue battle suit, white gloves, white boots with gold toe caps',
+  vegito: 'Super Saiyan Vegito: golden hair with Vegeta’s widow’s peak and Goku’s spikes, teal green eyes, a Potara earring on the ear, blue gi with an orange undershirt, white gloves, white boots with gold toe caps'
 };
 function lookOf(id, ss) {
   if (ss && SS_LOOK[id]) return SS_LOOK[id];
@@ -243,6 +252,10 @@ const MOTION_EN = {
     hold: 'both hands raised together high above the head, palms up and fingers spread, back arched and chest out',
     fire: 'both arms swung down and forward together in a two-handed overhead throw'
   },
+  spirit: {
+    hold: 'one arm raised high beside the head with the hand turned as if gripping the hilt of an invisible sword, the other arm out for balance',
+    fire: 'that raised arm swung down and forward in a single decisive sword cut, body driving through the shoulder'
+  },
   weave: {
     hold: 'both hands weaving a tight circle in front of the chest, wrists crossed, elbows tucked in',
     fire: 'both arms thrust forward together, open palms side by side facing the enemy'
@@ -290,6 +303,26 @@ const ENTRANCE_EN = {
          'rising and throwing the head back, chest expanding, arms flexed out',
          'at the peak of a roar, arms spread wide and every muscle flexed, head back',
          'lowering the arms into a huge wide-footed fighting stance'],
+  furyRise: ['crouched with the head bowed low and both fists clenched and shaking at the sides',
+             'straightening up as the power breaks loose, arms flung down and out, chest opening',
+             'at the peak of the outburst, arms thrown wide and head tilted back',
+             'lowering the arms into a tight, controlled fighting stance'],
+  kiLand: ['dropping straight down feet-first, body held rigid, both arms swept back behind',
+           'landing hard on one knee with one hand planted on the ground, head down',
+           'rising and bringing both fists together in front of the chest',
+           'settling into a loose, ready fighting stance'],
+  flare: ['descending slowly with the arms folded across the chest, chin raised',
+          'landing and flinging both arms down and out to the sides',
+          'crouched slightly as the aura bursts, arms low and wide, teeth bared',
+          'straightening into a tight fighting stance, fists raised'],
+  glove: ['standing at ease with the arms folded, head turned slightly away, smirking',
+          'one hand pulling the opposite glove tight at the wrist, looking down at it',
+          'one arm out with the fingers beckoning the opponent forward',
+          'dropping into a relaxed but balanced fighting stance'],
+  fusionPose: ['one arm extended straight out to the side at shoulder height, hips angled, fingers pointed',
+               'bending low and bringing both hands together in front, index fingers about to touch',
+               'both arms thrown wide open as the fusion light bursts, chest out, head back',
+               'settling into a wide, powerful fighting stance'],
   dive: ['diving down head-first from high up, arms swept back, body straight like an arrow',
          'pulling out of the dive, body rotating upright, tail whipping around',
          'landing on one knee with one hand planted on the ground, tail curled',
@@ -306,7 +339,12 @@ const VICTORY_EN = {
   fistUp: 'victory pose: one fist raised straight up above the head, the other arm at the side, standing tall',
   shoulder: 'victory pose: the sword resting back on one shoulder, the other hand on the hip',
   roarWin: 'victory pose: both arms flexed out wide in a strongman pose, chest thrown out, head back, enormous muscles bunched',
-  brush: 'victory pose: standing tall, one hand brushing dust off the opposite shoulder, tail raised behind, mask turned to the side'
+  brush: 'victory pose: standing tall, one hand brushing dust off the opposite shoulder, tail raised behind, mask turned to the side',
+  sideGlance: 'victory pose: standing quietly with one fist held closed in front of the chest, the other arm at the side, chin lifted and eyes calm',
+  thumbUp: 'victory pose: one arm raised with the thumb stuck up, the other hand at the side, grinning broadly',
+  pointDown: 'victory pose: one arm extended forward pointing at the fallen opponent, the other hand at the hip, sneering',
+  potaraTouch: 'victory pose: one hand resting on the hip while the other reaches up to touch the Potara earring on the ear, head turned slightly',
+  crossOut: 'victory pose: both arms flung open wide and low to the sides after uncrossing them, chest out, standing on a wide base'
 };
 const BREATH = [
   'settled at rest',
@@ -416,7 +454,10 @@ const SKILL_EN = {
   '마섬광': 'Masenko', '초 마섬광': 'Super Masenko',
   '버닝 어택': 'Burning Attack', '히트 돔 어택': 'Heat Dome Attack',
   '이레이저 캐논': 'Eraser Cannon', '기간틱 미티어': 'Gigantic Meteor',
-  '데스 비머': 'Death Beamer', '슈퍼노바': 'Supernova'
+  '데스 비머': 'Death Beamer', '슈퍼노바': 'Supernova',
+  '부자 카메하메하': 'Father-Son Kamehameha', '순간이동 에네르기파': 'Instant Transmission Kamehameha',
+  '파이널 카메하메하': 'Final Kamehameha', '스피릿 소드': 'Spirit Sword',
+  '스타더스트 브레이커': 'Stardust Breaker', '빅뱅 카메하메하': 'Big Bang Kamehameha'
 };
 function motionOf(tier) {
   const c = CHAR_BY_ID[charId];
@@ -668,6 +709,9 @@ function syncSSBox() {
   cb.disabled = !ok;
   if (!ok) cb.checked = false;
   document.getElementById('ssWrap').classList.toggle('off', !ok);
+  const form = CHAR_BY_ID[charId].form;
+  document.getElementById('ssLabel').textContent =
+    ok ? (form.name || '변신 형태') : '변신 형태 없음';
 }
 function switchChar(id) {
   charId = id;

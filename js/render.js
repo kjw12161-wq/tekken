@@ -226,6 +226,26 @@ const MOTION_POSE = {
       p.legB = [P(-23, -34), P(-35, 0)];
     }
   },
+  // 스피릿 소드 - 한 손을 머리 위로 세워 기의 검을 뽑았다가 내리긋는다
+  spirit(p, charging, g) {
+    if (charging) {
+      p.armF = [mix(P(25, -88), P(26, -110), g), mix(P(31, -104), P(34, -140), g)];
+      p.armB = [mix(P(-24, -88), P(-16, -92), g), mix(P(-28, -104), P(4, -104), g)];
+      p.chest = mix(p.chest, P(-4, -102), g);
+      p.head = mix(p.head, P(0, -124), g);
+      p.headTilt = -0.12 * g;
+      p.legF = [P(20, -34), P(28, 0)];
+      p.legB = [P(-20, -34), P(-30, 0)];
+    } else {
+      // 검을 앞으로 내리그은 순간
+      p.armF = [P(30, -104), P(52, -120)];
+      p.armB = [P(-14, -92), P(-20, -74)];
+      p.chest = P(11, -100); p.head = P(11, -122); p.hip = P(4, -62);
+      p.headTilt = 0.05;
+      p.legF = [P(27, -34), P(39, 0)];
+      p.legB = [P(-21, -34), P(-33, 0)];
+    }
+  },
   // 버닝 어택 - 손을 빠르게 교차해 감았다가 양손을 앞으로
   weave(p, charging, g, gs) {
     if (charging) {
@@ -677,6 +697,194 @@ const STYLE_MOVES = {
       p.legB = [P(-16, -42), P(-22, -16)];
       setSword(p, lerp(-2.0, 1.1, e), 76);
     }
+  },
+
+  /* 초2 오반 : 분노에 실린 직선적이고 무자비한 연타 */
+  fury: {
+    jab(p, e) {
+      // 팔꿈치를 접었다가 튕기듯 내지르는 짧은 스트레이트
+      p.armF = [mix(P(20, -90), P(38, -100), e), mix(P(26, -104), P(60, -102), e)];
+      p.armB = [mix(P(-22, -86), P(-18, -82), e), mix(P(-26, -102), P(-14, -76), e)];
+      p.chest = mix(p.chest, P(8, -100), e * 0.8);
+      p.head = mix(p.head, P(8, -122), e * 0.6);
+    },
+    straight(p, e) {
+      // 온 체중을 실어 파고드는 관통 정권 (앞발을 크게 딛는다)
+      p.armF = [mix(P(12, -94), P(44, -98), e), mix(P(18, -106), P(76, -97), e)];
+      p.armB = [mix(P(-24, -84), P(-20, -76), e), mix(P(-28, -100), P(-14, -66), e)];
+      p.chest = mix(p.chest, P(15, -99), e);
+      p.head = mix(p.head, P(15, -121), e * 0.7);
+      p.hip = mix(p.hip, P(8, -61), e);
+      p.legF = [mix(P(18, -33), P(30, -32), e), mix(P(24, 0), P(46, 0), e)];
+      p.legB = [mix(P(-18, -33), P(-26, -35), e), mix(P(-26, 0), P(-40, 0), e)];
+      p.headTilt = 0.06 * e;
+    },
+    uppercut(p, e) {
+      // 위로 도려내는 승천격
+      p.armF = [mix(P(18, -80), P(26, -116), e), mix(P(24, -96), P(32, -158), e)];
+      p.armB = [mix(P(-22, -86), P(-24, -96), e), mix(P(-26, -102), P(-30, -118), e)];
+      p.chest = mix(p.chest, P(3, -106), e);
+      p.head = mix(p.head, P(5, -128), e);
+      p.headTilt = -0.12 * e;
+      p.legF = [P(17, -34), P(23, 0)];
+      p.legB = [mix(P(-18, -33), P(-23, -46), e), mix(P(-26, 0), P(-33, -18), e)];
+    },
+    roundhouse(p, e) {
+      // 허리를 접어 내려찍는 각도 있는 하이킥
+      p.legF = [mix(P(20, -42), P(30, -84), e), mix(P(26, -8), P(70, -102), e)];
+      p.legB = [P(-15, -34), P(-22, 0)];
+      p.armF = [P(14, -94), P(2, -112)];
+      p.armB = [P(-26, -84), P(-40, -94)];
+      p.chest = mix(p.chest, P(-9, -103), e);
+      p.head = mix(p.head, P(-10, -125), e * 0.8);
+      p.headTilt = -0.14 * e;
+    }
+  },
+
+  /* 초2 오공 : 정통 무술을 초고속으로 — 짧게 감았다 폭발시킨다 */
+  fierce: {
+    jab(p, e) {
+      p.armF = [mix(P(22, -88), P(37, -97), e), mix(P(28, -104), P(59, -98), e)];
+      p.armB = [mix(P(-22, -86), P(-19, -80), e), mix(P(-26, -102), P(-15, -74), e)];
+      p.chest = mix(p.chest, P(7, -100), e * 0.7);
+    },
+    straight(p, e) {
+      // 뒷손을 허리에 완전히 감았다가 어깨째 밀어 넣는다
+      p.armF = [mix(P(14, -92), P(43, -98), e), mix(P(20, -104), P(75, -98), e)];
+      p.armB = [mix(P(-22, -86), P(-17, -76), e), mix(P(-26, -102), P(-10, -68), e)];
+      p.chest = mix(p.chest, P(14, -100), e);
+      p.head = mix(p.head, P(14, -122), e * 0.6);
+      p.hip = mix(p.hip, P(8, -62), e);
+      p.legF = [mix(P(18, -33), P(28, -33), e), mix(P(24, 0), P(43, 0), e)];
+      p.legB = [mix(P(-18, -33), P(-25, -34), e), mix(P(-26, 0), P(-38, 0), e)];
+    },
+    roundhouse(p, e) {
+      p.legF = [mix(P(20, -40), P(34, -80), e), mix(P(26, -6), P(78, -94), e)];
+      p.legB = [P(-14, -34), P(-20, 0)];
+      p.armF = [P(11, -92), P(-2, -108)];
+      p.armB = [P(-27, -86), P(-42, -95)];
+      p.chest = mix(p.chest, P(-11, -102), e * 0.9);
+      p.head = mix(p.head, P(-12, -124), e * 0.7);
+      p.headTilt = -0.12 * e;
+    },
+    airSlam(p, e) {
+      // 두 손을 맞잡아 내리찍는다
+      p.armF = [mix(P(20, -122), P(30, -60), e), mix(P(26, -148), P(38, -34), e)];
+      p.armB = [mix(P(-14, -124), P(16, -62), e), mix(P(-4, -148), P(30, -36), e)];
+      p.chest = mix(p.chest, P(6, -98), e);
+      p.legF = [P(20, -44), P(26, -18)];
+      p.legB = [P(-18, -50), P(-26, -30)];
+      p.headTilt = 0.12 * e;
+    }
+  },
+
+  /* 초2 베지터 : 왕자의 격투 — 팔꿈치, 무릎, 짧고 잔인하게 */
+  pride: {
+    jab(p, e) {
+      // 백너클
+      p.armF = [mix(P(24, -92), P(42, -106), e), mix(P(30, -104), P(54, -114), e)];
+      p.armB = [P(-20, -88), P(-13, -78)];
+      p.chest = mix(p.chest, P(6, -101), e * 0.6);
+      p.headTilt = -0.05 * e;
+    },
+    straight(p, e) {
+      // 팔꿈치를 박아 넣는다
+      p.armF = [mix(P(10, -94), P(34, -98), e), mix(P(24, -100), P(20, -92), e)];
+      p.armB = [mix(P(-22, -86), P(-16, -80), e), mix(P(-26, -102), P(-8, -72), e)];
+      p.chest = mix(p.chest, P(14, -99), e);
+      p.head = mix(p.head, P(14, -121), e * 0.7);
+      p.hip = mix(p.hip, P(7, -61), e);
+      p.legF = [mix(P(18, -33), P(28, -33), e), mix(P(24, 0), P(42, 0), e)];
+      p.legB = [mix(P(-18, -33), P(-26, -34), e), mix(P(-26, 0), P(-38, 0), e)];
+    },
+    lowKick(p, e) {
+      // 무릎으로 찍어 올린다
+      crouchPose(p, 0.9);
+      p.legF = [mix(P(18, -40), P(24, -68), e), mix(P(24, -12), P(44, -52), e)];
+      p.armF = [P(20, -70), P(10, -82)];
+      p.armB = [P(-18, -68), P(-26, -80)];
+    },
+    uppercut(p, e) {
+      p.armF = [mix(P(22, -84), P(24, -114), e), mix(P(28, -100), P(30, -154), e)];
+      p.armB = [P(-22, -88), P(-28, -104)];
+      p.chest = mix(p.chest, P(1, -105), e);
+      p.head = mix(p.head, P(3, -127), e);
+      p.legB = [mix(P(-18, -33), P(-24, -44), e), mix(P(-26, 0), P(-34, -16), e)];
+    }
+  },
+
+  /* 베지트 : 손오공과 베지터의 기술이 뒤섞인 여유로운 정타 */
+  fusion: {
+    jab(p, e) {
+      // 손등으로 툭 치듯 뻗는다 (여유)
+      p.armF = [mix(P(24, -90), P(40, -99), e), mix(P(30, -104), P(62, -100), e)];
+      p.armB = [P(-21, -87), P(-24, -100)];
+      p.chest = mix(p.chest, P(6, -100), e * 0.5);
+      p.headTilt = -0.04 * e;
+    },
+    straight(p, e) {
+      // 어깨를 크게 돌려 내리꽂는 정권
+      p.armF = [mix(P(12, -96), P(44, -96), e), mix(P(20, -110), P(76, -94), e)];
+      p.armB = [mix(P(-22, -86), P(-16, -78), e), mix(P(-26, -102), P(-8, -70), e)];
+      p.chest = mix(p.chest, P(14, -100), e);
+      p.head = mix(p.head, P(13, -122), e * 0.6);
+      p.hip = mix(p.hip, P(7, -62), e);
+      p.legF = [mix(P(18, -33), P(29, -33), e), mix(P(24, 0), P(44, 0), e)];
+      p.legB = [mix(P(-18, -33), P(-25, -34), e), mix(P(-26, 0), P(-38, 0), e)];
+    },
+    roundhouse(p, e) {
+      // 몸을 회전시켜 뒤꿈치로 후려친다
+      p.legF = [mix(P(20, -40), P(30, -76), e), mix(P(26, -6), P(74, -88), e)];
+      p.legB = [P(-16, -34), P(-24, 0)];
+      p.armF = [mix(P(18, -90), P(-6, -96), e), mix(P(24, -104), P(-26, -88), e)];
+      p.armB = [mix(P(-22, -88), P(10, -92), e), mix(P(-28, -102), P(30, -96), e)];
+      p.chest = mix(p.chest, P(-8, -102), e * 0.9);
+      p.headTilt = -0.1 * e;
+    },
+    grab(p, e) {
+      // 한 손으로 목을 낚아챈다
+      p.armF = [mix(P(24, -90), P(38, -104), e), mix(P(30, -104), P(62, -110), e)];
+      p.armB = [P(-20, -86), P(-14, -74)];
+      p.chest = mix(p.chest, P(9, -101), e);
+      p.headTilt = -0.06 * e;
+    }
+  },
+
+  /* 초오지터 : 거구의 융합 전사 — 크고 무거운 궤적 */
+  gogeta: {
+    jab(p, e) {
+      p.armF = [mix(P(24, -90), P(40, -100), e), mix(P(31, -105), P(64, -100), e)];
+      p.armB = [P(-24, -88), P(-30, -102)];
+      p.chest = mix(p.chest, P(8, -100), e * 0.7);
+    },
+    straight(p, e) {
+      // 어깨를 완전히 밀어 넣는 큰 정권
+      p.armF = [mix(P(10, -96), P(46, -97), e), mix(P(18, -112), P(80, -95), e)];
+      p.armB = [mix(P(-25, -86), P(-19, -76), e), mix(P(-30, -102), P(-12, -66), e)];
+      p.chest = mix(p.chest, P(16, -99), e);
+      p.head = mix(p.head, P(15, -121), e * 0.6);
+      p.hip = mix(p.hip, P(9, -61), e);
+      p.legF = [mix(P(19, -33), P(32, -32), e), mix(P(25, 0), P(48, 0), e)];
+      p.legB = [mix(P(-19, -33), P(-28, -35), e), mix(P(-27, 0), P(-42, 0), e)];
+    },
+    roundhouse(p, e) {
+      // 축을 크게 돌려 차 올리는 대회전
+      p.legF = [mix(P(22, -40), P(36, -80), e), mix(P(28, -6), P(84, -90), e)];
+      p.legB = [P(-16, -34), P(-24, 0)];
+      p.armF = [P(10, -94), P(-6, -106)];
+      p.armB = [P(-28, -86), P(-44, -92)];
+      p.chest = mix(p.chest, P(-12, -102), e);
+      p.head = mix(p.head, P(-13, -124), e * 0.7);
+      p.headTilt = -0.16 * e;
+    },
+    airSlam(p, e) {
+      p.armF = [mix(P(22, -126), P(32, -58), e), mix(P(28, -152), P(42, -30), e)];
+      p.armB = [mix(P(-16, -128), P(18, -60), e), mix(P(-6, -152), P(34, -32), e)];
+      p.chest = mix(p.chest, P(7, -98), e);
+      p.legF = [P(22, -46), P(28, -18)];
+      p.legB = [P(-20, -52), P(-28, -32)];
+      p.headTilt = 0.14 * e;
+    }
   }
 };
 
@@ -1077,6 +1285,151 @@ const ENTRANCE_POSE = {
     }
   },
 
+  // 초2 오반 : 고개를 숙이고 있다가 분노의 기를 터뜨리며 일어선다
+  furyRise(p, t) {
+    if (t < 0.25) {
+      crouchPose(p, 0.6);
+      p.armF = [P(20, -78), P(24, -58)];     // 주먹을 꽉 쥔 채 떨고 있다
+      p.armB = [P(-20, -78), P(-24, -58)];
+      p.head = P(4, -104); p.headTilt = 0.32;
+    } else if (t < 0.5) {
+      p.hip = P(0, -60); p.chest = P(-4, -102); p.head = P(-4, -126);
+      p.armF = [P(24, -88), P(31, -66)];
+      p.armB = [P(-24, -88), P(-31, -66)];
+      p.headTilt = -0.26;
+      p.legF = [P(22, -34), P(31, 0)];
+      p.legB = [P(-22, -34), P(-31, 0)];
+    } else if (t < 0.8) {
+      // 폭발의 정점 : 팔을 뿌리치고 고개를 든다
+      p.hip = P(0, -64); p.chest = P(-2, -105); p.head = P(0, -129);
+      p.armF = [P(29, -92), P(42, -72)];
+      p.armB = [P(-29, -92), P(-42, -72)];
+      p.headTilt = -0.36;
+      p.legF = [P(25, -34), P(36, 0)];
+      p.legB = [P(-25, -34), P(-36, 0)];
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
+  // 초2 오공 : 곧게 선 채로 급강하 → 한 무릎 착지 → 주먹을 맞대고 자세
+  kiLand(p, t, raw) {
+    if (raw < 0.35) {
+      const k = raw / 0.35;
+      p.offY = -240 * (1 - k * k * k);
+      p.armF = [P(18, -96), P(3, -74)];        // 두 팔을 뒤로 뻗어 낙하
+      p.armB = [P(-20, -96), P(-35, -74)];
+      p.legF = [P(18, -42), P(24, -16)];
+      p.legB = [P(-16, -40), P(-22, -12)];
+      p.chest = P(2, -102); p.head = P(4, -125);
+      p.headTilt = -0.06;
+    } else if (t < 0.55) {
+      crouchPose(p, 1.35);
+      p.armF = [P(23, -32), P(31, -8)];        // 한 손으로 지면을 짚는다
+      p.armB = [P(-20, -50), P(-29, -34)];
+      p.legB = [P(-23, -14), P(-35, 0)];
+      p.headTilt = 0.2;
+    } else if (t < 0.78) {
+      p.hip = P(0, -58); p.chest = P(1, -97); p.head = P(3, -119);
+      p.armF = [P(20, -86), P(3, -94)];        // 두 주먹을 가슴 앞에서 맞댄다
+      p.armB = [P(-18, -86), P(-1, -92)];
+      p.legF = [P(18, -30), P(25, 0)];
+      p.legB = [P(-17, -30), P(-24, 0)];
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
+  // 초2 베지터 : 팔짱을 낀 채 내려와 기를 터뜨리며 팔을 뿌리친다
+  flare(p, t, raw) {
+    if (raw < 0.42) {
+      p.offY = -130 * (1 - raw / 0.42);
+      p.armF = [P(18, -92), P(-14, -92)];
+      p.armB = [P(-18, -94), P(14, -94)];
+      p.legF = [P(16, -36), P(21, -6)];
+      p.legB = [P(-15, -36), P(-20, -4)];
+      p.chest = P(0, -101); p.head = P(-1, -124);
+      p.headTilt = -0.15;
+    } else if (t < 0.62) {
+      p.hip = P(0, -60); p.chest = P(0, -100); p.head = P(1, -122);
+      p.armF = [P(26, -88), P(41, -70)];
+      p.armB = [P(-26, -88), P(-41, -70)];
+      p.legF = [P(24, -34), P(34, 0)];
+      p.legB = [P(-24, -34), P(-34, 0)];
+      p.headTilt = -0.1;
+    } else if (t < 0.85) {
+      p.hip = P(0, -56); p.chest = P(0, -96); p.head = P(1, -118);
+      p.armF = [P(29, -84), P(38, -60)];
+      p.armB = [P(-29, -84), P(-38, -60)];
+      p.legF = [P(27, -32), P(38, 0)];
+      p.legB = [P(-27, -32), P(-38, 0)];
+      p.headTilt = -0.18;
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
+  // 베지트 : 팔짱 → 장갑을 당겨 끼우고 → 손끝으로 도발
+  glove(p, t) {
+    if (t < 0.3) {
+      p.armF = [P(17, -92), P(-14, -90)];
+      p.armB = [P(-17, -94), P(13, -92)];
+      p.chest = P(0, -101); p.head = P(0, -124);
+      p.headTilt = -0.12;
+      p.legF = [P(15, -34), P(19, 0)];
+      p.legB = [P(-14, -34), P(-18, 0)];
+    } else if (t < 0.58) {
+      p.armF = [P(10, -96), P(-7, -105)];      // 반대편 장갑을 당겨 끼운다
+      p.armB = [P(-12, -94), P(2, -109)];
+      p.chest = P(0, -100); p.head = P(2, -123);
+      p.headTilt = 0.14;
+      p.legF = [P(16, -34), P(20, 0)];
+      p.legB = [P(-15, -34), P(-19, 0)];
+    } else if (t < 0.8) {
+      p.armF = [P(24, -94), P(45, -105)];      // 손끝을 까딱여 도발
+      p.armB = [P(-19, -86), P(-14, -66)];
+      p.chest = P(3, -101); p.head = P(5, -123);
+      p.headTilt = -0.07;
+      p.legF = [P(18, -34), P(24, 0)];
+      p.legB = [P(-17, -34), P(-23, 0)];
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
+  // 초오지터 : 퓨전 포즈를 취했다가 융합의 빛과 함께 팔을 벌린다
+  fusionPose(p, t) {
+    if (t < 0.28) {
+      p.armF = [P(26, -92), P(51, -86)];       // 한 팔을 옆으로 곧게 뻗는다
+      p.armB = [P(-24, -94), P(-47, -105)];
+      p.chest = P(6, -100); p.head = P(8, -122); p.hip = P(2, -62);
+      p.headTilt = 0.12;
+      p.legF = [P(24, -34), P(36, 0)];
+      p.legB = [P(-22, -34), P(-32, 0)];
+    } else if (t < 0.52) {
+      p.armF = [P(20, -96), P(38, -111)];      // 손끝을 맞대는 순간
+      p.armB = [P(-18, -96), P(0, -113)];
+      p.chest = P(2, -98); p.head = P(4, -120); p.hip = P(0, -58);
+      p.headTilt = -0.08;
+      p.legF = [P(20, -32), P(28, 0)];
+      p.legB = [P(-20, -32), P(-28, 0)];
+    } else if (t < 0.8) {
+      p.armF = [P(31, -96), P(52, -78)];       // 융합의 빛
+      p.armB = [P(-31, -96), P(-52, -78)];
+      p.chest = P(0, -104); p.head = P(1, -128); p.hip = P(0, -64);
+      p.headTilt = -0.26;
+      p.legF = [P(27, -34), P(39, 0)];
+      p.legB = [P(-27, -34), P(-39, 0)];
+    } else {
+      p.armF = [P(25, -85), P(31, -103)];
+      p.armB = [P(-23, -85), P(-27, -102)];
+    }
+  },
+
   // 기본 : 그냥 자세를 잡는다
   stance(p) {}
 };
@@ -1173,6 +1526,52 @@ const VICTORY_POSE = {
     p.headTilt = -0.08;
     p.legF = [P(22, -33), P(31, 0)];
     p.legB = [P(-16, -33), P(-21, 0)];
+  },
+  // 초2 오반 : 주먹을 가슴 앞에 쥐고 조용히 고개를 든다
+  sideGlance(p, i, bob) {
+    p.armF = [P(16, -94 + bob * 0.3), P(-2, -101 + bob * 0.4)];
+    p.armB = [P(-22, -88), P(-27, -67 + bob * 0.2)];
+    p.chest = P(0, -102 + bob * 0.4); p.head = P(2, -125 + bob * 0.5);
+    p.headTilt = -0.18 + (i % 2) * 0.03;
+    p.legF = [P(17, -33), P(23, 0)];
+    p.legB = [P(-17, -33), P(-24, 0)];
+  },
+  // 초2 오공 : 씩 웃으며 엄지를 척 세운다
+  thumbUp(p, i, bob) {
+    p.armF = [P(24, -96 + bob * 0.4), P(35, -117 + bob * 0.6)];
+    p.armB = [P(-20, -86), P(-16, -64)];
+    p.chest = P(3, -100 + bob * 0.5); p.head = P(5, -122 + bob * 0.6);
+    p.headTilt = 0.06 + (i % 2) * 0.03;
+    p.legF = [P(18, -33), P(24, 0)];
+    p.legB = [P(-16, -33), P(-22, 0)];
+  },
+  // 초2 베지터 : 상대를 손가락으로 가리키며 콧방귀를 뀐다
+  pointDown(p, i, bob) {
+    p.armF = [P(26, -96), P(53, -105 + bob * 0.4)];
+    p.armB = [P(-20, -88), P(-15, -66)];
+    p.chest = P(4, -101 + bob * 0.35); p.head = P(6, -124 + bob * 0.45);
+    p.headTilt = -0.11 - (i % 2) * 0.03;
+    p.legF = [P(22, -33), P(31, 0)];
+    p.legB = [P(-20, -33), P(-28, 0)];
+  },
+  // 베지트 : 한 손은 허리, 다른 손으로 포타라 귀걸이를 매만진다
+  potaraTouch(p, i, bob) {
+    p.armF = [P(20, -86), P(16, -63)];
+    p.armB = [P(-18, -96), P(-6, -125 + bob * 0.5)];
+    p.chest = P(-1, -101 + bob * 0.4); p.head = P(0, -124 + bob * 0.5);
+    p.headTilt = -0.09 + (i % 2) * 0.03;
+    p.legF = [P(17, -33), P(22, 0)];
+    p.legB = [P(-16, -33), P(-21, 0)];
+  },
+  // 초오지터 : 팔을 X자로 모았다가 좌우로 크게 펼친다
+  crossOut(p, i, bob) {
+    const open = i >= 2;
+    p.armF = open ? [P(29, -94), P(49, -79 + bob * 0.4)] : [P(16, -94), P(-9, -101)];
+    p.armB = open ? [P(-29, -94), P(-49, -79 + bob * 0.4)] : [P(-16, -96), P(9, -103)];
+    p.chest = P(0, -102 + bob * 0.4); p.head = P(1, -125 + bob * 0.5);
+    p.headTilt = open ? -0.15 : 0.07;
+    p.legF = [P(24, -33), P(34, 0)];
+    p.legB = [P(-24, -33), P(-34, 0)];
   }
 };
 
@@ -1338,11 +1737,65 @@ function poseFor(f, time) {
 const HEAD_R = 17;
 const HAIR_SCALE = 1.3;           // 헤어는 머리보다 크게 (레퍼런스의 볼륨감)
 
+/** 변신 상태까지 반영한 머리 색·모양 (머리와 몸통 레이어에서 함께 쓴다) */
+function hairSetOf(ch, f) {
+  const c = ch.colors, form = ch.form || null;
+  const trans = !!f.superSaiyan && !!form;
+  const ss = trans && !!form.saiyan;
+  return {
+    trans, form, ss,
+    hair: ss ? (form.hair || '#ffdf3d') : c.hair,
+    hairLit: ss ? (form.hairLit || '#fff3a0') : c.hairLit,
+    style: (trans && form.hairStyle) || ch.hairStyle,
+    noBrow: trans && !!form.noBrow
+  };
+}
+
+/**
+ * 등 뒤로 길게 늘어지는 머리(초사이어인 3).
+ * 몸통보다 뒤 레이어에서 그려야 등 뒤로 흘러내리는 것처럼 보인다.
+ */
+function drawLongHair(ctx, p, hs, time, wobble) {
+  if (hs.style !== 'goku3') return;
+  const hair = hs.hair, hairLit = hs.hairLit;
+  const sway = Math.sin(time / 11) * (1.4 + (wobble || 0) * 0.4);
+  ctx.save();
+  ctx.translate(p.head[0], p.head[1]);
+  if (p.headTilt) ctx.rotate(p.headTilt);
+  ctx.scale(HAIR_SCALE, HAIR_SCALE);
+  // 몸통 뒤로 확실히 삐져나오도록 바깥쪽으로 흘러내리는 굵은 가닥 네 개
+  //  [뿌리x, 뿌리y, 길이, 폭, 끝이 뒤로 밀리는 정도]
+  const strands = [
+    [-8, -2, 66, 9, -10], [-16, -8, 57, 8, -8], [-23, -12, 45, 7, -6], [-28, -14, 32, 6, -4]
+  ];
+  strands.forEach(([sx0, sy0, len, w, drift], i) => {
+    const sw = sway * (0.5 + i * 0.3) + drift;
+    poly(ctx, [
+      [sx0 + w, sy0 - 2],
+      [sx0 + w * 0.4 + drift * 0.35, sy0 + len * 0.5],
+      [sx0 - 1 + sw, sy0 + len],
+      [sx0 - w * 1.05 + sw, sy0 + len - 9],
+      [sx0 - w * 1.25 + drift * 0.35, sy0 + len * 0.4],
+      [sx0 - w, sy0]
+    ], i === 1 ? hairLit : hair);
+    // 가닥 경계를 어둡게 그어 판자처럼 보이지 않게 한다
+    ctx.strokeStyle = shade(hair, -0.4);
+    ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(sx0 + w * 0.5, sy0 + 2);
+    ctx.quadraticCurveTo(sx0 + drift * 0.4, sy0 + len * 0.55, sx0 - 1 + sw, sy0 + len - 5);
+    ctx.stroke();
+  });
+  // 두상에서 갈기로 이어지는 뭉치 (목덜미가 비어 보이지 않게)
+  poly(ctx, [[2, -12], [-14, -16], [-30, -6], [-26, 10], [-8, 8], [3, 2]], hair);
+  ctx.restore();
+}
+
 /** 머리 뒤쪽 실루엣(얼굴보다 아래 레이어) */
-function drawHairBack(ctx, ch, f, time, hair, hairLit) {
+function drawHairBack(ctx, ch, f, time, hair, hairLit, style) {
   const c = ch.colors;
   const wobble = (f.charging || f.superSaiyan || f.ki >= 100) ? 2.2 : 0;
-  switch (ch.hairStyle) {
+  switch (style || ch.hairStyle) {
     case 'goku': {
       const n = 8;
       for (let i = 0; i < n; i++) {
@@ -1382,6 +1835,88 @@ function drawHairBack(ctx, ch, f, time, hair, hairLit) {
       ctx.beginPath(); ctx.arc(0, -3, 15, Math.PI, Math.PI * 2); ctx.fill();
       ctx.fillStyle = hairLit;
       ctx.beginPath(); ctx.ellipse(4, -11, 7, 3.2, -0.35, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+    case 'gohan2': {
+      // 초2 오반 : 위로 곧게 곤두선 날카로운 스파이크
+      ctx.fillStyle = hair;
+      ctx.beginPath(); ctx.ellipse(-1, -5, 16, 15, 0, 0, Math.PI * 2); ctx.fill();
+      const tips = [[-21, -28], [-14, -40], [-5, -47], [4, -46], [12, -39], [19, -28], [24, -15]];
+      tips.forEach((t, i) => {
+        const wob = Math.sin(time / 6 + i) * (wobble + 0.9);
+        const bx = t[0] * 0.4;
+        poly(ctx, [[bx - 7, -6], [t[0] + wob, t[1] + wob * 0.5], [bx + 7, -8]], i % 2 ? hairLit : hair);
+      });
+      ctx.fillStyle = hair;
+      ctx.beginPath(); ctx.arc(0, -3, 15, Math.PI, Math.PI * 2); ctx.fill();
+      break;
+    }
+    case 'goku2': {
+      // 초2 오공 : 손오공의 방사형 스파이크가 더 길고 날카롭게 곤두선다
+      // 뿌리는 두상을 따라 벌어지지만 끝은 전부 위로 모인다 (초사이어인의 쓸어올린 머리)
+      const tips2 = [[-21, -30], [-15, -40], [-8, -46], [-1, -49], [6, -47], [13, -41], [19, -32], [23, -21]];
+      tips2.forEach((t, i) => {
+        const wob = Math.sin(time / 6 + i) * (wobble + 0.7);
+        const bx = t[0] * 0.5, by = -6 - Math.abs(t[0]) * 0.12;
+        poly(ctx, [
+          [bx - 7, by], [t[0] + wob, t[1] + wob * 0.6], [bx + 7, by - 2]
+        ], i % 2 ? hairLit : hair);
+      });
+      ctx.fillStyle = hair;
+      ctx.beginPath(); ctx.arc(0, -3, 14, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = hairLit;
+      ctx.beginPath(); ctx.ellipse(3, -11, 7, 3.4, -0.4, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+    case 'goku3': {
+      // 초사이어인 3 : 정수리에서 크게 곤두선 갈기
+      // (등 뒤로 흘러내리는 긴 갈기는 몸통보다 뒤 레이어인 drawLongHair 에서 그린다)
+      ctx.fillStyle = hair;
+      ctx.beginPath(); ctx.ellipse(-2, -5, 18, 17, 0, 0, Math.PI * 2); ctx.fill();
+      const tips3 = [[-23, -25], [-16, -37], [-8, -45], [0, -48], [8, -45], [16, -37], [22, -26], [26, -14]];
+      tips3.forEach((t, i) => {
+        const wob = Math.sin(time / 8 + i) * (wobble + 0.8);
+        const bx = t[0] * 0.44, by = -7 - Math.abs(t[0]) * 0.1;
+        poly(ctx, [[bx - 8, by], [t[0] + wob, t[1] + wob * 0.5], [bx + 8, by - 2]],
+          i % 2 ? hairLit : hair);
+      });
+      break;
+    }
+    case 'vegeta2': {
+      // 초2 베지터 : 불꽃 머리가 한층 높고 사납게 뻗는다
+      poly(ctx, [[-16, -2], [-15, -15], [-5, -36 - wobble], [5, -42 - wobble], [16, -15], [17, -2]], hair);
+      poly(ctx, [[-14, -10], [-20, -25 - wobble], [-7, -18]], hair);
+      poly(ctx, [[14, -10], [21, -23 - wobble], [8, -18]], hair);
+      poly(ctx, [[-8, -9], [0, -34], [8, -11]], hairLit);
+      break;
+    }
+    case 'vegito': {
+      // 베지트 : 베지터의 뿔 + 손오공의 스파이크
+      const tipsV = [[-20, -20], [-15, -27], [-9, -32], [-2, -35], [5, -33], [11, -28], [17, -20], [22, -9]];
+      tipsV.forEach((t, i) => {
+        const wob = Math.sin(time / 7 + i) * (wobble + 0.5);
+        const bx = t[0] * 0.44;
+        poly(ctx, [[bx - 7, -6], [t[0] + wob, t[1] + wob * 0.5], [bx + 7, -8]], i % 2 ? hairLit : hair);
+      });
+      // 베지터에게 물려받은 정수리의 뿔 하나
+      poly(ctx, [[-9, -12], [-1, -35 - wobble], [9, -12]], hair);
+      poly(ctx, [[-3, -12], [0, -30], [4, -13]], hairLit);
+      ctx.fillStyle = hair;
+      ctx.beginPath(); ctx.arc(0, -3, 15, Math.PI, Math.PI * 2); ctx.fill();
+      break;
+    }
+    case 'gogeta': {
+      // 초오지터 : 좌우로 넓게 퍼진 거대한 금빛 갈기
+      ctx.fillStyle = hair;
+      ctx.beginPath(); ctx.ellipse(-1, -5, 18, 16, 0, 0, Math.PI * 2); ctx.fill();
+      const tipsG = [[-25, -25], [-17, -37], [-7, -44], [3, -46], [12, -41], [20, -32], [26, -20], [28, -8]];
+      tipsG.forEach((t, i) => {
+        const wob = Math.sin(time / 7 + i) * (wobble + 0.9);
+        const bx = t[0] * 0.36;
+        poly(ctx, [[bx - 8, -6], [t[0] + wob, t[1] + wob * 0.5], [bx + 8, -8]], i % 2 ? hairLit : hair);
+      });
+      ctx.fillStyle = hair;
+      ctx.beginPath(); ctx.arc(0, -3, 16, Math.PI, Math.PI * 2); ctx.fill();
       break;
     }
     case 'trunks': {
@@ -1454,9 +1989,10 @@ function drawHairBack(ctx, ch, f, time, hair, hairLit) {
 }
 
 /** 얼굴 위에 덮이는 앞머리 / 장식 */
-function drawHairFront(ctx, ch, f, time, hair, hairLit) {
+function drawHairFront(ctx, ch, f, time, hair, hairLit, style) {
   const c = ch.colors;
-  switch (ch.hairStyle) {
+  const wobble = (f.charging || f.superSaiyan || f.ki >= 100) ? 2.2 : 0;
+  switch (style || ch.hairStyle) {
     case 'goku':
       poly(ctx, [[-13, -8], [-5, -14], [2, -7], [8, -15], [14, -8], [13, -1], [6, -6], [0, 0], [-7, -5], [-13, -1]], hair);
       break;
@@ -1467,6 +2003,39 @@ function drawHairFront(ctx, ch, f, time, hair, hairLit) {
     case 'gohan':
       poly(ctx, [[-14, -10], [-5, -17], [2, -9], [9, -16], [15, -9], [14, -3], [6, -7], [0, -2], [-6, -6], [-14, -3]], hair);
       poly(ctx, [[-5, -12], [3, -17], [8, -10]], hairLit);
+      break;
+    case 'gohan2':
+      poly(ctx, [[-15, -9], [-8, -23], [-2, -10], [5, -25], [12, -11], [16, -19], [15, -4], [6, -9], [0, -3], [-7, -8], [-15, -3]], hair);
+      poly(ctx, [[-6, -17], [1, -23], [6, -15]], hairLit);
+      // 이마를 비스듬히 타고 내려오는 긴 앞머리 한 가닥 (초2 오반의 상징)
+      poly(ctx, [[-6, -13], [3, -7], [8, 6], [3, 8], [0, -1], [-8, -8]], hair);
+      break;
+    case 'goku2':
+      poly(ctx, [[-14, -8], [-6, -21], [0, -9], [7, -22], [14, -9], [13, -1], [6, -6], [0, 0], [-7, -5], [-13, -1]], hair);
+      poly(ctx, [[-4, -15], [3, -21], [8, -13]], hairLit);
+      break;
+    case 'goku3':
+      // 앞머리를 전부 뒤로 넘긴 이마 + 얼굴 옆으로 흘러내린 한 가닥
+      poly(ctx, [[-16, -6], [-8, -17], [0, -8], [8, -18], [16, -7], [15, -2], [0, -4], [-15, -2]], hair);
+      poly(ctx, [[-15, -4], [-22, 13], [-20, 30], [-14, 29], [-12, 11], [-11, -2]], hair);
+      poly(ctx, [[-19, 4], [-20, 20], [-16, 22], [-14, 6]], hairLit);
+      break;
+    case 'vegeta2':
+      poly(ctx, [[-14, -7], [14, -9], [12, -2], [4, -6], [-1, 1], [-6, -5], [-14, -1]], hair);
+      poly(ctx, [[-2, -2], [1, 4], [4, -3]], hair);   // 이마 각(V)
+      break;
+    case 'vegito':
+      poly(ctx, [[-15, -8], [-6, -19], [0, -8], [7, -20], [15, -8], [14, -2], [6, -6], [0, 1], [-7, -5], [-14, -2]], hair);
+      poly(ctx, [[-3, -3], [1, 4], [5, -4]], hair);   // 베지터에게 물려받은 이마 각
+      // 손오공에게 물려받아 이마 옆으로 늘어진 두 가닥 (눈은 가리지 않는다)
+      poly(ctx, [[1, -10], [7, -4], [9, 5], [5, 5], [2, -2], [-2, -6]], hair);
+      poly(ctx, [[-11, -9], [-7, -2], [-8, 7], [-12, 6], [-13, -2]], hair);
+      break;
+    case 'gogeta':
+      poly(ctx, [[-16, -8], [-8, -21], [-1, -10], [6, -22], [14, -9], [16, -17], [15, -3], [6, -8], [0, -1], [-7, -7], [-15, -2]], hair);
+      poly(ctx, [[-6, -17], [2, -23], [8, -14]], hairLit);
+      // 이마 한가운데로 굵게 내려오는 앞머리
+      poly(ctx, [[-4, -13], [4, -7], [7, 4], [1, 5], [-2, -2], [-9, -8]], hair);
       break;
     case 'trunks':
       poly(ctx, [[-15, -10], [15, -12], [13, -3], [6, -8], [0, -2], [-6, -7], [-15, -3]], hair);
@@ -1541,10 +2110,10 @@ function drawHairFront(ctx, ch, f, time, hair, hairLit) {
  */
 function drawHead(ctx, p, ch, f, time) {
   const c = ch.colors;
-  const form = ch.form || null;
-  const superSaiyan = !!f.superSaiyan && !!(form && form.saiyan);
-  const hair = superSaiyan ? (form.hair || '#ffdf3d') : c.hair;
-  const hairLit = superSaiyan ? (form.hairLit || '#fff3a0') : c.hairLit;
+  const hs = hairSetOf(ch, f);
+  const form = hs.form, trans = hs.trans, superSaiyan = hs.ss;
+  const hair = hs.hair, hairLit = hs.hairLit;
+  const hairStyle = hs.style, noBrow = hs.noBrow;
   const skinLight = shade(c.skin, 0.18);
   const skinEdge = edgeOf(c.skin);
 
@@ -1558,7 +2127,7 @@ function drawHead(ctx, p, ch, f, time) {
   if (p.headTilt) ctx.rotate(p.headTilt);
 
   ctx.save(); ctx.scale(HAIR_SCALE, HAIR_SCALE);
-  drawHairBack(ctx, ch, f, time, hair, hairLit);
+  drawHairBack(ctx, ch, f, time, hair, hairLit, hairStyle);
   ctx.restore();
 
   // 얼굴 윤곽 : 이마는 넓고 턱은 뾰족하게
@@ -1574,18 +2143,35 @@ function drawHead(ctx, p, ch, f, time) {
     c2.beginPath(); c2.ellipse(6, -10, 9, 5, -0.2, 0, Math.PI * 2); c2.fill();
   });
   // 귀
-  if (!/^(piccolo|frieza|cell|cooler)$/.test(ch.hairStyle)) {
+  if (!/^(piccolo|frieza|cell|cooler)$/.test(hairStyle)) {
     drawPart(ctx, [[-14, -3], [-11, -6], [-9, 1], [-12, 6], [-15, 4]], c.skinDark, skinEdge, null);
   }
+  // 포타라 귀걸이 (베지트)
+  if (ch.props && ch.props.earring) drawPotara(ctx, c);
 
   ctx.save(); ctx.scale(HAIR_SCALE, HAIR_SCALE);
-  drawHairFront(ctx, ch, f, time, hair, hairLit);
+  drawHairFront(ctx, ch, f, time, hair, hairLit, hairStyle);
   ctx.restore();
+
+  // 마인의 각인 : 이마의 M (머리카락 위에 얹어 확실히 보이게 한다)
+  if (trans && form.majin) {
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const mark = (col, w) => {
+      ctx.strokeStyle = col; ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(0.5, -6); ctx.lineTo(2.4, -14.5); ctx.lineTo(5, -9.5);
+      ctx.lineTo(7.6, -14.5); ctx.lineTo(9.5, -6);
+      ctx.stroke();
+    };
+    mark('#ffe9b0', 4.4);
+    mark('#2a1420', 2.2);
+  }
 
   // ---- 표정 ----
   const hurt = f.hitstun > 0 || f.state === 'hurt' || f.state === 'hurtAir';
   const angry = !!f.attack || f.charging || hurt;
-  const iris = superSaiyan ? ((ch.form && ch.form.eye) || '#2fbf6a') : c.eye;
+  // 눈동자 색은 눈꺼풀/눈썹 선 색(c.eye)과 분리한다 (초사이어인의 녹안 등)
+  const iris = superSaiyan ? ((ch.form && ch.form.eye) || '#2fbf6a') : (c.iris || c.eye);
   if (f.state === 'ko') {
     ctx.strokeStyle = c.eye; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
     [[3, 11], [-6, 1]].forEach(([x0, x1]) => {
@@ -1604,22 +2190,29 @@ function drawHead(ctx, p, ch, f, time) {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(ex + rx * 0.35, ey - ry * 0.55, 1.5, 1.6);
       // 위 눈꺼풀
-      ctx.strokeStyle = c.eye; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+      ctx.strokeStyle = c.eye; ctx.lineWidth = 2.1; ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(ex - rx - 0.6, ey - ry * 0.45);
-      ctx.quadraticCurveTo(ex, ey - ry - 1.4, ex + rx + 0.4, ey - ry * 0.35);
+      ctx.moveTo(ex - rx - 0.5, ey - ry * 0.42);
+      ctx.quadraticCurveTo(ex, ey - ry - 1.1, ex + rx + 0.3, ey - ry * 0.32);
       ctx.stroke();
     };
     eye(9.5, -1, 4.6, hurt ? 6.6 : 5.8, 2.7);
     eye(-0.6, -1, 3.8, hurt ? 5.8 : 5.1, 2.3);
-    // 눈썹 : 굵고 각지게
-    ctx.strokeStyle = c.eye; ctx.lineWidth = 3; ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(4.2, angry ? -8.4 : -7.6); ctx.lineTo(14.4, angry ? -5.4 : -6.6);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(-5.4, angry ? -6.6 : -6); ctx.lineTo(2.6, angry ? -8.8 : -8);
-    ctx.stroke();
+    // 눈썹 : 굵고 각지게 (초사이어인 3 은 눈썹이 없고 눈두덩이 튀어나온다)
+    if (noBrow) {
+      ctx.strokeStyle = shade(c.skinDark, -0.3); ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-4.6, -8.4); ctx.quadraticCurveTo(5, -12, 14.6, -7.8);
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = c.eye; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(4.4, angry ? -10.4 : -9.8); ctx.lineTo(14.4, angry ? -7.6 : -8.8);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-5.2, angry ? -8.8 : -8.3); ctx.lineTo(2.6, angry ? -10.8 : -10.2);
+      ctx.stroke();
+    }
     // 코 (작고 뾰족하게) + 입
     ctx.strokeStyle = shade(c.skinDark, -0.35); ctx.lineWidth = 1.8;
     ctx.beginPath(); ctx.moveTo(15.4, 3.4); ctx.lineTo(13.6, 5.6); ctx.stroke();
@@ -1771,7 +2364,7 @@ function drawFistPart(ctx, hand, dir, r, base, dark, light, edge) {
 }
 
 /** 부츠 : 발목 + 발등 + 밑창 (발끝은 항상 앞을 향한다) */
-function drawBootPart(ctx, ankle, dir, w, base, dark, light, edge) {
+function drawBootPart(ctx, ankle, dir, w, base, dark, light, edge, tip) {
   ctx.save();
   ctx.translate(ankle[0], ankle[1]);
   ctx.rotate(Math.atan2(dir[1], dir[0]));
@@ -1786,6 +2379,17 @@ function drawBootPart(ctx, ankle, dir, w, base, dark, light, edge) {
     c2.beginPath();
     c2.ellipse(w * 0.35, -w * 0.55, w * 0.7, w * 0.24, -0.15, 0, Math.PI * 2);
     c2.fill();
+    if (tip) {                                              // 금빛 앞코 (베지터/베지트 계열)
+      c2.fillStyle = tip;
+      c2.beginPath();
+      c2.moveTo(w * 0.72, -w * 0.62);
+      c2.lineTo(w * 1.48, -w * 0.28);
+      c2.lineTo(w * 1.62, w * 0.24);
+      c2.lineTo(w * 0.86, w * 0.5);
+      c2.closePath(); c2.fill();
+      c2.fillStyle = shade(tip, -0.32);
+      c2.fillRect(w * 0.72, w * 0.12, w * 1.1, w * 0.4);
+    }
   });
   ctx.restore();
 }
@@ -1816,7 +2420,7 @@ function drawArm(ctx, sh, el, ha, w, base, dark, light, glove, gloveDark, gloveL
 }
 
 /** 다리 한 짝 (허벅지 → 정강이 → 부츠) */
-function drawLeg(ctx, hip, kn, ft, w, base, dark, light, boot, bootDark, bootLight, deco) {
+function drawLeg(ctx, hip, kn, ft, w, base, dark, light, boot, bootDark, bootLight, deco, bootTip) {
   const edge = edgeOf(base), bEdge = edgeOf(boot);
   const withDeco = (shadeFn, len, w2, part) => (c2) => {
     shadeFn && shadeFn(c2);
@@ -1826,7 +2430,7 @@ function drawLeg(ctx, hip, kn, ft, w, base, dark, light, boot, bootDark, bootLig
     withDeco(limbShade(len, w, dark, light), len, w, 'thigh')));
   bone(ctx, kn, ft, len => drawPart(ctx, muscle(len, w * 0.78, 0.56, 0.34), base, edge,
     withDeco(limbShade(len, w * 0.78, dark, light), len, w * 0.78, 'shin')));
-  drawBootPart(ctx, ft, tipDir(kn, ft), w * 0.42, boot, bootDark, bootLight, bEdge);
+  drawBootPart(ctx, ft, tipDir(kn, ft), w * 0.42, boot, bootDark, bootLight, bEdge, bootTip);
 }
 
 /** 방향 벡터 : 관절 -> 끝. 세운 상태면 앞(+x), 뻗었으면 팔다리 방향 */
@@ -2028,6 +2632,62 @@ function drawCollar(ctx, p, c) {
   ctx.beginPath(); ctx.ellipse(cx - 0.4, cy - 2.6, 1.8, 1.3, -0.3, 0, Math.PI * 2); ctx.fill();
 }
 
+/** 베지트 : 양 귀의 포타라 귀걸이 (머리 좌표계 안에서 그린다) */
+function drawPotara(ctx, c) {
+  const gold = c.earring || '#f2c53d';
+  ctx.strokeStyle = shade(gold, -0.5); ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-13.4, 2.4); ctx.lineTo(-14.2, 6); ctx.stroke();
+  drawPart(ctx, [
+    [-17.4, 6.4], [-12.4, 6.4], [-11.2, 10.4], [-14.4, 13.6], [-17.8, 10.4]
+  ], gold, edgeOf(gold), c2 => {
+    c2.fillStyle = shade(gold, 0.45);
+    c2.beginPath(); c2.ellipse(-15.6, 8.6, 1.7, 1.3, -0.3, 0, Math.PI * 2); c2.fill();
+  });
+}
+
+/** 초오지터 : 맨몸 위에 걸친 메타모르성 조끼 (검은 조끼 + 주황 어깨판) */
+function drawFusionVest(ctx, p, c) {
+  const cx = p.chest[0], cy = p.chest[1], hx = p.hip[0], hy = p.hip[1];
+  const vest = c.vest || '#242c3d', vestDark = shade(vest, -0.4), vestLit = shade(vest, 0.28);
+  const pad = c.vestPad || '#e0602a', padDark = shade(pad, -0.22);
+  const trim = c.vestTrim || '#e6e9f2';
+
+  // 몸통을 덮는 조끼 본체
+  drawPart(ctx, [
+    [cx - 21, cy - 6], [cx - 6, cy - 12], [cx + 9, cy - 12], [cx + 22, cy - 6],
+    [cx + 18, cy + 20], [hx + 14, hy + 3], [hx - 14, hy + 3], [cx - 18, cy + 20]
+  ], vest, edgeOf(vest), c2 => {
+    c2.fillStyle = vestDark;
+    c2.beginPath(); c2.ellipse(cx - 18, cy + 16, 10, 20, 0, 0, Math.PI * 2); c2.fill();
+    c2.fillStyle = vestLit;
+    c2.beginPath(); c2.ellipse(cx + 14, cy + 4, 5, 9, -0.25, 0, Math.PI * 2); c2.fill();
+  });
+
+  // 가운데를 V 자로 열어 맨 가슴과 복근을 드러낸다
+  poly(ctx, [[cx - 9, cy - 10], [cx + 11, cy - 10], [cx + 4, cy + 16], [cx - 1, cy + 24], [cx - 5, cy + 16]], c.skin);
+  ctx.strokeStyle = shade(c.skin, -0.42); ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - 5, cy + 3); ctx.quadraticCurveTo(cx + 1, cy + 8, cx + 6, cy + 2);
+  ctx.stroke();
+  ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(cx - 4, cy + 13); ctx.lineTo(cx + 3, cy + 12); ctx.stroke();
+
+  // V 자 가장자리의 밝은 테두리
+  ctx.strokeStyle = trim; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - 10, cy - 11); ctx.lineTo(cx - 6, cy + 16); ctx.lineTo(cx - 1, cy + 25);
+  ctx.lineTo(cx + 5, cy + 16); ctx.lineTo(cx + 12, cy - 11);
+  ctx.stroke();
+
+  // 주황 어깨판
+  bone(ctx, p.shoulderF, [p.shoulderF[0] + 14, p.shoulderF[1] + 4],
+    len => drawPart(ctx, muscle(len, 17, 0.74, 0.5), pad, edgeOf(pad),
+      limbShade(len, 17, padDark, shade(pad, 0.34))));
+  bone(ctx, p.shoulderB, [p.shoulderB[0] - 13, p.shoulderB[1] + 4],
+    len => drawPart(ctx, muscle(len, 16, 0.74, 0.5), padDark, edgeOf(padDark),
+      limbShade(len, 16, shade(padDark, -0.28), pad)));
+}
+
 /** 브로리 : 허리에 두른 붉은 천 + 금색 허리 장식 */
 function drawSash(ctx, p, c, bulk) {
   const hx = p.hip[0], hy = p.hip[1];
@@ -2190,7 +2850,8 @@ function drawFighterRig(ctx, f, p, time) {
     c2.save(); c2.globalAlpha = 0.72; deco(c2, len, w, part); c2.restore();
   } : null;
 
-  // 0) 소품 (모든 부위 뒤) : 꼬리 / 날개 / 등에 멘 칼집
+  // 0) 소품 (모든 부위 뒤) : 긴 머리 / 꼬리 / 날개 / 등에 멘 칼집
+  drawLongHair(ctx, p, hairSetOf(ch, f), time, (f.charging || f.superSaiyan) ? 2.2 : 0);
   if (props.wings) drawWings(ctx, p, c);
   if (props.tail) drawTail(ctx, p, c);
   if (props.sword && !p.sword) drawScabbard(ctx, p, c);
@@ -2202,7 +2863,8 @@ function drawFighterRig(ctx, f, p, time) {
   // 2) 뒤쪽 다리
   drawLeg(ctx, p.hip, p.legB[0], p.legB[1], 24 * bulk,
     back(pants), shade(pantsDark, -0.26), shade(pantsLight, -0.26),
-    back(boot), shade(bootDark, -0.26), shade(bootLight, -0.26), decoBack);
+    back(boot), shade(bootDark, -0.26), shade(bootLight, -0.26), decoBack,
+    c.bootTip ? back(c.bootTip) : null);
 
   // 3) 몸통 : 어깨가 넓고 허리가 좁은 상체 실루엣
   const cx = p.chest[0], cy = p.chest[1], hx = p.hip[0], hy = p.hip[1];
@@ -2296,8 +2958,11 @@ function drawFighterRig(ctx, f, p, time) {
     ctx.stroke();
   }
 
+  // 초오지터 : 메타모르성 조끼
+  if (props.fusionVest) drawFusionVest(ctx, p, c);
+
   // 도복 깃 (속옷이 보이는 캐릭터)
-  if (/^(goku|vegeta|piccolo|gohan)$/.test(ch.id)) {
+  if (/^(goku|goku2|vegeta|vegeta2|piccolo|gohan|gohan2|vegito)$/.test(ch.id)) {
     poly(ctx, [
       [cx - 7, cy - 2], [cx + 9, cy - 2], [cx + 7, cy + 20], [cx + 1, cy + 26], [cx - 5, cy + 20]
     ], c.trim);
@@ -2353,7 +3018,7 @@ function drawFighterRig(ctx, f, p, time) {
 
   // 4) 앞쪽 다리
   drawLeg(ctx, p.hip, p.legF[0], p.legF[1], 26 * bulk,
-    pants, pantsDark, pantsLight, boot, bootDark, bootLight, deco);
+    pants, pantsDark, pantsLight, boot, bootDark, bootLight, deco, c.bootTip || null);
   // 브로리 : 허리에 두른 붉은 천 (다리 앞으로 늘어진다)
   if (props.sash) drawSash(ctx, p, c, bulk);
   // 5) 앞쪽 팔

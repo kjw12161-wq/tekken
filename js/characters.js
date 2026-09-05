@@ -225,6 +225,144 @@ const CHARACTERS = [
     special: { name: '데스 비머', color: '#7f5cff', core: '#e0d6ff', motion: 'point' },
     ultimate: { name: '슈퍼노바', color: '#ff7b3d', core: '#ffe6a8', motion: 'orb', type: 'orb' },
     quotes: { win: '프리저보다 못한 놈이었군.', pick: '내 앞에 선 걸 후회하게 될 거다.' }
+  },
+  {
+    id: 'gohan2',
+    name: '초2 오반',
+    title: '분노가 깨운 잠재능력',
+    hp: 1040, speed: 3.80, jump: 17.4, power: 1.24, defense: 1.00, weight: 1.00,
+    hairStyle: 'gohan2',
+    style: 'fury',
+    colors: {
+      gi: '#5f4a9c', giDark: '#3a2c66', trim: '#e8e2d0', trimDark: '#b5ad96',  // 보라 도복 + 흰 띠
+      sleeve: '#5f4a9c', sleeveDark: '#3a2c66',
+      forearm: '#5f4a9c', forearmDark: '#3a2c66',
+      band: '#eceadd', bandDark: '#b7b3a3',        // 흰 손목 보호대
+      pants: '#5f4a9c', pantsDark: '#3a2c66',
+      belt: '#e8e2d0', beltDark: '#b5ad96',
+      boot: '#c9862f', bootDark: '#8a5312',        // 황갈색 부츠
+      skin: '#f5c79b', skinDark: '#d69f70',
+      hair: '#ffd93d', hairLit: '#fff3a0',          // 이미 금발
+      aura: '#ffe066', iris: '#3fd07a', eye: '#2b2b2b'
+    },
+    entrance: 'furyRise', victory: 'sideGlance',
+    special: { name: '마섬광', color: '#ffd45c', core: '#fff6d2', motion: 'overhead' },
+    ultimate: { name: '부자 카메하메하', color: '#8ef0ff', core: '#ffffff', motion: 'onehand' },
+    quotes: { win: '더는... 아무도 다치게 두지 않아.', pick: '봐주지 않을 거야.' }
+  },
+  {
+    id: 'goku2',
+    name: '초2 오공',
+    title: '초사이어인 2',
+    hp: 1040, speed: 3.80, jump: 17.6, power: 1.18, defense: 1.02, weight: 1.00,
+    hairStyle: 'goku2',
+    style: 'fierce',
+    colors: {
+      gi: '#e8681a', giDark: '#a53f07', trim: '#1e4fd8', trimDark: '#12328f',
+      forearm: '#f5c79b', forearmDark: '#d69f70',   // 반팔 도복
+      band: '#2a5be0', bandDark: '#16337f',
+      belt: '#1e4fd8', beltDark: '#12328f',
+      boot: '#1b3ea8', bootDark: '#0f2468',
+      skin: '#f5c79b', skinDark: '#d69f70',
+      hair: '#ffdf3d', hairLit: '#fff8b8',
+      aura: '#ffe066', iris: '#3fd07a', eye: '#2b2b2b'
+    },
+    entrance: 'kiLand', victory: 'thumbUp',
+    form: {
+      name: '초사이어인 3', saiyan: true, hairStyle: 'goku3', noBrow: true,
+      hair: '#ffe24a', hairLit: '#fffbcf', eye: '#3fd07a', aura: '#ffe98a'
+    },
+    special: { name: '에네르기파', color: '#7fd8ff', core: '#ffffff', motion: 'cupped' },
+    ultimate: { name: '순간이동 에네르기파', color: '#8ef0ff', core: '#ffffff', motion: 'cupped' },
+    quotes: { win: '아직 더 위가 있어. 나도, 너도.', pick: '전력으로 간다!' }
+  },
+  {
+    id: 'vegeta2',
+    name: '초2 베지터',
+    title: '꺾이지 않는 자존심',
+    hp: 1000, speed: 3.85, jump: 17.6, power: 1.22, defense: 0.98, weight: 0.98,
+    hairStyle: 'vegeta2',
+    style: 'pride',
+    colors: {
+      gi: '#26356e', giDark: '#141d43', trim: '#eef1f7', trimDark: '#c2c8d8',  // 푸른 전투복
+      sleeve: '#2b3b78', sleeveDark: '#161f4a',
+      forearm: '#2b3b78', forearmDark: '#161f4a',
+      glove: '#f4f6fb', gloveDark: '#c3c9da',       // 흰 장갑
+      pants: '#26356e', pantsDark: '#141d43',
+      belt: '#2b3b78', beltDark: '#161f4a',
+      boot: '#f4f6fb', bootDark: '#c3c9da',
+      bootTip: '#f0c73a',                            // 금빛 앞코
+      skin: '#f5c79b', skinDark: '#d69f70',
+      hair: '#ffd93d', hairLit: '#fff3a0',
+      aura: '#ffdf4d', iris: '#3fd07a', eye: '#2b2b2b'
+    },
+    entrance: 'flare', victory: 'pointDown',
+    form: {
+      name: '마인 베지터', saiyan: true, majin: true,
+      hair: '#ffd93d', hairLit: '#fff3a0', eye: '#e8434f', aura: '#ff4d5e'
+    },
+    special: { name: '갤릭포', color: '#c47bff', core: '#ffe9ff', motion: 'onehand' },
+    ultimate: { name: '파이널 플래시', color: '#ffe14d', core: '#ffffff', motion: 'flash' },
+    quotes: { win: '이 몸을 넘어설 자는 없다.', pick: '내 자존심을 시험하겠다고?' }
+  },
+  {
+    id: 'vegito',
+    name: '베지트',
+    title: '포타라가 낳은 완성형',
+    hp: 1080, speed: 3.95, jump: 17.8, power: 1.28, defense: 1.06, weight: 1.02,
+    hairStyle: 'vegito',
+    style: 'fusion',
+    props: { earring: true },
+    colors: {
+      gi: '#2b4bb8', giDark: '#182f7a', trim: '#f08c2a', trimDark: '#ab5a12',  // 푸른 도복 + 주황 속옷
+      sleeve: '#2b4bb8', sleeveDark: '#182f7a',
+      forearm: '#2b4bb8', forearmDark: '#182f7a',
+      glove: '#f4f6fb', gloveDark: '#c3c9da',       // 흰 장갑
+      pants: '#2b4bb8', pantsDark: '#182f7a',
+      belt: '#1f3894', beltDark: '#0f2166',
+      boot: '#f4f6fb', bootDark: '#c3c9da',
+      bootTip: '#f0c73a',
+      skin: '#f5c79b', skinDark: '#d69f70',
+      hair: '#181818', hairLit: '#42384f',          // 검은 융합 머리
+      earring: '#f2c53d',                            // 포타라
+      aura: '#7fd8ff', eye: '#2b2b2b'
+    },
+    entrance: 'glove', victory: 'potaraTouch',
+    form: {
+      name: '초 베지트', saiyan: true,
+      hair: '#ffdf3d', hairLit: '#fff8b8', eye: '#3fd07a', aura: '#ffe066'
+    },
+    special: { name: '파이널 카메하메하', color: '#8ecdff', core: '#ffffff', motion: 'cupped' },
+    ultimate: { name: '스피릿 소드', color: '#ffe14d', core: '#fffbe0', motion: 'spirit' },
+    quotes: { win: '둘이 하나가 된 힘, 실감했나?', pick: '금방 끝내주지.' }
+  },
+  {
+    id: 'gogeta',
+    name: '초오지터',
+    title: '융합이 도달한 정점',
+    hp: 1140, speed: 3.90, jump: 17.6, power: 1.34, defense: 1.10, weight: 1.08,
+    hairStyle: 'gogeta',
+    style: 'gogeta',
+    bulk: 1.10,
+    props: { fusionVest: true },
+    colors: {
+      gi: '#f5c79b', giDark: '#d09a6a',             // 드러난 상체
+      trim: '#2f4fc8', trimDark: '#1a2f88',
+      vest: '#242c3d', vestPad: '#e0602a', vestTrim: '#e6e9f2',   // 검은 조끼 + 주황 어깨판
+      sleeve: '#f5c79b', sleeveDark: '#d09a6a',
+      forearm: '#f5c79b', forearmDark: '#d09a6a',
+      band: '#20222e', bandDark: '#0e0f16',         // 검은 손목 보호대
+      pants: '#dcd8c8', pantsDark: '#a5a08e',       // 회백색 통바지
+      belt: '#2f4fc8', beltDark: '#1a2f88',         // 파란 허리띠
+      boot: '#252a3a', bootDark: '#12151f',
+      skin: '#f5c79b', skinDark: '#d09a6a',
+      hair: '#ffdf3d', hairLit: '#fff8b8',
+      aura: '#ffe98a', iris: '#3fd07a', eye: '#2b2b2b'
+    },
+    entrance: 'fusionPose', victory: 'crossOut',
+    special: { name: '스타더스트 브레이커', color: '#ffd45c', core: '#ffffff', motion: 'palm', type: 'orb' },
+    ultimate: { name: '빅뱅 카메하메하', color: '#8ef0ff', core: '#ffffff', motion: 'flash' },
+    quotes: { win: '둘의 힘이 겹치면 이 정도다.', pick: '오래 걸리지 않을 거다.' }
   }
 ];
 

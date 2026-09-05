@@ -36,9 +36,25 @@ const SpriteBank = {
     this.pages.length = 0;
     this.frames.clear();
     this.count = 0;
+    this.loaded = null;                 // 지금 아틀라스에 구워 둔 캐릭터
     this._tmp = this._makeCanvas(CELL_W, CELL_H);
     this._sil = this._makeCanvas(CELL_W, CELL_H);
     this._tmpCtx = this._tmp.getContext('2d', { willReadFrequently: true });
+  },
+
+  /**
+   * 이번 매치에 쓰는 캐릭터만 아틀라스에 남긴다.
+   * 로스터가 커지면(14인) 매치를 거듭할수록 페이지 상한을 넘겨
+   * 벡터 렌더링으로 떨어지므로, 캐릭터가 바뀔 때 아틀라스를 비운다.
+   * 같은 조합으로 재대결하면 그대로 재사용한다.
+   */
+  keepOnly(ids) {
+    const cur = this.loaded;
+    if (cur && cur.length === ids.length && ids.every(id => cur.includes(id))) return;
+    const ext = this.external, on = this.enabled;
+    this.init({ disabled: !on });
+    this.external = ext;
+    this.loaded = ids.slice();
   },
 
   _makeCanvas(w, h) {
@@ -52,7 +68,8 @@ const SpriteBank = {
 
   /** 표정 등 포즈 키만으로는 구분되지 않는 변형을 키에 함께 넣는다 */
   variantOf(f) {
-    const ss = (f.superSaiyan && f.char.form && f.char.form.saiyan) ? 's' : 'n';
+    // 변신하면 머리 모양·색·각인이 달라지므로 변신 여부를 항상 키에 넣는다
+    const ss = (f.superSaiyan && f.char.form) ? 's' : 'n';
     const hurt = (f.hitstun > 0 || f.state === 'hurt' || f.state === 'hurtAir') ? 'h' : '';
     const angry = (f.attack || f.charging) ? 'a' : '';
     return ss + hurt + angry;
