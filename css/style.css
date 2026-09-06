@@ -16,6 +16,8 @@
 }
 
 * { box-sizing: border-box; }
+/* display 를 지정한 요소도 hidden 속성이 확실히 먹도록 */
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
@@ -374,6 +376,59 @@ html, body {
 .result-quote { margin: 0 0 6px; color: #ffd76a; font-style: italic; font-size: 14px; }
 .result-score { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
 
+/* ---------------- 온라인 로비 ---------------- */
+.net-card {
+  width: min(100%, 640px); max-height: 100%; overflow: auto;
+  border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(0,0,0,.45));
+  box-shadow: 0 22px 60px rgba(0,0,0,.6);
+  display: flex; flex-direction: column; gap: 10px;
+  touch-action: pan-y; -webkit-overflow-scrolling: touch;
+}
+.net-head { display: flex; align-items: center; gap: 12px; }
+.net-head h2 { margin: 0; font-size: 19px; font-weight: 900; }
+.net-status { margin: 0; font-size: 13px; color: var(--muted); min-height: 18px; }
+.net-status.good { color: #7bff9a; }
+.net-status.bad { color: var(--red); }
+.net-step { display: flex; flex-direction: column; gap: 8px; }
+.net-roles { display: flex; gap: 10px; flex-wrap: wrap; }
+.net-roles .btn { flex: 1 1 180px; }
+.net-help { margin: 4px 0 0; padding-left: 20px; color: var(--muted); font-size: 12.5px; line-height: 1.75; }
+.net-help b { color: #fff; }
+.net-label { font-size: 12px; font-weight: 700; color: var(--orange); }
+.net-row { display: flex; gap: 8px; align-items: stretch; }
+.net-code {
+  flex: 1; min-width: 0; resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 1.45;
+  color: var(--text); background: rgba(0,0,0,.45);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  word-break: break-all;
+}
+.net-code:focus { outline: none; border-color: var(--cyan); }
+.net-row .btn { flex: 0 0 auto; align-self: stretch; }
+.net-foot { margin: 2px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.7; }
+
+/* 전투 중 온라인 상태 배지 */
+.net-hud {
+  position: absolute; right: clamp(8px, 1.6cqw, 14px); bottom: clamp(8px, 1.6cqw, 14px);
+  font-size: clamp(9px, 1.4cqw, 12px); font-weight: 800; letter-spacing: .04em;
+  padding: 4px 9px; border-radius: 999px; pointer-events: none;
+  background: rgba(0,0,0,.55); border: 1px solid var(--line); color: #9fe8ff;
+}
+.net-hud.warn { color: #ffd76a; border-color: rgba(255,215,106,.5); }
+.net-hud.bad { color: var(--red); border-color: rgba(255,77,94,.5); }
+
+/* 온라인 안내 토스트 */
+.net-toast {
+  position: absolute; left: 50%; top: 14%; transform: translate(-50%, -8px);
+  padding: 8px 16px; border-radius: 999px; white-space: nowrap;
+  font-size: clamp(11px, 1.7cqw, 14px); font-weight: 700;
+  background: rgba(6,10,24,.9); border: 1px solid var(--line); color: var(--text);
+  opacity: 0; transition: opacity .2s ease, transform .2s ease; pointer-events: none; z-index: 25;
+}
+.net-toast.is-show { opacity: 1; transform: translate(-50%, 0); }
+.net-toast.bad { color: #ffb3ba; border-color: rgba(255,77,94,.55); }
+
 /* ---------------- 오버레이(도움말/일시정지) ---------------- */
 .overlay {
   position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
@@ -506,6 +561,9 @@ kbd {
 }
 @container stage (max-width: 470px) {
   .char-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .net-card { padding: 12px 14px; gap: 8px; }
+  .net-row { flex-direction: column; }
+  .net-help { font-size: 11.5px; line-height: 1.65; }
 
   .slots { width: 100%; margin-left: 0; justify-content: center; }
   .info-quote, .info-special { display: none; }

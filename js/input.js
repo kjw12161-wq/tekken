@@ -97,6 +97,20 @@ const Input = {
     return codes.some(c => this.justPressed.has(c));
   },
 
+  /**
+   * 온라인 대전용 : 한 프레임의 입력을 12비트 마스크로 만든다.
+   * 그 프레임 안에서 눌렸다 떼어진 짧은 입력도 놓치지 않도록
+   * '누르고 있음' 과 '방금 눌림' 을 함께 담는다.
+   */
+  mask(player) {
+    let m = 0;
+    for (let i = 0; i < NET_ACTIONS.length; i++) {
+      const a = NET_ACTIONS[i];
+      if (this.held(player, a) || this.pressed(player, a)) m |= 1 << i;
+    }
+    return m;
+  },
+
   /** 프레임 종료 시 호출 - 눌림 엣지 초기화 */
   endFrame() {
     this.justPressed.clear();

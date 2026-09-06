@@ -48,6 +48,8 @@
       <div class="combo combo-p1" id="combo-p1"><span class="combo-num">2</span><span class="combo-lbl">HIT COMBO!</span></div>
       <div class="combo combo-p2" id="combo-p2"><span class="combo-num">2</span><span class="combo-lbl">HIT COMBO!</span></div>
       <div class="announce" id="announce"></div>
+      <div class="net-hud" id="net-hud" hidden></div>
+      <div class="net-toast" id="net-toast"></div>
     </div>
 
     <!-- ===================== 타이틀 ===================== -->
@@ -70,7 +72,8 @@
 
         <div class="menu">
           <button id="btn-cpu" class="btn btn-main">1P vs CPU</button>
-          <button id="btn-versus" class="btn">2P 대전</button>
+          <button id="btn-online" class="btn">온라인 1v1</button>
+          <button id="btn-versus" class="btn">2P 로컬 대전</button>
           <button id="btn-howto" class="btn btn-ghost">조작 방법</button>
         </div>
         <p class="hint">Enter 키로 바로 시작</p>
@@ -106,6 +109,63 @@
             <p class="info-special">변신<br><b id="sel-form">초사이어인</b></p>
           </aside>
         </div>
+      </div>
+    </section>
+
+    <!-- ===================== 온라인 로비 ===================== -->
+    <section class="screen" id="screen-online">
+      <div class="net-card">
+        <header class="net-head">
+          <button id="btn-net-back" class="btn btn-ghost btn-sm">← 뒤로</button>
+          <h2>온라인 1v1</h2>
+        </header>
+        <p class="net-status" id="net-status">방을 만들거나, 받은 초대 코드로 참가하세요</p>
+
+        <!-- 1단계 : 역할 고르기 -->
+        <div id="net-choose" class="net-step">
+          <div class="net-roles">
+            <button id="btn-net-host" class="btn btn-main">방 만들기</button>
+            <button id="btn-net-join" class="btn">방 참가하기</button>
+          </div>
+          <ol class="net-help">
+            <li><b>방 만들기</b>를 누르면 <b>초대 코드</b>가 나옵니다. 복사해서 친구에게 보내세요.</li>
+            <li>친구는 <b>방 참가하기</b>에서 그 코드를 붙여넣고, 돌아온 <b>응답 코드</b>를 다시 보내 줍니다.</li>
+            <li>방장이 응답 코드를 붙여넣으면 연결됩니다. 중계 서버 없이 두 브라우저가 직접 이어집니다.</li>
+          </ol>
+        </div>
+
+        <!-- 2단계-A : 방장 -->
+        <div id="net-host" class="net-step" hidden>
+          <label class="net-label">① 이 초대 코드를 친구에게 보내세요</label>
+          <div class="net-row">
+            <textarea id="net-offer" class="net-code" readonly rows="3" placeholder="코드를 만드는 중..."></textarea>
+            <button id="btn-net-copy-offer" class="btn btn-sm">복사</button>
+          </div>
+          <label class="net-label">② 친구에게 받은 응답 코드를 붙여넣으세요</label>
+          <div class="net-row">
+            <textarea id="net-answer-in" class="net-code" rows="3" placeholder="응답 코드를 붙여넣기"></textarea>
+            <button id="btn-net-connect" class="btn btn-main btn-sm">연결</button>
+          </div>
+        </div>
+
+        <!-- 2단계-B : 참가자 -->
+        <div id="net-guest" class="net-step" hidden>
+          <label class="net-label">① 받은 초대 코드를 붙여넣으세요</label>
+          <div class="net-row">
+            <textarea id="net-offer-in" class="net-code" rows="3" placeholder="초대 코드를 붙여넣기"></textarea>
+            <button id="btn-net-enter" class="btn btn-main btn-sm">참가</button>
+          </div>
+          <div id="net-answer-box" hidden>
+            <label class="net-label">② 이 응답 코드를 방장에게 보내세요</label>
+            <div class="net-row">
+              <textarea id="net-answer" class="net-code" readonly rows="3"></textarea>
+              <button id="btn-net-copy-answer" class="btn btn-sm">복사</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="net-foot">양쪽 모두 <b>1P 조작키(WASD · JKL · U · I · O · Space)</b> 또는 터치 패드를 씁니다.
+          회사·학교처럼 방화벽이 센 네트워크에서는 직접 연결이 막힐 수 있습니다.</p>
       </div>
     </section>
 
@@ -190,7 +250,11 @@
           <li><b>빔 힘겨루기</b> — 빔 필살기끼리 마주치면 힘겨루기가 시작됩니다. <b>버튼을 연타</b>해 접점을 밀어내세요.
               밀린 쪽은 큰 피해를 입고, 오래 버티면 상쇄되어 둘 다 튕겨납니다. 초필살기는 필살기보다 훨씬 강하게 밉니다.</li>
           <li>기 게이지는 공격·피격·기 모으기로 충전되며, 100이 되면 오라가 폭발합니다.</li>
-          <li>터치 조작은 1P 전용입니다. <b>2P 대전은 키보드</b>로 즐겨 주세요.</li>
+          <li>터치 조작은 1P 전용입니다. <b>2P 로컬 대전은 키보드</b>로 즐겨 주세요.</li>
+          <li><b>온라인 1v1</b> — 타이틀의 [온라인 1v1] 에서 <b>방 만들기</b>로 나온 초대 코드를 친구에게 보내고,
+              친구가 돌려준 응답 코드를 붙여넣으면 연결됩니다. 중계 서버 없이 두 브라우저가 바로 이어지며,
+              <b>양쪽 모두 1P 조작키(또는 터치 패드)</b>를 씁니다. 화면 오른쪽 아래에 핑이 표시되고,
+              상대 입력이 늦으면 그 프레임에서 함께 기다립니다.</li>
         </ul>
         <button id="btn-help-close" class="btn btn-main">닫기</button>
       </div>
@@ -240,6 +304,7 @@
 <script src="js/ai.js"></script>
 <script src="js/render.js"></script>
 <script src="js/sprites.js"></script>
+<script src="js/net.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

@@ -10,6 +10,33 @@ const randInt = (a, b) => Math.floor(rand(a, b + 1));
 const approach = (v, target, step) => (v < target ? Math.min(v + step, target) : Math.max(v - step, target));
 
 /* ---------------------------------------------------------
+ *  SyncRng : 온라인 대전에서 두 대의 시뮬레이션이 어긋나지 않도록,
+ *  '게임 진행에 영향을 주는' 난수만 이 시드 난수로 뽑는다.
+ *  (파티클·화면 흔들림 같은 연출용 난수는 그대로 Math.random 을 쓴다.)
+ * --------------------------------------------------------- */
+const SyncRng = {
+  s: 1,
+  seed(v) { this.s = (v >>> 0) || 1; },
+  /** mulberry32 : 짧고 결정적이며 두 브라우저에서 같은 값을 낸다 */
+  next() {
+    this.s = (this.s + 0x6d2b79f5) >>> 0;
+    let t = this.s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  },
+  range(a, b) { return a + this.next() * (b - a); },
+  int(a, b) { return Math.floor(this.range(a, b + 1)); }
+};
+
+/** 상태값을 32비트로 접어 넣는 해시 (동기화 검증용) */
+function hash32(h, v) {
+  h = (h ^ (v | 0)) >>> 0;
+  h = Math.imul(h, 0x01000193) >>> 0;
+  return h;
+}
+
+/* ---------------------------------------------------------
  *  색 보정 : 기본색에서 음영/하이라이트 색을 만들어 쓴다
  * --------------------------------------------------------- */
 const _shadeCache = new Map();

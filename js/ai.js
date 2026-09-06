@@ -11,6 +11,24 @@ class HumanController {
   endFrame() {}
 }
 
+/**
+ * 온라인 대전용 컨트롤러.
+ * 키보드를 직접 읽지 않고, 락스텝으로 확정된 프레임 입력 마스크만 재생한다.
+ * 두 대의 시뮬레이션이 같은 마스크를 같은 프레임에 먹으므로 결과가 일치한다.
+ */
+class NetController {
+  constructor(playerIndex) {
+    this.p = playerIndex; this.isAI = false;
+    this.mask = 0; this.prev = 0;
+  }
+  /** 이번 프레임의 마스크를 넣는다 (프레임당 정확히 한 번) */
+  setMask(m) { this.prev = this.mask; this.mask = m | 0; }
+  held(a) { return (this.mask & NET_BIT[a]) !== 0; }
+  pressed(a) { return ((this.mask & ~this.prev) & NET_BIT[a]) !== 0; }
+  think() {}
+  endFrame() {}
+}
+
 const AI_LEVELS = {
   easy: { react: 16, aggression: 0.35, block: 0.35, special: 0.25, antiAir: 0.3, decide: 26, dash: 0.1 },
   normal: { react: 9, aggression: 0.58, block: 0.62, special: 0.5, antiAir: 0.6, decide: 16, dash: 0.3 },

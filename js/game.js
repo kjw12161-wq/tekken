@@ -33,8 +33,11 @@ const Game = {
   roundTimer: ROUND_TIME * 60,
   roundNo: 1,
   stage: STAGES[0],
-  mode: 'cpu',                    // cpu | versus
+  mode: 'cpu',                    // cpu | versus | online
   difficulty: 'normal',
+  netFrame: 0,                    // 온라인 : 락스텝으로 확정된 시뮬레이션 프레임
+  netStalled: 0,                  // 상대 입력을 기다린 연속 프레임 수
+  netStart: null,                 // 호스트가 정한 스테이지/시드
   paused: false,
   slowmo: 0,
   selection: [null, null],
@@ -144,13 +147,23 @@ const Game = {
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('is-active', s.id === id));
     document.getElementById('hud').classList.toggle('is-hidden', id !== 'screen-fight');
     document.getElementById('touchpad').classList.toggle('is-hidden', id !== 'screen-fight');
+    this.updateNetHud();
   },
 
   bindUI() {
     const q = id => document.getElementById(id);
     q('btn-cpu').addEventListener('click', () => this.startSelect('cpu'));
     q('btn-versus').addEventListener('click', () => this.startSelect('versus'));
+    q('btn-online').addEventListener('click', () => this.openOnline());
     q('btn-howto').addEventListener('click', () => q('screen-help').classList.add('is-active'));
+    // 온라인 로비
+    q('btn-net-host').addEventListener('click', () => this.netHost());
+    q('btn-net-join').addEventListener('click', () => this.netJoin());
+    q('btn-net-back').addEventListener('click', () => this.netLeave());
+    q('btn-net-copy-offer').addEventListener('click', () => this.netCopy('net-offer'));
+    q('btn-net-copy-answer').addEventListener('click', () => this.netCopy('net-answer'));
+    q('btn-net-connect').addEventListener('click', () => this.netSubmitAnswer());
+    q('btn-net-enter').addEventListener('click', () => this.netSubmitOffer());
     q('btn-help-close').addEventListener('click', () => q('screen-help').classList.remove('is-active'));
     document.querySelectorAll('[data-diff]').forEach(b => {
       b.addEventListener('click', () => {
@@ -160,14 +173,24 @@ const Game = {
       });
     });
     q('btn-select-back').addEventListener('click', () => {
+      if (this.mode === 'online') { this.netLeave(); return; }
       Sfx.play('ui');
       this.selectToken = (this.selectToken || 0) + 1;   // 예약된 매치 취소
       this.state = 'title';
       this.show('screen-title');
     });
-    q('btn-rematch').addEventListener('click', () => { Sfx.play('ui'); this.startMatch(); });
-    q('btn-tochars').addEventListener('click', () => { Sfx.play('ui'); this.startSelect(this.mode); });
-    q('btn-totitle').addEventListener('click', () => { Sfx.play('ui'); this.show('screen-title'); this.state = 'title'; });
+    q('btn-rematch').addEventListener('click', () => {
+      if (this.mode === 'online') { this.netRematch(); return; }
+      Sfx.play('ui'); this.startMatch();
+    });
+    q('btn-tochars').addEventListener('click', () => {
+      if (this.mode === 'online') { this.netBackToSelect(false); return; }
+      Sfx.play('ui'); this.startSelect(this.mode);
+    });
+    q('btn-totitle').addEventListener('click', () => {
+      if (this.mode === 'online') { this.netLeave(); return; }
+      Sfx.play('ui'); this.show('screen-title'); this.state = 'title';
+    });
     q('btn-pause').addEventListener('click', () => this.togglePause());
     q('btn-resume').addEventListener('click', () => this.togglePause());
     q('btn-quit').addEventListener('click', () => {
@@ -192,7 +215,8 @@ const Game = {
     });
     window.addEventListener('keydown', e => {
       if (e.code === 'Escape') {
-        if (this.state === 'fight') this.togglePause();
+        if (this.state === 'online') this.netLeave();
+        else if (this.state === 'fight') this.togglePause();
         else if (this.state === 'select') {
           Sfx.play('ui');
           this.selectToken = (this.selectToken || 0) + 1;
@@ -334,7 +358,11 @@ const Game = {
 
   updateSelectUI() {
     const label = document.getElementById('sel-turn');
-    if (this.selection[0] === null) label.textContent = '1P 캐릭터를 선택하세요';
+    if (this.mode === 'online') {
+      const mine = this.selection[Net.localIndex], theirs = this.selection[Net.remoteIndex];
+      label.textContent = mine === null ? '내 캐릭터를 선택하세요'
+        : theirs === null ? '상대가 고르는 중...' : '곧 시작합니다';
+    } else if (this.selection[0] === null) label.textContent = '1P 캐릭터를 선택하세요';
     else if (this.selection[1] === null) {
       label.textContent = this.mode === 'cpu' ? 'CPU 상대 결정 중...' : '2P 캐릭터를 선택하세요';
     }
@@ -353,6 +381,16 @@ const Game = {
 
   pickCharacter(i) {
     if (this.state !== 'select' || this.rouletteTimer > 0) return;
+    if (this.mode === 'online') {
+      if (!Net.connected()) return;
+      if (this.selection[Net.localIndex] !== null) return;   // 이미 골랐다
+      Sfx.play('ui');
+      this.selection[Net.localIndex] = i;
+      Net.send({ t: 'pick', i });
+      this.updateSelectUI();
+      this.netMaybeStart();
+      return;
+    }
     Sfx.play('ui');
     if (this.selection[0] === null) {
       this.selection[0] = i;
@@ -400,7 +438,13 @@ const Game = {
     const c1 = CHARACTERS[this.selection[0] != null ? this.selection[0] : 0];
     const c2 = CHARACTERS[this.selection[1] != null ? this.selection[1] : 1];
     SpriteBank.keepOnly([c1.id, c2.id]);       // 이번 매치에 쓰는 캐릭터만 아틀라스에 굽는다
-    this.stage = STAGES[randInt(0, STAGES.length - 1)];
+    // 온라인은 스테이지와 난수 시드를 호스트가 정해 두 대가 똑같이 굴러가게 한다
+    const online = this.mode === 'online' && this.netStart;
+    this.stage = online ? STAGES[this.netStart.stage % STAGES.length]
+                        : STAGES[randInt(0, STAGES.length - 1)];
+    SyncRng.seed(online ? this.netStart.seed : ((Math.random() * 0xffffffff) >>> 0));
+    this.time = 0;                             // 슬로모 판정이 프레임 수에 걸려 있어 매치마다 맞춘다
+    this.netFrame = 0; this.netStalled = 0;
     this.roundNo = 1;
     this.projectiles.length = 0;
     this.blastClashes.length = 0;
@@ -409,17 +453,32 @@ const Game = {
 
     const ai = new AIController(this.difficulty);
     ai.world = this;
-    const ctrl2 = this.mode === 'cpu' ? ai : new HumanController(1);
+    let ctrl1, ctrl2;
+    if (this.mode === 'online') {
+      ctrl1 = new NetController(0);
+      ctrl2 = new NetController(1);
+    } else {
+      ctrl1 = new HumanController(0);
+      ctrl2 = this.mode === 'cpu' ? ai : new HumanController(1);
+    }
 
     this.fighters = [
-      new Fighter(c1, { world: this, index: 0, controller: new HumanController(0), x: 640, facing: 1 }),
+      new Fighter(c1, { world: this, index: 0, controller: ctrl1, x: 640, facing: 1 }),
       new Fighter(c2, { world: this, index: 1, controller: ctrl2, x: 1120, facing: -1 })
     ];
+    if (this.mode === 'online') Net.begin([ctrl1, ctrl2], (this.netStart && this.netStart.epoch) || 1);
     this.fighters[0].roundsWon = 0;
     this.fighters[1].roundsWon = 0;
     document.getElementById('name-p1').textContent = c1.name;
     document.getElementById('name-p2').textContent = c2.name;
-    document.getElementById('tag-p2').textContent = this.mode === 'cpu' ? `CPU (${this.diffLabel()})` : '2P';
+    if (this.mode === 'online') {
+      document.getElementById('tag-p1').textContent = Net.localIndex === 0 ? '나' : '상대';
+      document.getElementById('tag-p2').textContent = Net.localIndex === 1 ? '나' : '상대';
+    } else {
+      document.getElementById('tag-p1').textContent = '1P';
+      document.getElementById('tag-p2').textContent =
+        this.mode === 'cpu' ? `CPU (${this.diffLabel()})` : '2P';
+    }
     document.getElementById('stage-name').textContent = this.stage.name;
     this.hudLag = [1, 1];
     this.state = 'fight';
@@ -758,12 +817,18 @@ const Game = {
       guard++;
       // 슬로모로 건너뛴 틱은 입력을 읽지 않았으므로 엣지를 남겨 둔다
       if (this.tick() !== false) Input.endFrame();
+      else if (this.netBlocked) { this.acc = 0; break; }   // 상대 대기 중엔 시간을 쌓지 않는다
     }
     this.draw();
     requestAnimationFrame(nt => this.loop(nt));
   },
 
   tick() {
+    // 온라인 : 상대 입력이 확정되기 전에는 한 프레임도 진행하지 않는다.
+    // (this.time 조차 올리지 않아야 두 대의 시뮬레이션이 정확히 겹친다)
+    if (Net.active && this.state === 'fight' && !this.paused) {
+      if (!this.netStep()) return false;
+    }
     this.time++;
     if (this.state === 'select') { this.updateRoulette(); return; }
     if (this.state !== 'fight' || this.paused) return;
@@ -823,6 +888,268 @@ const Game = {
     this.updateHud(false);
   },
 
+  /* ==================== 온라인 대전 ==================== */
+
+  /** 온라인 관련 안내를 화면 위에 잠깐 띄운다 */
+  netToast(text, tone) {
+    const el = document.getElementById('net-toast');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'net-toast is-show' + (tone ? ' ' + tone : '');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => el.classList.remove('is-show'), 2600);
+  },
+
+  /** 온라인 로비 화면의 상태 문구 */
+  netStatus(text, tone) {
+    const el = document.getElementById('net-status');
+    if (el) { el.textContent = text; el.className = 'net-status' + (tone ? ' ' + tone : ''); }
+  },
+
+  /** 온라인 로비를 연다 */
+  openOnline() {
+    Sfx.play('ui');
+    if (!Net.supported()) {
+      this.netToast('이 브라우저에서는 온라인 대전을 쓸 수 없습니다', 'bad');
+      return;
+    }
+    Net.reset();
+    Net.onEvent = (type, payload) => this.onNetEvent(type, payload);
+    this.netShowLobbyStep('choose');
+    this.state = 'online';
+    this.show('screen-online');
+  },
+
+  /** 로비 단계 전환 : choose(역할 선택) / host / guest */
+  netShowLobbyStep(step) {
+    this.netStep_ = step;
+    ['choose', 'host', 'guest'].forEach(k => {
+      const el = document.getElementById('net-' + k);
+      if (el) el.hidden = k !== step;
+    });
+    if (step === 'choose') this.netStatus('방을 만들거나, 받은 초대 코드로 참가하세요');
+  },
+
+  async netHost() {
+    Sfx.play('ui');
+    this.netShowLobbyStep('host');
+    this.netStatus('초대 코드를 만드는 중...');
+    document.getElementById('net-offer').value = '';
+    try {
+      const code = await Net.createOffer();
+      document.getElementById('net-offer').value = code;
+      this.netStatus('초대 코드를 상대에게 보내고, 받은 응답 코드를 아래에 붙여넣으세요');
+    } catch (e) {
+      this.netStatus('초대 코드를 만들지 못했습니다 : ' + e.message, 'bad');
+    }
+  },
+
+  netJoin() {
+    Sfx.play('ui');
+    this.netShowLobbyStep('guest');
+    this.netStatus('받은 초대 코드를 붙여넣고 [참가]를 누르세요');
+    document.getElementById('net-answer').value = '';
+    document.getElementById('net-answer-box').hidden = true;
+  },
+
+  async netSubmitOffer() {
+    const code = document.getElementById('net-offer-in').value;
+    if (!code.trim()) { this.netStatus('초대 코드를 붙여넣어 주세요', 'bad'); return; }
+    this.netStatus('연결하는 중...');
+    try {
+      const answer = await Net.acceptOffer(code);
+      document.getElementById('net-answer').value = answer;
+      document.getElementById('net-answer-box').hidden = false;
+      this.netStatus('응답 코드를 호스트에게 보내면 연결됩니다');
+    } catch (e) {
+      this.netStatus('참가하지 못했습니다 : ' + e.message, 'bad');
+    }
+  },
+
+  async netSubmitAnswer() {
+    const code = document.getElementById('net-answer-in').value;
+    if (!code.trim()) { this.netStatus('응답 코드를 붙여넣어 주세요', 'bad'); return; }
+    this.netStatus('연결하는 중...');
+    try {
+      await Net.acceptAnswer(code);
+    } catch (e) {
+      this.netStatus('연결하지 못했습니다 : ' + e.message, 'bad');
+    }
+  },
+
+  /** 코드 복사 버튼 */
+  async netCopy(id) {
+    const el = document.getElementById(id);
+    if (!el || !el.value) return;
+    try {
+      await navigator.clipboard.writeText(el.value);
+      this.netToast('코드를 복사했습니다');
+    } catch (e) {
+      el.select();                                  // 클립보드가 막혀 있으면 선택만 해 준다
+      this.netToast('직접 복사(Ctrl+C)해 주세요');
+    }
+    Sfx.play('ui');
+  },
+
+  /** 온라인 연결을 끊고 타이틀로 돌아간다 */
+  netLeave(quiet) {
+    if (Net.phase === 'connected') Net.quit(); else Net.reset();
+    Net.onEvent = null;
+    this.mode = 'cpu';
+    this.selectToken = (this.selectToken || 0) + 1;
+    this.state = 'title';
+    this.show('screen-title');
+    if (!quiet) Sfx.play('ui');
+  },
+
+  /** 양쪽 캐릭터가 정해지면 호스트가 시작 신호를 보낸다 */
+  netMaybeStart() {
+    if (this.mode !== 'online') return;
+    if (this.selection[0] === null || this.selection[1] === null) return;
+    if (Net.role !== 'host') return;
+    const token = (this.selectToken || 0);
+    setTimeout(() => {
+      if (this.mode !== 'online' || (this.selectToken || 0) !== token) return;
+      if (!Net.connected()) return;
+      this.netSendStart();
+    }, 460);
+  },
+
+  /** 호스트만 호출 : 스테이지와 난수 시드를 정해 함께 시작한다 */
+  netSendStart() {
+    const payload = {
+      t: 'start',
+      stage: randInt(0, STAGES.length - 1),
+      seed: (Math.random() * 0xffffffff) >>> 0,
+      epoch: ((Net.epoch || 0) + 1) & 255 || 1     // 매치마다 1 씩 올린다 (0 은 쓰지 않는다)
+    };
+    Net.send(payload);
+    Net.clearRematch();
+    this.netStart = payload;
+    this.startMatch();
+  },
+
+  /** 온라인 결과 화면의 버튼 (재대결 / 캐릭터 선택 / 나가기) */
+  netRematch() {
+    Sfx.play('ui');
+    Net.send({ t: 'rematch' });
+    const both = Net.markRematch(true);
+    if (both && Net.role === 'host') this.netSendStart();
+    else if (!both) this.netToast('상대의 응답을 기다리는 중...');
+  },
+
+  netBackToSelect(fromRemote) {
+    if (!fromRemote) { Sfx.play('ui'); Net.send({ t: 'toSelect' }); }
+    Net.clearPicks();
+    Net.clearRematch();
+    this.selection = [null, null];
+    this.startSelect('online');
+  },
+
+  /** Net 모듈에서 올라오는 사건 처리 */
+  onNetEvent(type, payload) {
+    switch (type) {
+      case 'connected':
+        this.netStatus('연결됐습니다! 캐릭터를 고르세요', 'good');
+        Net.clearPicks(); Net.clearRematch();
+        this.selection = [null, null];
+        setTimeout(() => { if (Net.connected()) this.startSelect('online'); }, 500);
+        break;
+      case 'pick':
+        if (this.mode === 'online' && this.state === 'select') {
+          this.selection[Net.remoteIndex] = payload;
+          this.updateSelectUI();
+          this.netMaybeStart();
+        }
+        break;
+      case 'start':
+        this.netStart = payload;
+        Net.clearRematch();
+        this.startMatch();
+        break;
+      case 'rematch':
+        if (Net.markRematch(false) && Net.role === 'host') this.netSendStart();
+        else this.netToast('상대가 재대결을 원합니다');
+        break;
+      case 'toSelect':
+        this.netBackToSelect(true);
+        break;
+      case 'failed':
+        this.netStatus(Net.lastError || '연결에 실패했습니다', 'bad');
+        break;
+      case 'disconnected':
+        this.netToast(Net.lastError || '상대와의 연결이 끊겼습니다', 'bad');
+        this.netLeave(true);
+        break;
+    }
+  },
+
+  /** HUD 오른쪽 아래의 온라인 상태 표시 (핑 · 동기화) */
+  updateNetHud() {
+    const el = document.getElementById('net-hud');
+    if (!el) return;
+    if (!Net.active || this.state !== 'fight') { el.hidden = true; return; }
+    el.hidden = false;
+    const waiting = this.netStalled > 6;
+    el.textContent = Net.desync ? '동기화 오류'
+      : waiting ? '상대를 기다리는 중...' : `${Net.ping}ms`;
+    el.className = 'net-hud' + (Net.desync ? ' bad' : waiting ? ' warn' : '');
+  },
+
+  /* ==================== 온라인 락스텝 ==================== */
+
+  /**
+   * 이번 프레임을 진행해도 되는지 판단한다.
+   *  - 내 입력은 NET_DELAY 프레임 뒤에 쓰이도록 미리 확정해 보낸다
+   *  - 두 사람의 입력이 모두 도착한 프레임만 진행한다
+   */
+  netStep() {
+    if (!Net.connected()) { this.netBlocked = true; return false; }
+    const f = this.netFrame;
+    // 온라인에서는 양쪽 모두 1P 조작키(WASD/JKL)와 터치 패드를 쓴다
+    Net.captureLocal(f + NET_DELAY, Input.mask(0));
+    if (!Net.hasBoth(f)) { this.netStalled++; this.netBlocked = true; return false; }
+    this.netStalled = 0;
+    this.netBlocked = false;
+    Net.applyFrame(f);
+    if (f % 30 === 0) {
+      Net.sendPing();
+      Net.sendChecksum(f, this.stateChecksum());
+    }
+    this.netFrame = f + 1;
+    return true;
+  },
+
+  /** 두 대의 시뮬레이션이 어긋나지 않았는지 확인하기 위한 상태 해시 */
+  stateChecksum() {
+    let h = 0x811c9dc5;
+    h = hash32(h, this.roundNo);
+    h = hash32(h, this.roundTimer);
+    h = hash32(h, this.phaseTimer);
+    h = hash32(h, this.phase.length);
+    for (const f of this.fighters) {
+      h = hash32(h, Math.round(f.x * 8));
+      h = hash32(h, Math.round(f.y * 8));
+      h = hash32(h, Math.round(f.vx * 32));
+      h = hash32(h, Math.round(f.vy * 32));
+      h = hash32(h, Math.round(f.hp * 4));
+      h = hash32(h, Math.round(f.ki * 4));
+      h = hash32(h, f.facing);
+      h = hash32(h, f.hitstun);
+      h = hash32(h, f.blockstun);
+      h = hash32(h, f.roundsWon);
+      h = hash32(h, f.state.length);
+      h = hash32(h, f.attack ? f.attack.frame + 1 : 0);
+      h = hash32(h, f.attack ? f.attack.def.key.length : 0);
+    }
+    h = hash32(h, this.projectiles.length);
+    for (const p of this.projectiles) {
+      h = hash32(h, Math.round(p.x * 4));
+      h = hash32(h, Math.round(p.y * 4));
+    }
+    return h >>> 0;
+  },
+
   onTimeout() {
     if (this.phase !== 'battle') return;
     const [a, b] = this.fighters;
@@ -875,8 +1202,10 @@ const Game = {
       draw ? '"승부를 가리지 못했다..."' : `"${winner.char.quotes.win}"`;
     document.getElementById('result-score').textContent =
       `${this.fighters[0].char.name} ${this.fighters[0].roundsWon} : ${this.fighters[1].roundsWon} ${this.fighters[1].char.name}`;
-    const tag = draw ? 'DRAW'
-      : `${winner.index === 0 ? '1P' : (this.mode === 'cpu' ? 'CPU' : '2P')} WIN`;
+    let tag;
+    if (draw) tag = 'DRAW';
+    else if (this.mode === 'online') tag = winner.index === Net.localIndex ? '승리!' : '패배';
+    else tag = `${winner.index === 0 ? '1P' : (this.mode === 'cpu' ? 'CPU' : '2P')} WIN`;
     document.getElementById('result-tag').textContent = tag;
     const cv = document.getElementById('result-portrait');
     this.drawPortrait(cv, shown.char);
@@ -886,6 +1215,8 @@ const Game = {
 
   togglePause() {
     if (this.state !== 'fight') return;
+    // 온라인은 한쪽만 멈출 수 없다 (상대 시뮬레이션이 그대로 흐른다)
+    if (this.mode === 'online') { this.netToast('온라인 대전은 일시정지할 수 없습니다'); return; }
     this.paused = !this.paused;
     document.getElementById('pause-overlay').classList.toggle('is-active', this.paused);
   },
@@ -1003,7 +1334,8 @@ const Game = {
 
     // t : 0 = A쪽(=A 열세), 1 = B쪽(=A 우세)
     const pa = this.clashPower(a), pb = this.clashPower(b);
-    c.t = clamp(c.t + (pa - pb) * 0.0125 + rand(-0.0016, 0.0016), 0, 1);
+    // 온라인에서도 양쪽 결과가 같아야 하므로 시드 난수로 흔든다
+    c.t = clamp(c.t + (pa - pb) * 0.0125 + SyncRng.range(-0.0016, 0.0016), 0, 1);
 
     // 접점 위치 = 두 총구 사이를 t 로 보간
     const ma = motionFor(a.char, a.attack.def), mb = motionFor(b.char, b.attack.def);
@@ -1243,6 +1575,7 @@ const Game = {
     });
     document.getElementById('timer').textContent =
       String(Math.max(0, Math.ceil(this.roundTimer / 60))).padStart(2, '0');
+    this.updateNetHud();
   },
 
   /* ==================== 그리기 ==================== */
@@ -1299,6 +1632,7 @@ const Game = {
     this.particles.draw(ctx);
     if (this.debug) drawDebugBoxes(ctx, this.fighters);
 
+    this.updateNetHud();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const f of order) drawUltScreen(ctx, f, this.time, CW, CH);
     this.drawOffscreenMarkers(ctx);
