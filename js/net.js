@@ -1,10 +1,13 @@
 /* =========================================================
  *  온라인 1v1 (WebRTC P2P + 지연 롤백 없는 락스텝)
  *
- *  중계 서버 없이 두 브라우저를 직접 잇는다.
- *   1) 호스트가 '초대 코드'를 만들어 상대에게 전달한다.
- *   2) 상대가 코드를 붙여넣고 '응답 코드'를 돌려준다.
- *   3) 호스트가 응답 코드를 붙여넣으면 연결된다.
+ *  붙는 방법은 두 가지다.
+ *   A) 방 번호  — 시그널링 서버(server/signal.js)가 두 사람을 짝지어 준다.
+ *                 방장이 받은 네 글자 방 번호만 알려주면 끝.
+ *   B) 코드 교환 — 서버가 없을 때. 초대 코드/응답 코드를 직접 주고받는다.
+ *
+ *  어느 쪽이든 실제 게임 데이터는 서버를 거치지 않는다.
+ *  협상이 끝나면 두 브라우저가 P2P 로 직접 주고받는다.
  *
  *  연결 뒤에는 프레임마다 12비트 입력 마스크만 주고받고,
  *  두 대가 똑같은 시뮬레이션을 돌린다(락스텝).
@@ -59,6 +62,8 @@ const Net = {
   localIndex: 0,          // 내가 조작하는 파이터 (host=0, guest=1)
   remoteIndex: 1,
   pc: null, ctl: null, ch: null,
+  ws: null,               // 시그널링 소켓 (연결이 맺어지면 닫는다)
+  room: '',               // 방 번호 (방 번호로 붙었을 때)
   tracks: [new InputTrack(), new InputTrack()],
   ctrls: [null, null],
   frame: 0,               // 다음에 진행할 시뮬레이션 프레임
@@ -84,7 +89,10 @@ const Net = {
     try { if (this.ch) this.ch.close(); } catch (e) { /* 이미 닫힘 */ }
     try { if (this.ctl) this.ctl.close(); } catch (e) { /* 이미 닫힘 */ }
     try { if (this.pc) this.pc.close(); } catch (e) { /* 이미 닫힘 */ }
+    this._closeSignal();
     this.pc = this.ctl = this.ch = null;
+    this.room = '';
+    this._pendingIce = [];
     this.active = false; this.role = null; this.phase = 'idle';
     this.localIndex = 0; this.remoteIndex = 1;
     this.tracks[0].clear(); this.tracks[1].clear();
@@ -96,14 +104,208 @@ const Net = {
     this._rematchLocal = this._rematchRemote = false;
   },
 
-  _newPeer() {
+  _newPeer(trickle) {
     const pc = new RTCPeerConnection({ iceServers: STUN_SERVERS });
     pc.onconnectionstatechange = () => {
       const st = pc.connectionState;
       if (st === 'failed' || st === 'disconnected' || st === 'closed') this._drop(st);
     };
+    if (trickle) {
+      // 방 번호 방식 : 후보를 찾는 대로 서버를 통해 흘려보낸다 (연결이 훨씬 빠르다)
+      pc.onicecandidate = e => {
+        if (e.candidate) this._sig({ ice: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate });
+      };
+    }
+    this._pendingIce = [];
     this.pc = pc;
     return pc;
+  },
+
+  /* ---------------- 방 번호 방식 ---------------- */
+
+  /** 시그널링 서버 주소를 정한다 (저장값 → ?signal= → 같은 출처 순) */
+  signalUrl() {
+    try {
+      const saved = localStorage.getItem('dfz.signal');
+      if (saved) return saved;
+    } catch (e) { /* 저장소가 막혀 있으면 무시 */ }
+    const q = (location.search.match(/[?&]signal=([^&]+)/) || [])[1];
+    if (q) return decodeURIComponent(q);
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${scheme}//${location.host}/ws`;
+    }
+    return '';                       // file:// 이나 샌드박스에서는 자동 추정이 불가능하다
+  },
+
+  /** 시그널링 서버가 살아 있는지 짧게 확인한다 (로비를 열 때) */
+  probeSignal(url, ms) {
+    return new Promise(resolve => {
+      const target = url || this.signalUrl();
+      if (!target || typeof WebSocket !== 'function') { resolve(false); return; }
+      let ws, done = false;
+      const finish = ok => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        try { if (ws) { ws.onopen = ws.onerror = ws.onclose = null; ws.close(); } } catch (e) { /* 무시 */ }
+        resolve(ok);
+      };
+      const timer = setTimeout(() => finish(false), ms || 2500);
+      try { ws = new WebSocket(target); } catch (e) { finish(false); return; }
+      ws.onopen = () => finish(true);
+      ws.onerror = () => finish(false);
+      ws.onclose = () => finish(false);
+    });
+  },
+
+  setSignalUrl(url) {
+    try {
+      if (url) localStorage.setItem('dfz.signal', url);
+      else localStorage.removeItem('dfz.signal');
+    } catch (e) { /* 무시 */ }
+  },
+
+  _closeSignal() {
+    if (this.ws) {
+      try { this.ws.onclose = null; this.ws.close(); } catch (e) { /* 무시 */ }
+      this.ws = null;
+    }
+  },
+
+  /** 시그널링 서버에 붙는다 */
+  _openSignal(url) {
+    return new Promise((resolve, reject) => {
+      const target = url || this.signalUrl();
+      if (!target) { reject(new Error('시그널링 서버 주소를 알 수 없습니다')); return; }
+      let ws;
+      try { ws = new WebSocket(target); } catch (e) { reject(new Error('서버 주소가 올바르지 않습니다')); return; }
+      const timer = setTimeout(() => {
+        try { ws.close(); } catch (e) { /* 무시 */ }
+        reject(new Error('시그널링 서버에 연결하지 못했습니다'));
+      }, 8000);
+      ws.onopen = () => {
+        clearTimeout(timer);
+        this.ws = ws;
+        ws.onmessage = e => this._onSignal(e.data);
+        ws.onclose = () => {
+          this.ws = null;
+          // 아직 P2P 가 안 붙었는데 서버와 끊기면 알린다
+          if (this.phase !== 'connected') {
+            this.lastError = '시그널링 서버와의 연결이 끊겼습니다';
+            this._emit('failed');
+          }
+        };
+        resolve(ws);
+      };
+      ws.onerror = () => {
+        clearTimeout(timer);
+        if (!this.ws) reject(new Error('시그널링 서버에 연결하지 못했습니다'));
+      };
+    });
+  },
+
+  _wsSend(obj) {
+    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(obj));
+  },
+  _sig(d) { this._wsSend({ t: 'sig', d }); },
+
+  /** 방장 : 방을 만들고 상대가 들어오기를 기다린다 */
+  async hostRoom(url) {
+    this.reset();
+    this.role = 'host'; this.phase = 'offering';
+    this.localIndex = 0; this.remoteIndex = 1;
+    await this._openSignal(url);
+    this._wsSend({ t: 'create' });
+  },
+
+  /** 참가자 : 방 번호로 들어간다 */
+  async joinRoom(code, url) {
+    this.reset();
+    this.role = 'guest'; this.phase = 'answering';
+    this.localIndex = 1; this.remoteIndex = 0;
+    await this._openSignal(url);
+    this._wsSend({ t: 'join', room: String(code || '').trim().toUpperCase() });
+  },
+
+  async _onSignal(text) {
+    let msg;
+    try { msg = JSON.parse(text); } catch (e) { return; }
+    switch (msg.t) {
+      case 'created':
+        this.room = msg.room;
+        this._emit('room', msg.room);
+        return;
+      case 'joined':
+        this.room = msg.room;
+        // 방장의 offer 를 받을 준비를 미리 해 둔다
+        this._prepareGuestPeer();
+        this._emit('joined', msg.room);
+        return;
+      case 'peer':                                  // 상대가 들어왔다 → 방장이 offer 를 만든다
+        this._emit('peerJoined');
+        await this._hostOffer();
+        return;
+      case 'sig':
+        await this._onNegotiation(msg.d);
+        return;
+      case 'peerLeft':
+        if (this.phase !== 'connected') {
+          this.lastError = '상대가 방을 나갔습니다';
+          this._emit('failed');
+        }
+        return;
+      case 'expired':
+        this.lastError = '방이 만료됐습니다. 다시 만들어 주세요';
+        this._emit('failed');
+        return;
+      case 'error':
+        this.lastError = {
+          notFound: '그런 방이 없습니다. 번호를 확인해 주세요',
+          full: '이미 두 명이 들어가 있는 방입니다',
+          busy: '서버가 붐빕니다. 잠시 뒤 다시 시도해 주세요'
+        }[msg.code] || '방에 들어가지 못했습니다';
+        this._emit('roomError', this.lastError);
+        return;
+    }
+  },
+
+  _prepareGuestPeer() {
+    const pc = this._newPeer(true);
+    const chans = {};
+    pc.ondatachannel = e => {
+      chans[e.channel.label] = e.channel;
+      if (chans.ctl && chans.in) this._bindChannels(chans.ctl, chans.in);
+    };
+  },
+
+  async _hostOffer() {
+    const pc = this._newPeer(true);
+    const ctl = pc.createDataChannel('ctl', { ordered: true });
+    const ch = pc.createDataChannel('in', { ordered: false, maxRetransmits: 0 });
+    this._bindChannels(ctl, ch);
+    await pc.setLocalDescription(await pc.createOffer());
+    this._sig({ sdp: pc.localDescription.sdp, type: 'offer' });
+  },
+
+  async _onNegotiation(d) {
+    if (!d || !this.pc) return;
+    const pc = this.pc;
+    if (d.sdp) {
+      await pc.setRemoteDescription({ type: d.type, sdp: d.sdp });
+      // 미리 도착해 쌓아둔 후보를 이제 넣는다
+      for (const c of this._pendingIce) {
+        try { await pc.addIceCandidate(c); } catch (e) { /* 쓸모없는 후보는 무시 */ }
+      }
+      this._pendingIce = [];
+      if (d.type === 'offer') {
+        await pc.setLocalDescription(await pc.createAnswer());
+        this._sig({ sdp: pc.localDescription.sdp, type: 'answer' });
+      }
+    } else if (d.ice) {
+      if (!pc.remoteDescription) { this._pendingIce.push(d.ice); return; }
+      try { await pc.addIceCandidate(d.ice); } catch (e) { /* 무시 */ }
+    }
   },
 
   _bindChannels(ctl, ch) {
@@ -114,6 +316,8 @@ const Net = {
     const opened = () => {
       if (ctl.readyState === 'open' && ch.readyState === 'open' && this.phase !== 'connected') {
         this.phase = 'connected';
+        this._wsSend({ t: 'bye' });
+        this._closeSignal();          // 붙고 나면 서버는 더 필요 없다
         this._emit('connected');
       }
     };
@@ -126,7 +330,7 @@ const Net = {
     this.reset();
     this.role = 'host'; this.phase = 'offering';
     this.localIndex = 0; this.remoteIndex = 1;
-    const pc = this._newPeer();
+    const pc = this._newPeer(false);
     const ctl = pc.createDataChannel('ctl', { ordered: true });
     const ch = pc.createDataChannel('in', { ordered: false, maxRetransmits: 0 });
     this._bindChannels(ctl, ch);
@@ -142,7 +346,7 @@ const Net = {
     this.localIndex = 1; this.remoteIndex = 0;
     const msg = await this._decode(code);
     if (!msg || msg.t !== 'offer') throw new Error('초대 코드가 아닙니다');
-    const pc = this._newPeer();
+    const pc = this._newPeer(false);
     const chans = {};
     pc.ondatachannel = e => {
       chans[e.channel.label] = e.channel;

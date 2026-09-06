@@ -67,6 +67,14 @@ const Game = {
     this.buildSelectGrid();
     this.bindUI();
     this.show('screen-title');
+    // ?room=XXXX 로 들어오면 바로 그 방에 참가한다 (링크만 받아도 되도록)
+    const invited = (location.search.match(/[?&]room=([0-9A-Za-z]{3,8})/) || [])[1];
+    if (invited && Net.supported()) {
+      this.openOnline();
+      this._probeToken = (this._probeToken || 0) + 1;   // 자동 참가 중엔 탐색이 끼어들지 않게
+      document.getElementById('net-room-in').value = invited.toUpperCase();
+      this.netRoomJoin();
+    }
     requestAnimationFrame(t => this.loop(t));
   },
 
@@ -160,6 +168,20 @@ const Game = {
     q('btn-net-host').addEventListener('click', () => this.netHost());
     q('btn-net-join').addEventListener('click', () => this.netJoin());
     q('btn-net-back').addEventListener('click', () => this.netLeave());
+    q('tab-net-room').addEventListener('click', () => { Sfx.play('ui'); this.netTab('room'); });
+    q('tab-net-code').addEventListener('click', () => { Sfx.play('ui'); this.netTab('code'); });
+    q('btn-room-create').addEventListener('click', () => this.netRoomCreate());
+    q('btn-room-join').addEventListener('click', () => this.netRoomJoin());
+    q('btn-room-copy').addEventListener('click', () => this.netCopyText(Net.room));
+    q('btn-room-link').addEventListener('click', () => this.netCopyLink());
+    q('btn-room-cancel').addEventListener('click', () => { Sfx.play('ui'); this.netTab('room'); });
+    q('btn-signal-save').addEventListener('click', () => this.netSaveSignal());
+    q('net-room-in').addEventListener('keydown', e => {
+      if (e.code === 'Enter') { e.preventDefault(); this.netRoomJoin(); }
+    });
+    q('net-room-in').addEventListener('input', e => {
+      e.target.value = e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
+    });
     q('btn-net-copy-offer').addEventListener('click', () => this.netCopy('net-offer'));
     q('btn-net-copy-answer').addEventListener('click', () => this.netCopy('net-answer'));
     q('btn-net-connect').addEventListener('click', () => this.netSubmitAnswer());
@@ -915,9 +937,92 @@ const Game = {
     }
     Net.reset();
     Net.onEvent = (type, payload) => this.onNetEvent(type, payload);
-    this.netShowLobbyStep('choose');
+    document.getElementById('net-signal-url').value = Net.signalUrl() || '';
+    this.netTab(this._netTab || 'room');
     this.state = 'online';
     this.show('screen-online');
+    this.netProbe();
+  },
+
+  /** 시그널링 서버가 있는지 살펴보고, 없으면 코드 교환 방식으로 안내한다 */
+  async netProbe() {
+    if (this._netTab === 'code') return;
+    const token = ++this._probeToken;
+    this.netStatus('시그널링 서버를 찾는 중...');
+    const ok = await Net.probeSignal();
+    if (token !== this._probeToken || this.state !== 'online') return;
+    if (ok) {
+      this.netStatus('방을 만들어 번호를 알려주거나, 받은 번호로 참가하세요');
+    } else {
+      this.netTab('code');
+      this.netStatus('시그널링 서버가 없어 코드 교환 방식으로 붙습니다 ' +
+        '(서버를 띄우면 방 번호로 바로 붙을 수 있습니다)', 'bad');
+    }
+  },
+
+  /** 붙는 방식 탭 전환 : 방 번호 / 코드 직접 교환 */
+  netTab(which) {
+    this._probeToken = (this._probeToken || 0) + 1;
+    this._netTab = which;
+    Net.reset();
+    Net.onEvent = (type, payload) => this.onNetEvent(type, payload);
+    document.getElementById('tab-net-room').classList.toggle('is-on', which === 'room');
+    document.getElementById('tab-net-code').classList.toggle('is-on', which === 'code');
+    document.getElementById('net-room').hidden = which !== 'room';
+    this.netRoomWaiting(false);
+    document.getElementById('net-room-in').value = '';
+    this.netShowLobbyStep(which === 'room' ? null : 'choose');
+    this.netStatus(which === 'room'
+      ? '방을 만들어 번호를 알려주거나, 받은 번호로 참가하세요'
+      : '서버 없이 초대 코드를 직접 주고받는 방식입니다');
+  },
+
+  /* ---------------- 방 번호 방식 ---------------- */
+
+  /** 방을 만든 뒤에는 만들기/참가 줄을 감추고 방 번호만 보여준다 */
+  netRoomWaiting(on) {
+    document.getElementById('net-room-show').hidden = !on;
+    document.querySelector('#net-room .net-roles').hidden = on;
+    document.querySelector('#net-room .net-join-row').hidden = on;
+  },
+
+  async netRoomCreate() {
+    Sfx.play('ui');
+    this._probeToken = (this._probeToken || 0) + 1;   // 진행 중인 서버 탐색은 무효로
+    this.netRoomWaiting(false);
+    this.netStatus('방을 만드는 중...');
+    try {
+      await Net.hostRoom();
+    } catch (e) {
+      this.netStatus(e.message + ' — [코드 직접 교환] 으로도 붙을 수 있습니다', 'bad');
+    }
+  },
+
+  /** 방 번호가 담긴 주소를 복사한다 (링크만 보내면 바로 참가된다) */
+  netCopyLink() {
+    const url = location.origin + location.pathname + '?room=' + encodeURIComponent(Net.room);
+    this.netCopyText(url, '참가 링크를 복사했습니다');
+  },
+
+  async netRoomJoin() {
+    const code = document.getElementById('net-room-in').value.trim().toUpperCase();
+    if (code.length < 3) { this.netStatus('방 번호를 입력해 주세요', 'bad'); return; }
+    Sfx.play('ui');
+    this._probeToken = (this._probeToken || 0) + 1;
+    this.netStatus(`${code} 방에 들어가는 중...`);
+    try {
+      await Net.joinRoom(code);
+    } catch (e) {
+      this.netStatus(e.message + ' — [코드 직접 교환] 으로도 붙을 수 있습니다', 'bad');
+    }
+  },
+
+  netSaveSignal() {
+    const url = document.getElementById('net-signal-url').value.trim();
+    Net.setSignalUrl(url);
+    document.getElementById('net-signal-url').value = Net.signalUrl() || '';
+    this.netToast(url ? '서버 주소를 저장했습니다' : '자동 찾기로 되돌렸습니다');
+    Sfx.play('ui');
   },
 
   /** 로비 단계 전환 : choose(역할 선택) / host / guest */
@@ -927,11 +1032,11 @@ const Game = {
       const el = document.getElementById('net-' + k);
       if (el) el.hidden = k !== step;
     });
-    if (step === 'choose') this.netStatus('방을 만들거나, 받은 초대 코드로 참가하세요');
   },
 
   async netHost() {
     Sfx.play('ui');
+    document.getElementById('net-room').hidden = true;
     this.netShowLobbyStep('host');
     this.netStatus('초대 코드를 만드는 중...');
     document.getElementById('net-offer').value = '';
@@ -946,6 +1051,7 @@ const Game = {
 
   netJoin() {
     Sfx.play('ui');
+    document.getElementById('net-room').hidden = true;
     this.netShowLobbyStep('guest');
     this.netStatus('받은 초대 코드를 붙여넣고 [참가]를 누르세요');
     document.getElementById('net-answer').value = '';
@@ -975,6 +1081,18 @@ const Game = {
     } catch (e) {
       this.netStatus('연결하지 못했습니다 : ' + e.message, 'bad');
     }
+  },
+
+  /** 짧은 문자열(방 번호)을 복사한다 */
+  async netCopyText(text, done) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      this.netToast(done || '방 번호를 복사했습니다');
+    } catch (e) {
+      this.netToast('복사가 막혀 있습니다. 직접 적어 주세요');
+    }
+    Sfx.play('ui');
   },
 
   /** 코드 복사 버튼 */
@@ -1073,6 +1191,23 @@ const Game = {
         break;
       case 'toSelect':
         this.netBackToSelect(true);
+        break;
+      case 'room': {                     // 방이 만들어졌다
+        document.getElementById('net-room-code').textContent = payload;
+        this.netRoomWaiting(true);
+        document.getElementById('btn-room-link').hidden = !/^https?:$/.test(location.protocol);
+        this.netStatus('방 번호를 친구에게 알려주세요. 들어오면 바로 시작합니다', 'good');
+        Sfx.play('bell');
+        break;
+      }
+      case 'joined':
+        this.netStatus(`${payload} 방에 들어갔습니다. 연결하는 중...`);
+        break;
+      case 'peerJoined':
+        this.netStatus('상대가 들어왔습니다. 연결하는 중...', 'good');
+        break;
+      case 'roomError':
+        this.netStatus(payload, 'bad');
         break;
       case 'failed':
         this.netStatus(Net.lastError || '연결에 실패했습니다', 'bad');

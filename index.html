@@ -121,16 +121,55 @@
         </header>
         <p class="net-status" id="net-status">방을 만들거나, 받은 초대 코드로 참가하세요</p>
 
-        <!-- 1단계 : 역할 고르기 -->
-        <div id="net-choose" class="net-step">
+        <!-- 붙는 방식 고르기 -->
+        <div class="net-tabs">
+          <button id="tab-net-room" class="chip is-on">방 번호로 붙기</button>
+          <button id="tab-net-code" class="chip">코드 직접 교환</button>
+        </div>
+
+        <!-- 방식 A : 방 번호 -->
+        <div id="net-room" class="net-step">
           <div class="net-roles">
-            <button id="btn-net-host" class="btn btn-main">방 만들기</button>
-            <button id="btn-net-join" class="btn">방 참가하기</button>
+            <button id="btn-room-create" class="btn btn-main">방 만들기</button>
+          </div>
+          <div class="net-join-row">
+            <input id="net-room-in" class="net-roomin" maxlength="6" spellcheck="false"
+                   autocomplete="off" placeholder="방 번호" aria-label="방 번호">
+            <button id="btn-room-join" class="btn">참가</button>
+          </div>
+          <div id="net-room-show" class="net-roombox" hidden>
+            <span class="net-roomlabel">방 번호</span>
+            <b id="net-room-code" class="net-roomcode">----</b>
+            <div class="net-roombtns">
+              <button id="btn-room-copy" class="btn btn-sm">번호 복사</button>
+              <button id="btn-room-link" class="btn btn-sm">링크 복사</button>
+              <button id="btn-room-cancel" class="btn btn-ghost btn-sm">취소</button>
+            </div>
+          </div>
+          <p class="net-help-line">친구에게 <b>방 번호 네 글자</b>만 알려주면 됩니다.
+            서버는 두 사람을 짝지어 주기만 하고, 대전 데이터는 서버를 거치지 않습니다.</p>
+          <details class="net-adv">
+            <summary>시그널링 서버 주소</summary>
+            <div class="net-row">
+              <input id="net-signal-url" class="net-code" spellcheck="false" autocomplete="off"
+                     placeholder="ws://localhost:8080/ws">
+              <button id="btn-signal-save" class="btn btn-sm">저장</button>
+            </div>
+            <p class="net-foot">비워 두고 저장하면 현재 주소에서 자동으로 찾습니다.
+              직접 서버를 띄우려면 <code>node server/signal.js</code> 를 실행하세요.</p>
+          </details>
+        </div>
+
+        <!-- 방식 B : 코드 직접 교환 -->
+        <div id="net-choose" class="net-step" hidden>
+          <div class="net-roles">
+            <button id="btn-net-host" class="btn btn-main">초대 코드 만들기</button>
+            <button id="btn-net-join" class="btn">받은 코드로 참가</button>
           </div>
           <ol class="net-help">
-            <li><b>방 만들기</b>를 누르면 <b>초대 코드</b>가 나옵니다. 복사해서 친구에게 보내세요.</li>
-            <li>친구는 <b>방 참가하기</b>에서 그 코드를 붙여넣고, 돌아온 <b>응답 코드</b>를 다시 보내 줍니다.</li>
-            <li>방장이 응답 코드를 붙여넣으면 연결됩니다. 중계 서버 없이 두 브라우저가 직접 이어집니다.</li>
+            <li><b>초대 코드 만들기</b>를 누르면 코드가 나옵니다. 복사해서 친구에게 보내세요.</li>
+            <li>친구는 <b>받은 코드로 참가</b>에서 그 코드를 붙여넣고, 돌아온 <b>응답 코드</b>를 다시 보내 줍니다.</li>
+            <li>방장이 응답 코드를 붙여넣으면 연결됩니다. 서버가 아예 필요 없는 방식입니다.</li>
           </ol>
         </div>
 
@@ -251,8 +290,10 @@
               밀린 쪽은 큰 피해를 입고, 오래 버티면 상쇄되어 둘 다 튕겨납니다. 초필살기는 필살기보다 훨씬 강하게 밉니다.</li>
           <li>기 게이지는 공격·피격·기 모으기로 충전되며, 100이 되면 오라가 폭발합니다.</li>
           <li>터치 조작은 1P 전용입니다. <b>2P 로컬 대전은 키보드</b>로 즐겨 주세요.</li>
-          <li><b>온라인 1v1</b> — 타이틀의 [온라인 1v1] 에서 <b>방 만들기</b>로 나온 초대 코드를 친구에게 보내고,
-              친구가 돌려준 응답 코드를 붙여넣으면 연결됩니다. 중계 서버 없이 두 브라우저가 바로 이어지며,
+          <li><b>온라인 1v1</b> — 타이틀의 [온라인 1v1] 에서 <b>방 만들기</b>를 누르면 <b>네 글자 방 번호</b>가 나옵니다.
+              친구에게 번호(또는 참가 링크)만 알려주면 들어옵니다. 시그널링 서버가 없는 곳에서는
+              <b>코드 직접 교환</b> 방식으로 자동 전환됩니다.
+              어느 쪽이든 대전 데이터는 서버를 거치지 않고 두 브라우저가 바로 주고받으며,
               <b>양쪽 모두 1P 조작키(또는 터치 패드)</b>를 씁니다. 화면 오른쪽 아래에 핑이 표시되고,
               상대 입력이 늦으면 그 프레임에서 함께 기다립니다.</li>
         </ul>

@@ -396,6 +396,44 @@ html, body {
 .net-help { margin: 4px 0 0; padding-left: 20px; color: var(--muted); font-size: 12.5px; line-height: 1.75; }
 .net-help b { color: #fff; }
 .net-label { font-size: 12px; font-weight: 700; color: var(--orange); }
+.net-tabs { display: flex; gap: 8px; }
+.net-tabs .chip { flex: 1 1 0; }
+.net-join-row { display: flex; gap: 8px; }
+.net-join-row .btn { flex: 0 0 auto; }
+.net-roomin {
+  flex: 1; min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 20px; font-weight: 800; letter-spacing: .28em; text-align: center;
+  text-transform: uppercase;
+  color: var(--text); background: rgba(0,0,0,.45);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+}
+.net-roomin::placeholder { letter-spacing: .08em; font-size: 14px; font-weight: 600; color: var(--muted); }
+.net-roomin:focus { outline: none; border-color: var(--cyan); }
+.net-roombox {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; border-radius: 12px;
+  border: 1px solid rgba(255,138,31,.5);
+  background: linear-gradient(180deg, rgba(255,138,31,.14), rgba(0,0,0,.35));
+}
+.net-roomlabel { font-size: 12px; font-weight: 700; color: var(--muted); }
+.net-roombtns { display: flex; gap: 6px; flex-wrap: wrap; }
+.net-roomcode {
+  flex: 1 1 120px; min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: clamp(30px, 7cqw, 44px); font-weight: 900; letter-spacing: .16em;
+  color: #ffd76a; text-shadow: 0 0 22px rgba(255,190,60,.55);
+}
+.net-help-line { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.7; }
+.net-help-line b { color: #fff; }
+.net-adv { font-size: 12px; color: var(--muted); }
+.net-adv summary { cursor: pointer; padding: 4px 0; color: var(--cyan); }
+.net-adv .net-row { margin-top: 6px; }
+.net-adv .net-code { font-size: 12px; min-height: 34px; }
+.net-adv code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: rgba(255,255,255,.1); padding: 1px 5px; border-radius: 4px; color: #fff;
+}
 .net-row { display: flex; gap: 8px; align-items: stretch; }
 .net-code {
   flex: 1; min-width: 0; resize: vertical;
